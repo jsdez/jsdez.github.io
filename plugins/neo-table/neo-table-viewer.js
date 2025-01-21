@@ -147,11 +147,11 @@ export class MyTable extends LitElement {
         data = this.removeKeysFromData(data);
       }
   
-      if (this.replaceKeys && data) {
+    if (this.replaceKeys && data) {
         data = this.renameKeys(data);
-      }
-
-    return data;
+    }
+  
+      return data;
   }
 
   removeKeysFromData(data) {
@@ -170,25 +170,22 @@ export class MyTable extends LitElement {
   }
 
   renameKeys(data) {
-    // Parse the JSON string to get the key mappings
-    const keyMappings = JSON.parse(this.replaceKeys).keyMappings;
+    // Parse replaceKeys as a JSON object if it's in the correct format
+    let keyMappings = {};
+    try {
+      keyMappings = JSON.parse(this.replaceKeys).keyMappings || {};
+    } catch (e) {
+      console.error("Error parsing replaceKeys:", e);
+    }
 
-    // Map over each object in data array and replace keys as necessary
     const newData = data.map(obj => {
       const newObj = {};
       for (const key in obj) {
-        const newKey = keyMappings[key] || key; // Get the new key if it exists in the map, otherwise use the old key
+        const newKey = keyMappings[key] || key;  // Use new key if mapped, otherwise original key
         newObj[newKey] = obj[key];
       }
       return newObj;
     });
-
-    // Check for any old keys left unmapped
-    const unmappedKeys = Object.keys(keyMappings).filter(oldKey => !Object.values(data).some(obj => obj.hasOwnProperty(oldKey)));
-
-    if (unmappedKeys.length > 0) {
-      console.warn('The following old keys are not found in the data and will not be renamed:', unmappedKeys);
-    }
 
     return newData;
   }
