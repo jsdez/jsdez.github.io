@@ -31,15 +31,15 @@ export class MyTable extends LitElement {
           verticalLayout: true,
           defaultValue: 'JSON',
         },
+        removeKeys: {
+            type: 'string',
+            title: 'Remove keys JSON',
+            description: 'Use key-values to remove columns e.g. {"keyName1": true,"keyName2": true}'
+          },
         replaceKeys: {
           type: 'string',
           title: 'Rename keys JSON',
-          description: 'Use key-value pairs to rename columns e.g. {"keyMappings": {"oldKey1": "newKey1","oldKey2": "newKey2"}}'
-        },
-        removeKeys:{
-            type: 'string',
-            title: 'Remove Keys JSON',
-            description: 'Enter a comma separated list of keys to remove from the final table e.g. Keyname1,Keyname2'
+          description: 'Use key-value pairs to rename columns e.g. {"oldKey1":"newKey1","oldKey2":"newKey2"}'
         },
         pageItemLimit: {
           type: 'string',
@@ -62,6 +62,7 @@ export class MyTable extends LitElement {
   static properties = {
     dataobject: '',
     datatype: '',
+    removeKeys: '',
     replaceKeys: '',
     prefDateFormat: '',
     pageItemLimit: { type: Number },
@@ -78,6 +79,7 @@ export class MyTable extends LitElement {
   constructor() {
     super();
     this.dataobject = '';
+    this.removeKeys = '';
     this.replaceKeys = '';
     this.prefDateFormat = '';
     this.pageItemLimit = "5";
@@ -143,21 +145,32 @@ export class MyTable extends LitElement {
       data = null;
     }
 
+    // Apply removeKeys first, if provided
     if (this.removeKeys && data) {
         data = this.removeKeysFromData(data);
-      }
+    }
   
+    // Apply replaceKeys after removeKeys
     if (this.replaceKeys && data) {
         data = this.renameKeys(data);
     }
-  
-      return data;
+
+    return data;
   }
 
   removeKeysFromData(data) {
-    // Split removeKeys by commas into an array of keys to remove
-    const keysToRemove = this.removeKeys.split(',').map(key => key.trim());
-    
+    // Ensure removeKeys is an object
+    if (typeof this.removeKeys === 'string') {
+      try {
+        this.removeKeys = JSON.parse(this.removeKeys);
+      } catch (e) {
+        console.error("Error parsing removeKeys:", e);
+        return data;
+      }
+    }
+
+    const keysToRemove = Object.keys(this.removeKeys);
+
     const newData = data.map(obj => {
       const newObj = { ...obj };
       keysToRemove.forEach(key => {
@@ -170,18 +183,20 @@ export class MyTable extends LitElement {
   }
 
   renameKeys(data) {
-    // Parse replaceKeys as a JSON object if it's in the correct format
-    let keyMappings = {};
-    try {
-      keyMappings = JSON.parse(this.replaceKeys).keyMappings || {};
-    } catch (e) {
-      console.error("Error parsing replaceKeys:", e);
+    // Ensure replaceKeys is an object
+    if (typeof this.replaceKeys === 'string') {
+      try {
+        this.replaceKeys = JSON.parse(this.replaceKeys);
+      } catch (e) {
+        console.error("Error parsing replaceKeys:", e);
+        return data;
+      }
     }
 
     const newData = data.map(obj => {
       const newObj = {};
       for (const key in obj) {
-        const newKey = keyMappings[key] || key;  // Use new key if mapped, otherwise original key
+        const newKey = this.replaceKeys[key] || key;  // Use new key if mapped, otherwise original key
         newObj[newKey] = obj[key];
       }
       return newObj;
@@ -221,6 +236,11 @@ export class MyTable extends LitElement {
 
       data.push(row);
     }
+
+    if (this.replaceKeys && data) {
+      return this.renameKeys(data);
+    }
+
     return data;
   }
 
