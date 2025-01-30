@@ -1,0 +1,184 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+:root {
+    --ntx-form-theme-font-family: "Poppins", "Open Sans", "Helvetica", "Arial", sans-serif;
+}
+
+.nx-form {
+    background-color: #fff;
+    border: 1px solid #dee2e6!important;
+    border-radius: 0px;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+    border-bottom-left-radius: 0px;
+    box-shadow: none!important;
+}
+
+/**Buttons**/
+/* Style the checkboxes as buttons, similar to Bootstrap, within the .choice-buttons class */
+.choice-buttons .nx-checkbox-container {
+  display: inline-block;
+  margin: 5px 10px;
+  padding: 8px 15px;
+  border: 2px solid var(--ntx-form-theme-color-primary-button-background); /* Use primary button background color */
+  border-radius: var(--ntx-form-theme-border-radius); /* Use the theme's border radius */
+  background-color: var(--ntx-form-theme-color-secondary-button-background);
+  color: var(--ntx-form-theme-color-secondary-button-font); /* Use primary button font color */
+  font-family: var(--ntx-form-theme-font-family); /* Use the defined font family */
+  font-size: var(--ntx-form-theme-text-label-size); /* Use the theme's text label size */
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  line-height: 1.5;
+  text-transform: uppercase; /* Optional: Transform text to uppercase */
+}
+
+.choice-buttons .nx-checkbox .nx-checkbox-label {
+  color: var(--ntx-form-theme-color-secondary-button-font)!important;
+}
+
+/* Hover effect for button appearance */
+.choice-buttons .nx-checkbox-container:hover {
+  background-color: var(--ntx-form-theme-color-primary-button-hover); /* Use hover color from theme */
+  color: white;
+}
+
+/* When checked, make the button appear selected */
+.choice-buttons input[type="checkbox"]:checked + .nx-checkbox-container {
+  background-color: var(--ntx-form-theme-color-primary-button-background); /* Use primary button background */
+  color: white;
+  border-color: var(--ntx-form-theme-color-primary-button-hover); /* Use hover border color */
+}
+
+/* When checked, make the button appear selected */
+.choice-buttons input[type="checkbox"]:checked + .nx-checkbox-container .nx-checkbox-label {
+    color: white !important;
+  }
+  
+
+/* Custom checkbox tick styling */
+.choice-buttons .nx-checkbox-faux {
+  display: none;
+}
+
+/* Hide the original checkbox */
+.choice-buttons input[type="checkbox"] {
+  display: none;
+}
+
+/* Optional: Focus state to improve accessibility */
+.choice-buttons input[type="checkbox"]:focus + .nx-checkbox-container {
+  outline: 2px solid var(--ntx-form-theme-color-primary-button-hover); /* Use hover border color for focus */
+}
+
+/**font**/
+
+.poppins-thin {
+  font-family: "Poppins", serif;
+  font-weight: 100;
+  font-style: normal;
+}
+
+.poppins-extralight {
+  font-family: "Poppins", serif;
+  font-weight: 200;
+  font-style: normal;
+}
+
+.poppins-light {
+  font-family: "Poppins", serif;
+  font-weight: 300;
+  font-style: normal;
+}
+
+.poppins-regular {
+  font-family: "Poppins", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.poppins-medium {
+  font-family: "Poppins", serif;
+  font-weight: 500;
+  font-style: normal;
+}
+
+.poppins-semibold {
+  font-family: "Poppins", serif;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.poppins-bold {
+  font-family: "Poppins", serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.poppins-extrabold {
+  font-family: "Poppins", serif;
+  font-weight: 800;
+  font-style: normal;
+}
+
+.poppins-black {
+  font-family: "Poppins", serif;
+  font-weight: 900;
+  font-style: normal;
+}
+
+.poppins-thin-italic {
+  font-family: "Poppins", serif;
+  font-weight: 100;
+  font-style: italic;
+}
+
+.poppins-extralight-italic {
+  font-family: "Poppins", serif;
+  font-weight: 200;
+  font-style: italic;
+}
+
+.poppins-light-italic {
+  font-family: "Poppins", serif;
+  font-weight: 300;
+  font-style: italic;
+}
+
+.poppins-regular-italic {
+  font-family: "Poppins", serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.poppins-medium-italic {
+  font-family: "Poppins", serif;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.poppins-semibold-italic {
+  font-family: "Poppins", serif;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.poppins-bold-italic {
+  font-family: "Poppins", serif;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.poppins-extrabold-italic {
+  font-family: "Poppins", serif;
+  font-weight: 800;
+  font-style: italic;
+}
+
+.poppins-black-italic {
+  font-family: "Poppins", serif;
+  font-weight: 900;
+  font-style: italic;
+}
