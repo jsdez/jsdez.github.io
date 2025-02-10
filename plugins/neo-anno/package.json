@@ -1,0 +1,37 @@
+{
+  "name": "neo-anno",
+  "version": "1.0.0",
+  "description": "NAC Image Annotation",
+  "files": [
+    "dist",
+    "index.html"
+  ],
+  "main": "neo-anno.js",
+  "scripts": {
+    "build": "webpack && npm run copy-image",
+    "copy-image": "cp src/img/person.png dist/img"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JSDenintex/JSDenintex.github.io.git"
+  },
+  "keywords": [
+    "Annotation",
+    "NAC"
+  ],
+  "author": "Jake Dennison",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/JSDenintex/JSDenintex.github.io/issues"
+  },
+  "homepage": "https://github.com/JSDenintex/JSDenintex.github.io#readme",
+  "dependencies": {
+    "lit": "^2.6.1",
+    "markerjs2": "^2.32.1",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
+  },
+  "devDependencies": {
+    "babel-loader": "^9.1.2"
+  }
+}
