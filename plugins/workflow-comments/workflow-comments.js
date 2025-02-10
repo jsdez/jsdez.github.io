@@ -2116,7 +2116,7 @@ let WorkflowComments = _decorate([e$3('wf-comments')], function (_initialize, _L
         // plugin contract information
         return {
           controlName: 'Workflow Comments',
-          groupName: 'Presales Controls',
+          groupName: 'Custom Controls',
           fallbackDisableSubmit: false,
           iconUrl: 'one-line-text',
           version: '1',
