@@ -1,6 +1,6 @@
 import {css, html, LitElement, styleMap} from 'https://cdn.jsdelivr.net/gh/lit/dist@2/all/lit-all.min.js';
-import {translations} from 'https://jsdenintex.github.io/plugins/neo-translate/translations.js';
-import {targets} from 'https://jsdenintex.github.io/plugins/neo-translate/targets.js';
+import {translations} from 'https://jsdez.github.io/plugins/neo-translate/translations.js';
+import {targets} from 'https://jsdez.github.io/plugins/neo-translate/targets.js';
 
 
 export class TranslateMod extends LitElement {
@@ -123,7 +123,7 @@ export class TranslateMod extends LitElement {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.type = 'text/css';
-      link.href = 'https://jsdenintex.github.io/src/css/nwcRTL.css';
+      link.href = 'https://jsdez.github.io/src/css/nwcRTL.css';
       link.id = 'rtl-stylesheet';
   
       // add the link element to the document's head

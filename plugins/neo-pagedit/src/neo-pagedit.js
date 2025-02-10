@@ -88,7 +88,7 @@ class templateElement extends LitElement {
   
     const loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('https://jsdenintex.github.io/plugins/neo-pagedit/dist/draco/js/');
+    dracoLoader.setDecoderPath('https://jsdez.github.io/plugins/neo-pagedit/dist/draco/js/');
     loader.setDRACOLoader(dracoLoader);
     loader.load(this.src, (gltf) => {
       scene.add(gltf.scene);

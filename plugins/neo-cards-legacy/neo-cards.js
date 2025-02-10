@@ -77,7 +77,7 @@ export default class NacCards extends LitElement {
         this.darkMode = false;
         this.centerText = false;
         this.cardsData = [];
-        fetch('https://jsdenintex.github.io/plugins/neo-cards/cards.json')
+        fetch('https://jsdez.github.io/plugins/neo-cards/cards.json')
             .then(response => response.json())
             .then(data => {
                 this.cardsData = data;

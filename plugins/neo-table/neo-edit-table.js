@@ -11,7 +11,7 @@ export class MyTable extends LitElement {
   
   async loadData() {
     try {
-      const response = await fetch('https://jsdenintex.github.io/plugins/neo-table/data.json');
+      const response = await fetch('https://jsdez.github.io/plugins/neo-table/data.json');
       this.data = await response.json();
       this.data.forEach(row => {
         row.edit = false;
@@ -43,7 +43,7 @@ export class MyTable extends LitElement {
 
   async saveRow(row) {
     try {
-      const response = await fetch('https://jsdenintex.github.io/plugins/neo-table/data.json', {
+      const response = await fetch('https://jsdez.github.io/plugins/neo-table/data.json', {
         method: 'PUT',
         body: JSON.stringify(row),
         headers: {

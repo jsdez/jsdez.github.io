@@ -8,7 +8,7 @@ class pwElement extends LitElement {
       controlName: 'neo-password',
       fallbackDisableSubmit: false,
       description: '',
-      iconUrl: "https://jsdenintex.github.io/plugins/neo-password/dist/lock.svg",
+      iconUrl: "https://jsdez.github.io/plugins/neo-password/dist/lock.svg",
       groupName: 'Custom controls',
       version: '1.0',
       properties: {

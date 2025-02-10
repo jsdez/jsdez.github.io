@@ -92,7 +92,7 @@ class ARElement extends LitElement {
   
     const loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('https://jsdenintex.github.io/plugins/neo-ar/dist/draco/js/');
+    dracoLoader.setDecoderPath('https://jsdez.github.io/plugins/neo-ar/dist/draco/js/');
     loader.setDRACOLoader(dracoLoader);
     loader.load(this.src, (gltf) => {
       scene.add(gltf.scene);

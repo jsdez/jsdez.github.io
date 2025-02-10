@@ -7,7 +7,7 @@ class contactsElement extends LitElement {
       controlName: 'neo-contacts',
       fallbackDisableSubmit: false,
       description: 'Display contact cards',
-      iconUrl: "https://jsdenintex.github.io/plugins/neo-contacts/dist/contactico.svg",
+      iconUrl: "https://jsdez.github.io/plugins/neo-contacts/dist/contactico.svg",
       groupName: 'Visual Data',
       version: '1.0',
       properties: {
@@ -149,7 +149,7 @@ render() {
           </div>
           <div class="card-footer d-flex justify-content-end">
               <a href="${contact[this.linkedins]}" target="_blank">
-                  <img src="https://jsdenintex.github.io/plugins/neo-contacts/dist/LinkedIn_Logo.svg" alt="LinkedIn" height="32">
+                  <img src="https://jsdez.github.io/plugins/neo-contacts/dist/LinkedIn_Logo.svg" alt="LinkedIn" height="32">
               </a>
           </div>
         </div>

@@ -1,8 +1,8 @@
 {
-  "name": "neo-sql",
+  "name": "neo-notes",
   "version": "1.0.0",
   "description": "",
-  "main": "./src/neo-sql.js",
+  "main": "./src/neo-notes.js",
   "browser": "./src/index.html",
   "scripts": {
     "build": "webpack"
@@ -18,7 +18,6 @@
   },
   "homepage": "https://github.com/jsdez/jsdez.github.io#readme",
   "dependencies": {
-    "@azure/msal-browser": "^3.17.0",
     "css-loader": "^6.8.1",
     "lit": "^2.6.1",
     "style-loader": "^3.3.3",

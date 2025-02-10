@@ -10,7 +10,7 @@ class UnitElement extends LitElement {
       controlName: 'neo-unit',
       fallbackDisableSubmit: false,
       description: 'Control for displaying units of measurement',
-      iconUrl: "https://jsdenintex.github.io/plugins/neo-unit/dist/unit-icon.svg",
+      iconUrl: "https://jsdez.github.io/plugins/neo-unit/dist/unit-icon.svg",
       groupName: 'Custom controls',
       version: '1.0',
       properties: {

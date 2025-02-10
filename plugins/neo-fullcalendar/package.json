@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JSDenintex/JSDenintex.github.io.git"
+    "url": "git+https://github.com/jsdez/jsdez.github.io.git"
   },
   "author": "Jake Dennison",
   "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/JSDenintex/JSDenintex.github.io/issues"
+    "url": "https://github.com/jsdez/jsdez.github.io/issues"
   },
-  "homepage": "https://github.com/JSDenintex/JSDenintex.github.io#readme",
+  "homepage": "https://github.com/jsdez/jsdez.github.io#readme",
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",
     "@fullcalendar/daygrid": "^6.1.15",

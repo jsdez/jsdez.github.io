@@ -13,7 +13,7 @@ class templateElement extends LitElement {
       controlName: 'neo-printform',
       fallbackDisableSubmit: false,
       description: 'Display a print button on a bar at the top of the form',
-      iconUrl: 'https://jsdenintex.github.io/plugins/neo-printform/dist/printing.svg',
+      iconUrl: 'https://jsdez.github.io/plugins/neo-printform/dist/printing.svg',
       groupName: 'Admin Tools',
       version: '1.0',
       properties: {
@@ -121,7 +121,7 @@ class templateElement extends LitElement {
           >
             <img
               class="print-icon"
-              src="https://jsdenintex.github.io/plugins/neo-printform/dist/printing-bl.svg"
+              src="https://jsdez.github.io/plugins/neo-printform/dist/printing-bl.svg"
               alt="Print Icon"
               width="20"
               height="20"
