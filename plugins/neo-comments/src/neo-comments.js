@@ -83,30 +83,30 @@ class commentsElement extends LitElement {
       :host {
         display: block;
         padding: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 8px;
         max-width: 100%;
       }
+
       .comments-history {
-        margin-bottom: 1.5rem;
+        display: flex;
+        flex-direction: column;
       }
-      .comment-item {
-        padding: 0.5rem;
-        border-bottom: 1px solid #ddd;
-        margin-bottom: 0.5rem;
+
+      .card {
+        border: none;
+        border-radius: 0;
+        margin: 0; /* Remove gaps between cards */
+        padding: 0; /* Ensure uniform alignment */
+        border-bottom: 1px solid #ddd; /* Add a bottom border */
       }
-      .comment-item:last-child {
-        border-bottom: none;
+
+      .card:last-child {
+        border-bottom: none; /* Remove the border for the last card */
       }
-      .comment-item strong {
-        display: block;
+
+      .card-body {
+        padding: 1rem;
       }
-      .comment-item p {
-        font-size: 1rem;
-      }
-      .comment-item small {
-        color: #777;
-      }
+
       textarea {
         width: 100%;
         height: 100px;
@@ -116,6 +116,7 @@ class commentsElement extends LitElement {
         border-radius: 4px;
         margin-bottom: 1rem;
       }
+
       button {
         display: inline-block;
         padding: 0.5rem 1rem;
@@ -126,30 +127,13 @@ class commentsElement extends LitElement {
         border-radius: 4px;
         cursor: pointer;
       }
+
       button:disabled {
         background-color: #ccc;
         cursor: not-allowed;
       }
-
-      /* Updated styles for the card group */
-      .comments-history {
-        display: flex;
-        flex-direction: column;
-        gap: 0; /* Remove space between cards */
-      }
-
-      .card {
-        border-radius: 8px;
-        margin-bottom: 0; /* No margin between cards */
-      }
-
-      .card-body {
-        padding: 1rem;
-        border: 1px solid #ddd; /* Border between the cards */
-        border-radius: 8px;
-      }
     `;
-  }
+}
 
   constructor() {
     super();
@@ -201,7 +185,7 @@ class commentsElement extends LitElement {
                   <div class="card-body p-4">
                     <div class="d-flex flex-start">
                       <div>
-                        <h6 class="fw-bold text-white mb-1">${item.name || 'Anonymous'}</h6>
+                        <h6 class="fw-bold text-white mb-1">${item.cname || 'Anonymous'}</h6>
                         <div class="d-flex align-items-center mb-3">
                           <p class="mb-0 text-muted">
                             ${new Date(item.timestamp).toLocaleDateString('en-US', {
@@ -210,7 +194,7 @@ class commentsElement extends LitElement {
                               month: 'long',
                               day: 'numeric',
                             })}
-                            <span class="badge bg-success ms-2">${item.task || 'No Task'}</span>
+                            <span class="badge bg-success ms-2">${item.ctask || 'No Task'}</span>
                           </p>
                         </div>
                         <p class="mb-0">${item.comment}</p>
