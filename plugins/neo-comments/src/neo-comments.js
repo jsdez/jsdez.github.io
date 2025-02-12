@@ -99,10 +99,6 @@ class commentsElement extends LitElement {
         border-bottom: 1px solid #ddd; /* Add a bottom border */
       }
 
-      .card:last-child {
-        border-bottom: none; /* Remove the border for the last card */
-      }
-
       .card-body {
         padding: 1rem;
       }
@@ -194,7 +190,7 @@ class commentsElement extends LitElement {
                               month: 'long',
                               day: 'numeric',
                             })}
-                            <span class="badge bg-success ms-2">${item.ctask || 'No Task'}</span>
+                            <span class="badge bg-primary ms-2">${item.ctask || 'No Task'}</span>
                           </p>
                         </div>
                         <p class="mb-0">${item.comment}</p>
