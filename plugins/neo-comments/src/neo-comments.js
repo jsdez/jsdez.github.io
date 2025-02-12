@@ -180,10 +180,24 @@ class commentsElement extends LitElement {
           ? this.workingComments.map(
               (item) => html`
                 <div class="card mb-3">
-                  <div class="card-body">
-                    <h5 class="card-title">${item.name || 'Anonymous'}</h5>
-                    <p class="card-text">${item.comment}</p>
-                    <small class="text-muted">${new Date(item.timestamp).toLocaleString()}</small>
+                  <div class="card-body p-4">
+                    <div class="d-flex flex-start">
+                      <div>
+                        <h6 class="fw-bold text-white mb-1">${item.name || 'Anonymous'}</h6>
+                        <div class="d-flex align-items-center mb-3">
+                          <p class="mb-0 text-muted">
+                            ${new Date(item.timestamp).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                            })}
+                            <span class="badge bg-success ms-2">${item.task || 'No Task'}</span>
+                          </p>
+                        </div>
+                        <p class="mb-0">${item.comment}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               `
@@ -197,18 +211,18 @@ class commentsElement extends LitElement {
           .value=${this.newComment}
           @input=${this.handleCommentChange}
           placeholder="Write your comment here..."
-          class="form-control"
         ></textarea>
         <button
           @click=${this.addComment}
           ?disabled=${!this.newComment.trim()}
-          class="btn btn-primary mt-2"
+          class="btn btn-primary"
         >
           Submit Comment
         </button>
       </div>
     `;
   }
+  
   
 }
 
