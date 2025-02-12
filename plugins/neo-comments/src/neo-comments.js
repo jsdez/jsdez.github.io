@@ -33,7 +33,7 @@ class commentsElement extends LitElement {
         outputobj: {
           title: 'Comments',
           type: 'object',
-          description: 'Workflow Comments',
+          description: 'Workflow Comments Output - Do Not Use',
           properties: {
             name: {
               type: 'string',
@@ -97,6 +97,10 @@ class commentsElement extends LitElement {
         margin: 0; /* Remove gaps between cards */
         padding: 0; /* Ensure uniform alignment */
         border-bottom: 1px solid #ddd; /* Add a bottom border */
+      }
+
+      .card:first-child {
+        border-top: 1px solid #ddd; /* Remove the border for the last card */
       }
 
       .card-body {
