@@ -62,6 +62,11 @@ class commentsElement extends LitElement {
             },
           },
         },
+        tablestyles: {
+          type: 'string',
+          description: 'Insert the bootstrap 5 table styles for comments history e.g. table-dark table-striped',
+          title: 'Bootstrap table styles',
+        },
       },
       events: ["ntx-value-change"],
       standardProperties: {
@@ -76,6 +81,7 @@ class commentsElement extends LitElement {
     inputobj: { type: Object },
     workingComments: { type: Array },
     newComment: { type: String },
+    tablestyles: { type: String },
   };
 
   static get styles() {
@@ -138,6 +144,7 @@ class commentsElement extends LitElement {
     this.inputobj = null;
     this.workingComments = [];
     this.newComment = '';
+    this.tablestyles = ''; // Default empty string for styles
   }
 
   updated(changedProperties) {
@@ -174,24 +181,36 @@ class commentsElement extends LitElement {
   render() {
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-      
+
       <div class="comments-history">
-        <h3>Comments History</h3>
         ${this.workingComments.length > 0
-          ? this.workingComments.map(
-              (item) => html`
-                <div class="comment-item">
-                  <strong>${item.name || 'Anonymous'}</strong>
-                  <p>${item.comment}</p>
-                  <small>${new Date(item.timestamp).toLocaleString()}</small>
-                </div>
-              `
-            )
+          ? html`
+              <table class="table ${this.tablestyles}">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Comment</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${this.workingComments.map(
+                    (item) => html`
+                      <tr>
+                        <td>${item.name || 'Anonymous'}</td>
+                        <td>${item.comment}</td>
+                        <td>${new Date(item.timestamp).toLocaleString()}</td>
+                      </tr>
+                    `
+                  )}
+                </tbody>
+              </table>
+            `
           : html`<p>No comments available.</p>`}
       </div>
 
       <div class="mt-4">
-        <h3>Add a Comment</h3>
+        <h6>Add a Comment</h6>
         <textarea
           .value=${this.newComment}
           @input=${this.handleCommentChange}
