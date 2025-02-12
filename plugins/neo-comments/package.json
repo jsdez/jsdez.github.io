@@ -1,8 +1,8 @@
 {
-  "name": "neo-notes",
+  "name": "neo-comments",
   "version": "1.0.0",
   "description": "",
-  "main": "./src/neo-notes.js",
+  "main": "./src/neo-comments.js",
   "browser": "./src/index.html",
   "scripts": {
     "build": "webpack"

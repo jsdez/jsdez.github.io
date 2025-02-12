@@ -1,10 +1,10 @@
 const path = require('path');
 
 module.exports = {
-  entry: './src/neo-notes.js',
+  entry: './src/neo-comments.js',
   mode: 'production',
   output: {
-    filename: 'neo-notes.js',
+    filename: 'neo-comments.js',
     path: path.resolve(__dirname, 'dist'),
   },
   module: {

@@ -1,0 +1,83 @@
+<Process Id="1234" Name="Decommission SDWAN Edge Devices" ReferenceNo="" Objective="Ensure safe and compliant decommissioning of SDWAN edge devices." IsTouchModeEnabled="false" IsTextModeOn="false" UseDynamicMapperImage="true" Background="" Owner="Process Owner" OwnerId="1" Expert="Process Expert" ExpertId="2" Group="Network Management" GroupId="1001" State="Active" StateId="1" Version="1.0" PromappVersion="0.0.0.0" UniqueId="unique-process-id" IsPolicyModeOn="false" IsVirtualVariation="false">
+  <ProcessGroupItems>
+    <ProcessGroup Id="1001" UniqueId="group-id" Name="Network Management" ProcessGroupItemId="123" />
+  </ProcessGroupItems>
+  <ProcessProcedures>
+    <Activity Id="1001" UniqueId="step1-id" Number="1.0" Order="0">
+      <Text>Invalidate the Certificate for the Device</Text>
+      <Ownerships>
+        <Role Id="2001" Name="Network Engineer" IsVirtual="false" />
+      </Ownerships>
+      <ChildProcessProcedures>
+        <Task Id="10011" UniqueId="step1-task1-id" Order="1" Number="1.0.1">
+          <Text>Access the SDWAN management interface.</Text>
+        </Task>
+        <Task Id="10012" UniqueId="step1-task2-id" Order="2" Number="1.0.2">
+          <Text>Navigate to Certificate Management.</Text>
+        </Task>
+        <Task Id="10013" UniqueId="step1-task3-id" Order="3" Number="1.0.3">
+          <Text>Identify the device(s) to be decommissioned and select the option to invalidate the certificate.</Text>
+        </Task>
+      </ChildProcessProcedures>
+      <Note Id="10014" UniqueId="step1-note-id" Order="4" Number="">
+        <Text>Ensure the correct devices are selected to prevent accidental disruption to active devices.</Text>
+      </Note>
+    </Activity>
+
+    <Activity Id="1002" UniqueId="step2-id" Number="2.0" Order="1">
+      <Text>Send the Certificate Invalidations to Controllers</Text>
+      <Ownerships>
+        <Role Id="2001" Name="Network Engineer" IsVirtual="false" />
+      </Ownerships>
+      <ChildProcessProcedures>
+        <Task Id="10021" UniqueId="step2-task1-id" Order="1" Number="2.0.1">
+          <Text>Use the "Send to Controllers" functionality within the management interface.</Text>
+        </Task>
+        <Task Id="10022" UniqueId="step2-task2-id" Order="2" Number="2.0.2">
+          <Text>Confirm the invalidated certificate information is propagated to all vSmart controllers.</Text>
+        </Task>
+      </ChildProcessProcedures>
+      <Note Id="10023" UniqueId="step2-note-id" Order="3" Number="">
+        <Text>Verify confirmation messages or logs to ensure the update is successfully applied.</Text>
+      </Note>
+    </Activity>
+
+    <Activity Id="1003" UniqueId="step3-id" Number="3.0" Order="2">
+      <Text>Delete the Device from vManage</Text>
+      <Ownerships>
+        <Role Id="2001" Name="Network Engineer" IsVirtual="false" />
+      </Ownerships>
+      <ChildProcessProcedures>
+        <Task Id="10031" UniqueId="step3-task1-id" Order="1" Number="3.0.1">
+          <Text>Navigate to Device Management within the vManage interface.</Text>
+        </Task>
+        <Task Id="10032" UniqueId="step3-task2-id" Order="2" Number="3.0.2">
+          <Text>Locate the device by serial number or hostname and delete it from vManage.</Text>
+        </Task>
+      </ChildProcessProcedures>
+      <Note Id="10033" UniqueId="step3-note-id" Order="3" Number="">
+        <Text>The device's configuration is purged from vManage, but its serial number remains in the Cisco Plug and Play portal.</Text>
+      </Note>
+    </Activity>
+
+    <Activity Id="1004" UniqueId="step4-id" Number="4.0" Order="3">
+      <Text>Remove the Serial Number from the Cisco Plug and Play Portal (if required)</Text>
+      <Ownerships>
+        <Role Id="2001" Name="Network Engineer" IsVirtual="false" />
+      </Ownerships>
+      <ChildProcessProcedures>
+        <Task Id="10041" UniqueId="step4-task1-id" Order="1" Number="4.0.1">
+          <Text>Access the Cytiva_SDWAN Plug and Play Portal.</Text>
+        </Task>
+        <Task Id="10042" UniqueId="step4-task2-id" Order="2" Number="4.0.2">
+          <Text>Search for the device by its serial number and remove it if the device will no longer join the SDWAN overlay.</Text>
+        </Task>
+      </ChildProcessProcedures>
+      <Note Id="10043" UniqueId="step4-note-id" Order="3" Number="">
+        <Text>Only perform this step if the device is permanently decommissioned.</Text>
+      </Note>
+    </Activity>
+  </ProcessProcedures>
+  <SearchKeywords />
+  <Outputs />
+</Process>
