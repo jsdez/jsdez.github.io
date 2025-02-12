@@ -20,6 +20,11 @@ class commentsElement extends LitElement {
           description: 'Email Address',
           title: 'Email Address',
         },
+        ctask: {
+          type: 'string',
+          description: 'Task Name',
+          title: 'Task Name',
+        },
         inputobj: {
           type: 'object',
           title: 'Input Object',
@@ -39,6 +44,11 @@ class commentsElement extends LitElement {
               type: 'string',
               description: 'Email Address',
               title: 'Email Address',
+            },
+            task: {
+              type: 'string',
+              description: 'Task Name',
+              title: 'Task Name',
             },
             comment: {
               type: 'string',
