@@ -130,6 +130,24 @@ class commentsElement extends LitElement {
         background-color: #ccc;
         cursor: not-allowed;
       }
+
+      /* Updated styles for the card group */
+      .comments-history {
+        display: flex;
+        flex-direction: column;
+        gap: 0; /* Remove space between cards */
+      }
+
+      .card {
+        border-radius: 8px;
+        margin-bottom: 0; /* No margin between cards */
+      }
+
+      .card-body {
+        padding: 1rem;
+        border: 1px solid #ddd; /* Border between the cards */
+        border-radius: 8px;
+      }
     `;
   }
 
@@ -179,7 +197,7 @@ class commentsElement extends LitElement {
         ${this.workingComments.length > 0
           ? this.workingComments.map(
               (item) => html`
-                <div class="card mb-3">
+                <div class="card">
                   <div class="card-body p-4">
                     <div class="d-flex flex-start">
                       <div>
@@ -222,8 +240,6 @@ class commentsElement extends LitElement {
       </div>
     `;
   }
-  
-  
 }
 
 customElements.define('neo-comments', commentsElement);
