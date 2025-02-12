@@ -63,16 +63,18 @@ class commentsElement extends LitElement {
           },
         },
       },
+      events: ["ntx-value-change"],
       standardProperties: {
         fieldLabel: true,
         description: true,
+        readOnly: true,
       },
     };
   }
 
   static properties = {
     inputobj: { type: Object },
-    outputobj: { type: Object },
+    workingComments: { type: Array },
     newComment: { type: String },
   };
 
@@ -128,8 +130,15 @@ class commentsElement extends LitElement {
   constructor() {
     super();
     this.inputobj = null;
-    this.outputobj = {};
+    this.workingComments = [];
     this.newComment = '';
+  }
+
+  updated(changedProperties) {
+    // Initialize workingComments with inputobj.comments when inputobj changes
+    if (changedProperties.has('inputobj') && this.inputobj?.comments) {
+      this.workingComments = [...this.inputobj.comments];
+    }
   }
 
   handleCommentChange(e) {
@@ -138,22 +147,30 @@ class commentsElement extends LitElement {
 
   addComment() {
     const timestamp = new Date().toISOString();
-    this.outputobj = {
+    const newEntry = {
+      name: this.inputobj?.name || 'Anonymous',
+      email: this.inputobj?.email || 'N/A',
       comment: this.newComment,
       timestamp,
     };
 
+    // Add the new comment to the working object
+    this.workingComments = [...this.workingComments, newEntry];
+
+    // Update outputobj and emit the ntx-value-change event
+    const outputobj = { comments: this.workingComments };
+    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: outputobj }));
+
     // Clear the comment box
     this.newComment = '';
-    this.dispatchEvent(new CustomEvent('comment-added', { detail: this.outputobj }));
   }
 
   render() {
     return html`
       <div class="comments-history">
         <h3>Comments History</h3>
-        ${this.inputobj && this.inputobj.comments
-          ? this.inputobj.comments.map(
+        ${this.workingComments.length > 0
+          ? this.workingComments.map(
               (item) => html`
                 <div class="comment-item">
                   <strong>${item.name || 'Anonymous'}</strong>
