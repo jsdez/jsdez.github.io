@@ -101,6 +101,12 @@ class commentsElement extends LitElement {
       .comment-item strong {
         display: block;
       }
+      .comment-item p {
+        font-size: 1rem;
+      }
+      .comment-item small {
+        color: #777;
+      }
       textarea {
         width: 100%;
         height: 100px;
@@ -167,6 +173,8 @@ class commentsElement extends LitElement {
 
   render() {
     return html`
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+      
       <div class="comments-history">
         <h3>Comments History</h3>
         ${this.workingComments.length > 0
@@ -182,7 +190,7 @@ class commentsElement extends LitElement {
           : html`<p>No comments available.</p>`}
       </div>
 
-      <div>
+      <div class="mt-4">
         <h3>Add a Comment</h3>
         <textarea
           .value=${this.newComment}
@@ -192,6 +200,7 @@ class commentsElement extends LitElement {
         <button
           @click=${this.addComment}
           ?disabled=${!this.newComment.trim()}
+          class="btn btn-primary"
         >
           Submit Comment
         </button>
