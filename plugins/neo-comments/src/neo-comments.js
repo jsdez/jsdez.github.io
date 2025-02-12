@@ -20,16 +20,6 @@ class commentsElement extends LitElement {
           description: 'Email Address',
           title: 'Email Address',
         },
-        ccomment: {
-          type: 'string',
-          description: 'Comment',
-          title: 'Comment',
-        },
-        ctimestamp: {
-          type: 'string',
-          title: 'Log time',
-          description: 'Date and time when the item was last updated',
-        },
         inputobj: {
           type: 'object',
           title: 'Input Object',
@@ -85,7 +75,7 @@ class commentsElement extends LitElement {
         padding: 1rem;
         border: 1px solid #ccc;
         border-radius: 8px;
-        max-width: 500px;
+        max-width: 100%;
       }
       .comments-history {
         margin-bottom: 1.5rem;
