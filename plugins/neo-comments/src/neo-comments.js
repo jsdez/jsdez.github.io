@@ -77,6 +77,11 @@ class CommentsElement extends LitElement {
   }
 
   static properties = {
+    firstName: { type: String },
+    lastName: { type: String },
+    email: { type: String },
+    badge: { type: String },
+    badgeStyle: { type: String },
     inputobj: { type: Object },
     workingComments: { type: Array },
     newComment: { type: String },
@@ -135,16 +140,16 @@ class CommentsElement extends LitElement {
         background-color: #ccc;
         cursor: not-allowed;
       }
-
-      .badge-default {
-        background-color: var(--ntx-form-theme-color-primary-button-background, #e0e0e0);
-        color: var(--ntx-form-theme-color-primary-button-font, #000);
-      }
     `;
   }
 
   constructor() {
     super();
+    this.firstName = '';
+    this.lastName = '';
+    this.email = '';
+    this.badge = 'Update';  // Default Badge
+    this.badgeStyle = 'Default';  // Default Badge Style
     this.inputobj = null;
     this.workingComments = [];
     this.newComment = '';
@@ -163,12 +168,13 @@ class CommentsElement extends LitElement {
   addComment() {
     const timestamp = new Date().toISOString();
 
+    // Use the current standalone properties for the new comment
     const newEntry = {
-      firstName: this.inputobj?.firstName || 'Anonymous',
-      lastName: this.inputobj?.lastName || '',
-      email: this.inputobj?.email || 'N/A',
-      badge: this.inputobj?.badge?.trim() || 'Update',
-      badgeStyle: this.inputobj?.badgeStyle || 'Default',
+      firstName: this.firstName || 'Anonymous',
+      lastName: this.lastName || '',
+      email: this.email || 'N/A',
+      badge: this.badge || 'Update',  // Dynamically use the badge property
+      badgeStyle: this.badgeStyle || 'Default',  // Dynamically use the badgeStyle property
       comment: this.newComment,
       timestamp,
     };
@@ -208,9 +214,7 @@ class CommentsElement extends LitElement {
                               month: 'long',
                               day: 'numeric',
                             })}
-                            <span class="badge ${item.badgeStyle === 'Default' ? 'badge-default' : `bg-${item.badgeStyle.toLowerCase()}`} ms-2">
-                              ${item.badge || 'Update'}
-                            </span>
+                            <span class="badge ${this.getBadgeClass(item.badgeStyle)} ms-2">${item.badge || 'Update'}</span>
                           </p>
                         </div>
                         <p class="mb-0">${item.comment}</p>
@@ -240,6 +244,11 @@ class CommentsElement extends LitElement {
         </button>
       </div>
     `;
+  }
+
+  // Helper method to apply the correct class based on badge style
+  getBadgeClass(style) {
+    return `bg-${style.toLowerCase()}`;  // Bootstrap badge class
   }
 }
 
