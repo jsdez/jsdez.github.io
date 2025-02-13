@@ -166,9 +166,13 @@ class CommentsElement extends LitElement {
         width: 100%;
         height: 100px;
         padding: 0.5rem;
-        font-size: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 4px;
+        background: var(--ntx-form-theme-color-input-background);
+        border-color: var(--ntx-form-theme-color-border);
+        border-radius: var(--ntx-form-theme-border-radius);
+        caret-color: var(--ntx-form-theme-color-input-text);
+        color: var(--ntx-form-theme-color-input-text);
+        font-family: var(--ntx-form-theme-font-family);
+        font-size: var(--ntx-form-theme-text-input-size);
         margin-bottom: 1rem;
       }
   
