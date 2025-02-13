@@ -63,7 +63,7 @@
                         <h6 class="fw-bold mb-1">${t.firstName} ${t.lastName||""}</h6>
                         <div class="d-flex align-items-center mb-3">
                           <p class="mb-0 text-muted">
-                            ${new Date(t.timestamp).toLocaleDateString("en-GB",{weekday:"short",year:"numeric",month:"long",day:"numeric"})}
+                            ${new Date(t.timestamp).toLocaleString("en-GB",{weekday:"short",year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:!1})}
                             <span class="badge ${this.getBadgeClass(t.badgeStyle)} ms-2">${t.badge||"Update"}</span>
                           </p>
                         </div>

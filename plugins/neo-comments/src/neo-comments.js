@@ -208,11 +208,15 @@ class CommentsElement extends LitElement {
                         <h6 class="fw-bold mb-1">${item.firstName} ${item.lastName || ''}</h6>
                         <div class="d-flex align-items-center mb-3">
                           <p class="mb-0 text-muted">
-                            ${new Date(item.timestamp).toLocaleDateString('en-GB', {
+                            ${new Date(item.timestamp).toLocaleString('en-GB', {
                               weekday: 'short',
                               year: 'numeric',
-                              month: 'long',
+                              month: 'short',
                               day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                              hour12: false
                             })}
                             <span class="badge ${this.getBadgeClass(item.badgeStyle)} ms-2">${item.badge || 'Update'}</span>
                           </p>
