@@ -90,6 +90,10 @@ class CommentsElement extends LitElement {
         margin-bottom: 1rem;
       }
 
+      .comment-textarea:focus {
+        border-color: var(--ntx-form-theme-color-primary);
+      }
+
       .comment-text {
         user-select: text;
       }
@@ -200,8 +204,7 @@ class CommentsElement extends LitElement {
     inputobj: { type: Object },
     workingComments: { type: Array },
     newComment: { type: String },
-    readOnly: { type: Boolean },
-    editingCommentIndex: { type: Number },
+    readOnly: { type: Boolean }
   };
   
   constructor() {
@@ -214,29 +217,21 @@ class CommentsElement extends LitElement {
     this.inputobj = null;
     this.workingComments = [];
     this.newComment = '';
-    this.editingCommentIndex = null;  // No comment is being edited initially
   }
 
   updated(changedProperties) {
     if (changedProperties.has('inputobj') && Array.isArray(this.inputobj?.comments)) {
-      this.workingComments = [...this.inputobj.comments.map(comment => ({
-        ...comment,
-        isEditable: false  // Mark inputobj comments as non-editable
-      }))];
+      this.workingComments = [...this.inputobj.comments];
     }
 
-    if (changedProperties.has('readOnly')) {
-      // Ensure that the render responds to `readonly` changes
-      this.requestUpdate(); // Force re-render if readonly changes
+      if (changedProperties.has('readOnly')) {
+    // Ensure that the render responds to `readonly` changes
+    this.requestUpdate(); // Force re-render if readonly changes
     }
   }
 
   handleCommentChange(e) {
     this.newComment = e.target.value;
-  }
-
-  handleEditChange(e, index) {
-    this.workingComments[index].comment = e.target.value;  // Update the comment being edited
   }
 
   addComment() {
@@ -251,32 +246,30 @@ class CommentsElement extends LitElement {
       badgeStyle: this.badgeStyle || 'Default',  // Dynamically use the badgeStyle property
       comment: this.newComment,
       timestamp,
-      isEditable: true,
     };
 
     this.workingComments = [...this.workingComments, newEntry];
-    this.newComment = '';
-    this.editingCommentIndex = null;  // Clear any existing editing state
-    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: { comments: this.workingComments } }));
-  }
 
-  startEditing(index) {
-    this.editingCommentIndex = index;  // Set the index of the comment to be edited
-  }
-  
-  saveEdit() {
-    this.editingCommentIndex = null;  // End editing mode
-    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: { comments: this.workingComments } }));
+    const mostRecentComment = newEntry;
+
+    const outputobj = {
+      comments: this.workingComments,
+      mostRecentComment,
+    };
+
+    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: outputobj }));
+
+    this.newComment = '';
   }
 
   render() {
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-      
+  
       <div class="comments-history">
         ${this.workingComments.length > 0
           ? this.workingComments.map(
-              (item, index) => html`
+              (item) => html`
                 <div class="card comment-card">
                   <div class="card-body">
                     <div class="d-flex flex-row align-items-center">
@@ -296,23 +289,7 @@ class CommentsElement extends LitElement {
                       <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">${item.badge || 'Update'}</span>
                     </div>
                     <div>
-                      ${this.editingCommentIndex === index && !item.isEditable
-                        ? html`
-                            <textarea
-                              class="form-control"
-                              .value=${item.comment}
-                              @input=${(e) => this.handleEditChange(e, index)}
-                            ></textarea>
-                            <button @click=${this.saveEdit} class="btn btn-primary mt-2">Save</button>
-                          `
-                        : html`<p class="mb-0 py-3 comment-text">${item.comment}</p>`
-                      }
-                      ${item.isEditable && this.editingCommentIndex !== index
-                        ? html`
-                          <button @click=${() => this.startEditing(index)} class="btn btn-link mt-2">Edit</button>
-                        `
-                        : ''
-                      }
+                      <p class="mb-0 py-3 comment-text">${item.comment}</p>
                     </div>
                   </div>
                 </div>
