@@ -300,7 +300,7 @@ class CommentsElement extends LitElement {
       ${!this.readOnly ? html`
         <div class="mt-4">
           <textarea
-            class="form-control comment-textarea"
+            class="comment-textarea"
             .value=${this.newComment}
             @input=${this.handleCommentChange}
             placeholder="Write your comment here..."
