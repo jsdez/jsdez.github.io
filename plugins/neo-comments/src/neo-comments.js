@@ -219,6 +219,11 @@ class CommentsElement extends LitElement {
     if (changedProperties.has('inputobj') && Array.isArray(this.inputobj?.comments)) {
       this.workingComments = [...this.inputobj.comments];
     }
+
+    if (changedProperties.has('readOnly')) {
+      // Ensure that the render responds to `readonly` changes
+      this.requestUpdate(); // Force re-render if readonly changes
+    }
   }
 
   handleCommentChange(e) {
