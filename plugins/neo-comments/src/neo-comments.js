@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 
-class commentsElement extends LitElement {
+class CommentsElement extends LitElement {
   static getMetaConfig() {
     return {
       controlName: 'neo-comments',
@@ -10,17 +10,22 @@ class commentsElement extends LitElement {
       groupName: 'NEO',
       version: '1.0',
       properties: {
-        cname: {
+        firstName: {
           type: 'string',
-          description: 'Full name',
-          title: 'Full name',
+          description: 'First name',
+          title: 'First name',
         },
-        cemail: {
+        lastName: {
+          type: 'string',
+          description: 'Last name',
+          title: 'Last name',
+        },
+        email: {
           type: 'string',
           description: 'Email Address',
           title: 'Email Address',
         },
-        ctask: {
+        task: {
           type: 'string',
           description: 'Task Name',
           title: 'Task Name',
@@ -42,23 +47,25 @@ class commentsElement extends LitElement {
               items: {
                 type: 'object',
                 properties: {
-                  name: { type: 'string', description: 'Full name', title: 'Full name' },
+                  firstName: { type: 'string', description: 'First Name', title: 'First Name' },
+                  lastName: { type: 'string', description: 'Last Name', title: 'Last Name' },
                   email: { type: 'string', description: 'Email Address', title: 'Email Address' },
                   task: { type: 'string', description: 'Task Name', title: 'Task Name' },
                   comment: { type: 'string', description: 'Comment', title: 'Comment' },
-                  timestamp: { type: 'string', description: 'Log time', title: 'Log time' },
+                  timestamp: { type: 'string', format: 'date-time', description: 'Log time', title: 'Log time' },
                 },
               },
             },
-            Lastest: {
+            mostRecentComment: {
               type: 'object',
               description: 'Latest comment',
               properties: {
-                name: { type: 'string', description: 'Full name', title: 'Full name' },
+                firstName: { type: 'string', description: 'First Name', title: 'First Name' },
+                lastName: { type: 'string', description: 'Last Name', title: 'Last Name' },
                 email: { type: 'string', description: 'Email Address', title: 'Email Address' },
                 task: { type: 'string', description: 'Task Name', title: 'Task Name' },
                 comment: { type: 'string', description: 'Comment', title: 'Comment' },
-                timestamp: { type: 'string', description: 'Log time', title: 'Log time' },
+                timestamp: { type: 'string', format: 'date-time', description: 'Log time', title: 'Log time' },
               },
             },
           },
@@ -143,7 +150,7 @@ class commentsElement extends LitElement {
   }
 
   updated(changedProperties) {
-    if (changedProperties.has('inputobj') && this.inputobj?.comments) {
+    if (changedProperties.has('inputobj') && Array.isArray(this.inputobj?.comments)) {
       this.workingComments = [...this.inputobj.comments];
     }
   }
@@ -154,10 +161,12 @@ class commentsElement extends LitElement {
 
   addComment() {
     const timestamp = new Date().toISOString();
+
     const newEntry = {
-      name: this.inputobj?.name || 'Anonymous',
+      firstName: this.inputobj?.firstName || 'Anonymous',
+      lastName: this.inputobj?.lastName || '',
       email: this.inputobj?.email || 'N/A',
-      task: this.inputobj?.task || 'No Task',
+      task: this.inputobj?.task?.trim() || 'Update',
       comment: this.newComment,
       timestamp,
     };
@@ -178,8 +187,8 @@ class commentsElement extends LitElement {
 
   render() {
     return html`
-      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-      
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
       <div class="comments-history">
         ${this.workingComments.length > 0
           ? this.workingComments.map(
@@ -188,16 +197,16 @@ class commentsElement extends LitElement {
                   <div class="card-body">
                     <div class="d-flex flex-start">
                       <div>
-                        <h6 class="fw-bold mb-1">${item.name || 'Anonymous'}</h6>
+                        <h6 class="fw-bold mb-1">${item.firstName} ${item.lastName || ''}</h6>
                         <div class="d-flex align-items-center mb-3">
                           <p class="mb-0 text-muted">
-                            ${new Date(item.timestamp).toLocaleDateString('en-US', {
+                            ${new Date(item.timestamp).toLocaleDateString('en-GB', {
                               weekday: 'short',
                               year: 'numeric',
                               month: 'long',
                               day: 'numeric',
                             })}
-                            <span class="badge bg-primary ms-2">${item.task || 'No Task'}</span>
+                            <span class="badge bg-primary ms-2">${item.task || 'Update'}</span>
                           </p>
                         </div>
                         <p class="mb-0">${item.comment}</p>
@@ -209,18 +218,19 @@ class commentsElement extends LitElement {
             )
           : html`<p>No comments available.</p>`}
       </div>
-  
+
       <div class="mt-4">
         <h3>Add a Comment</h3>
         <textarea
+          class="form-control"
           .value=${this.newComment}
           @input=${this.handleCommentChange}
           placeholder="Write your comment here..."
         ></textarea>
         <button
+          class="btn btn-primary"
           @click=${this.addComment}
           ?disabled=${!this.newComment.trim()}
-          class="btn btn-primary"
         >
           Submit Comment
         </button>
@@ -229,4 +239,4 @@ class commentsElement extends LitElement {
   }
 }
 
-customElements.define('neo-comments', commentsElement);
+customElements.define('neo-comments', CommentsElement);
