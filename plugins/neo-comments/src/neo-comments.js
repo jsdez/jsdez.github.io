@@ -116,6 +116,11 @@ class CommentsElement extends LitElement {
         padding: 1rem;
       }
 
+      .badge-default {
+        background-color: var(--ntx-form-theme-color-primary-button-background, #e0e0e0);
+        color: var(--ntx-form-theme-color-primary-button-font, #000);
+      }
+
       textarea {
         width: 100%;
         height: 100px;
@@ -252,7 +257,19 @@ class CommentsElement extends LitElement {
 
   // Helper method to apply the correct class based on badge style
   getBadgeClass(style) {
-    return `bg-${style.toLowerCase()}`;  // Bootstrap badge class
+    const badgeClasses = {
+      Default: 'badge badge-default',
+      Primary: 'badge bg-primary text-white',
+      Secondary: 'badge bg-secondary text-white',
+      Success: 'badge bg-success text-white',
+      Danger: 'badge bg-danger text-white',
+      Warning: 'badge bg-warning text-dark',
+      Info: 'badge bg-info text-dark',
+      Light: 'badge bg-light text-dark',
+      Dark: 'badge bg-dark text-white',
+    };
+
+    return badgeClasses[style] || badgeClasses.Default;
   }
 }
 
