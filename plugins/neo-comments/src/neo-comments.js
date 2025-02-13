@@ -6,7 +6,7 @@ class commentsElement extends LitElement {
       controlName: 'neo-comments',
       fallbackDisableSubmit: false,
       description: 'Notes and comments',
-      iconUrl: "",
+      iconUrl: '',
       groupName: 'NEO',
       version: '1.0',
       properties: {
@@ -31,50 +31,40 @@ class commentsElement extends LitElement {
           description: 'Enter the comments object from previous control here',
         },
         outputobj: {
-          title: 'Comments',
+          title: 'Comments Output',
           type: 'object',
           description: 'Workflow Comments Output - Do Not Use',
           isValueField: true,
           properties: {
             comments: {
-              type: 'object',
-              description: 'Nested object storing multiple comments',
-              title: 'Comments',
-              Properties: {
+              type: 'array',
+              description: 'Array of comments',
+              items: {
                 type: 'object',
                 properties: {
-                  name: {
-                    type: 'string',
-                    description: 'Full name',
-                    title: 'Full name',
-                  },
-                  email: {
-                    type: 'string',
-                    description: 'Email Address',
-                    title: 'Email Address',
-                  },
-                  task: {
-                    type: 'string',
-                    description: 'Task Name',
-                    title: 'Task Name',
-                  },
-                  comment: {
-                    type: 'string',
-                    description: 'Comment',
-                    title: 'Comment',
-                  },
-                  timestamp: {
-                    type: 'string',
-                    title: 'Log time',
-                    description: 'Date and time when the item was last updated',
-                  },
+                  name: { type: 'string', description: 'Full name', title: 'Full name' },
+                  email: { type: 'string', description: 'Email Address', title: 'Email Address' },
+                  task: { type: 'string', description: 'Task Name', title: 'Task Name' },
+                  comment: { type: 'string', description: 'Comment', title: 'Comment' },
+                  timestamp: { type: 'string', description: 'Log time', title: 'Log time' },
                 },
+              },
+            },
+            mostRecentComment: {
+              type: 'object',
+              description: 'The most recently added comment',
+              properties: {
+                name: { type: 'string', description: 'Full name', title: 'Full name' },
+                email: { type: 'string', description: 'Email Address', title: 'Email Address' },
+                task: { type: 'string', description: 'Task Name', title: 'Task Name' },
+                comment: { type: 'string', description: 'Comment', title: 'Comment' },
+                timestamp: { type: 'string', description: 'Log time', title: 'Log time' },
               },
             },
           },
         },
       },
-      events: ["ntx-value-change"],
+      events: ['ntx-value-change'],
       standardProperties: {
         fieldLabel: true,
         description: true,
@@ -167,18 +157,18 @@ class commentsElement extends LitElement {
     const newEntry = {
       name: this.inputobj?.name || 'Anonymous',
       email: this.inputobj?.email || 'N/A',
-      task: this.inputobj?.task || 'Update',
+      task: this.inputobj?.task || 'No Task',
       comment: this.newComment,
       timestamp,
     };
 
     this.workingComments = [...this.workingComments, newEntry];
 
+    const mostRecentComment = newEntry;
+
     const outputobj = {
-      comments: this.workingComments.reduce((acc, comment, index) => {
-        acc[index] = comment;
-        return acc;
-      }, {}),
+      comments: this.workingComments,
+      mostRecentComment,
     };
 
     this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: outputobj }));
@@ -207,7 +197,7 @@ class commentsElement extends LitElement {
                               month: 'long',
                               day: 'numeric',
                             })}
-                            <span class="badge bg-primary ms-2">${item.task || 'Update'}</span>
+                            <span class="badge bg-primary ms-2">${item.task || 'No Task'}</span>
                           </p>
                         </div>
                         <p class="mb-0">${item.comment}</p>
