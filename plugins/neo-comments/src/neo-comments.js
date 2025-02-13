@@ -190,7 +190,7 @@ class CommentsElement extends LitElement {
         },
       },
       events: ['ntx-value-change'],
-      standardProperties: { fieldLabel: true, description: true, readOnly: true, visibility: true },
+      standardProperties: { fieldLabel: true, description: true, readOnly: true, visibility: true, required: true },
     };
   }
 
@@ -339,7 +339,7 @@ class CommentsElement extends LitElement {
       Success: 'badge bg-success text-white',
       Danger: 'badge bg-danger text-white',
       Warning: 'badge bg-warning text-dark',
-      Info: 'badge bg-info text-dark',
+      Info: 'badge bg-info',
       Light: 'badge bg-light text-dark',
       Dark: 'badge bg-dark text-white',
     };
