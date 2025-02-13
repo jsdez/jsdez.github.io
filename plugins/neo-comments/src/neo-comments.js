@@ -76,8 +76,7 @@ class CommentsElement extends LitElement {
         color: var(--ntx-form-theme-color-primary-button-font, #000);
       }
       
-  
-      textarea {
+      .comment-textarea {
         width: 100%;
         height: 100px;
         padding: 0.5rem;
@@ -89,6 +88,10 @@ class CommentsElement extends LitElement {
         font-family: var(--ntx-form-theme-font-family);
         font-size: var(--ntx-form-theme-text-input-size);
         margin-bottom: 1rem;
+      }
+
+      .comment-text {
+        user-select: text;
       }
   
       .btn-default {
@@ -110,9 +113,6 @@ class CommentsElement extends LitElement {
         color: var(--ntx-form-theme-color-primary-button-font);
       }
   
-      .comment-text {
-        user-select: text;
-      }
     `;
   }
 
@@ -292,7 +292,7 @@ class CommentsElement extends LitElement {
       ${!this.readOnly ? html`
         <div class="mt-4">
           <textarea
-            class="form-control"
+            class="form-control comment-textarea"
             .value=${this.newComment}
             @input=${this.handleCommentChange}
             placeholder="Write your comment here..."
