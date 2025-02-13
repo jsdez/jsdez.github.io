@@ -91,7 +91,6 @@ class CommentsElement extends LitElement {
     return css`
       :host {
         display: block;
-        padding: 1rem;
         max-width: 100%;
       }
   
@@ -156,6 +155,11 @@ class CommentsElement extends LitElement {
       }
   
       .badge-default {
+        background-color: var(--ntx-form-theme-color-primary-button-background, #e0e0e0);
+        color: var(--ntx-form-theme-color-primary-button-font, #000);
+      }
+      
+      .btn-default {
         background-color: var(--ntx-form-theme-color-primary-button-background, #e0e0e0);
         color: var(--ntx-form-theme-color-primary-button-font, #000);
       }
@@ -249,7 +253,7 @@ class CommentsElement extends LitElement {
         ${this.workingComments.length > 0
           ? this.workingComments.map(
               (item) => html`
-                <div class="card comment-card mb-3">
+                <div class="card comment-card">
                 <div class="card-body">
                     <div class="d-flex flex-row align-items-center">
                       <h6 class="fw-bold mb-0 me-2">${item.firstName} ${item.lastName || ''}</h6>
@@ -268,7 +272,7 @@ class CommentsElement extends LitElement {
                       <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">${item.badge || 'Update'}</span>
                     </div>
                     <div>
-                    <p class="mb-0 p-1 comment-text">${item.comment}</p>
+                    <p class="mb-0 py-3 comment-text">${item.comment}</p>
                   </div>
                 </div>
               `
@@ -277,7 +281,6 @@ class CommentsElement extends LitElement {
       </div>
   
       <div class="mt-4">
-        <h6>Add a Comment</h6>
         <textarea
           class="form-control"
           .value=${this.newComment}
@@ -285,11 +288,11 @@ class CommentsElement extends LitElement {
           placeholder="Write your comment here..."
         ></textarea>
         <button
-          class="btn btn-primary"
+          class="btn btn-default"
           @click=${this.addComment}
           ?disabled=${!this.newComment.trim()}
         >
-          Submit Comment
+          Add Comment
         </button>
       </div>
     `;
