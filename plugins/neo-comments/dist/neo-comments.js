@@ -3,7 +3,6 @@
       :host {
         display: block;
         max-width: 100%;
-        margin-top: 1rem;
       }
   
       .comments-history {
