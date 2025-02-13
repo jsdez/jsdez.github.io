@@ -92,6 +92,7 @@ class CommentsElement extends LitElement {
       :host {
         display: block;
         max-width: 100%;
+        margin-top: 1rem;
       }
   
       .comments-history {
@@ -110,6 +111,7 @@ class CommentsElement extends LitElement {
   
       .comment-card:first-child {
         border-top: 1px solid #ddd;
+        margin-top: 1rem;
       }
   
       .comment-card:hover {
