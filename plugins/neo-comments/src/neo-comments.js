@@ -34,6 +34,7 @@ class commentsElement extends LitElement {
           title: 'Comments',
           type: 'object',
           description: 'Workflow Comments Output - Do Not Use',
+          isValueField: true,
           properties: {
             name: {
               type: 'string',
