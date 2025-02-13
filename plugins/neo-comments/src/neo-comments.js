@@ -36,30 +36,9 @@ class commentsElement extends LitElement {
           description: 'Workflow Comments Output - Do Not Use',
           isValueField: true,
           properties: {
-            name: {
-              type: 'string',
-              description: 'Full name',
-              title: 'Full name',
-            },
-            email: {
-              type: 'string',
-              description: 'Email Address',
-              title: 'Email Address',
-            },
-            task: {
-              type: 'string',
-              description: 'Task Name',
-              title: 'Task Name',
-            },
-            comment: {
-              type: 'string',
-              description: 'Comment',
-              title: 'Comment',
-            },
-            timestamp: {
-              type: 'string',
-              title: 'Log time',
-              description: 'Date and time when the item was last updated',
+            comments: {
+              type: 'object',
+              description: 'Comments object with indexed keys',
             },
           },
         },
@@ -75,7 +54,7 @@ class commentsElement extends LitElement {
 
   static properties = {
     inputobj: { type: Object },
-    workingComments: { type: Array },
+    workingComments: { type: Object },
     newComment: { type: String },
   };
 
@@ -95,13 +74,13 @@ class commentsElement extends LitElement {
       .card {
         border: none;
         border-radius: 0;
-        margin: 0; /* Remove gaps between cards */
-        padding: 0; /* Ensure uniform alignment */
-        border-bottom: 1px solid #ddd; /* Add a bottom border */
+        margin: 0;
+        padding: 0;
+        border-bottom: 1px solid #ddd;
       }
 
       .card:first-child {
-        border-top: 1px solid #ddd; /* Remove the border for the last card */
+        border-top: 1px solid #ddd;
       }
 
       .card-body {
@@ -134,19 +113,18 @@ class commentsElement extends LitElement {
         cursor: not-allowed;
       }
     `;
-}
+  }
 
   constructor() {
     super();
     this.inputobj = null;
-    this.workingComments = [];
+    this.workingComments = {};
     this.newComment = '';
   }
 
   updated(changedProperties) {
-    // Initialize workingComments with inputobj.comments when inputobj changes
     if (changedProperties.has('inputobj') && this.inputobj?.comments) {
-      this.workingComments = [...this.inputobj.comments];
+      this.workingComments = { ...this.inputobj.comments };
     }
   }
 
@@ -157,20 +135,25 @@ class commentsElement extends LitElement {
   addComment() {
     const timestamp = new Date().toISOString();
     const newEntry = {
-      name: this.inputobj?.name || 'Anonymous',
-      email: this.inputobj?.email || 'N/A',
+      name: this.inputobj?.cname || 'Anonymous',
+      email: this.inputobj?.cemail || 'N/A',
+      task: this.inputobj?.ctask || 'No Task',
       comment: this.newComment,
       timestamp,
     };
 
-    // Add the new comment to the working object
-    this.workingComments = [...this.workingComments, newEntry];
+    const nextIndex = Object.keys(this.workingComments).length
+      ? Math.max(...Object.keys(this.workingComments).map(Number)) + 1
+      : 0;
 
-    // Update outputobj and emit the ntx-value-change event
+    this.workingComments = {
+      ...this.workingComments,
+      [nextIndex]: newEntry,
+    };
+
     const outputobj = { comments: this.workingComments };
     this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: outputobj }));
 
-    // Clear the comment box
     this.newComment = '';
   }
 
@@ -179,14 +162,14 @@ class commentsElement extends LitElement {
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
       
       <div class="comments-history">
-        ${this.workingComments.length > 0
-          ? this.workingComments.map(
+        ${Object.keys(this.workingComments).length > 0
+          ? Object.values(this.workingComments).map(
               (item) => html`
                 <div class="card">
                   <div class="card-body p-4">
                     <div class="d-flex flex-start">
                       <div>
-                        <h6 class="fw-bold text-white mb-1">${item.cname || 'Anonymous'}</h6>
+                        <h6 class="fw-bold text-white mb-1">${item.name || 'Anonymous'}</h6>
                         <div class="d-flex align-items-center mb-3">
                           <p class="mb-0 text-muted">
                             ${new Date(item.timestamp).toLocaleDateString('en-US', {
@@ -195,7 +178,7 @@ class commentsElement extends LitElement {
                               month: 'long',
                               day: 'numeric',
                             })}
-                            <span class="badge bg-primary ms-2">${item.ctask || 'No Task'}</span>
+                            <span class="badge bg-primary ms-2">${item.task || 'No Task'}</span>
                           </p>
                         </div>
                         <p class="mb-0">${item.comment}</p>
