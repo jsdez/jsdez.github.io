@@ -105,18 +105,16 @@
       <div class="comments-history">
         ${this.workingComments.length>0?this.workingComments.map((t=>T`
                 <div class="card comment-card mb-3">
-                   <div class="card-header">
-                      <div class="d-flex flex-row align-items-center">
-                        <h6 class="fw-bold mb-0 me-2">${t.firstName} ${t.lastName||""}</h6>
-                        <p class="mb-0 text-muted me-2">
-                          ${new Date(t.timestamp).toLocaleString("en-GB",{weekday:"short",year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:!1})}
-                        </p>
-                        <span class="badge ${this.getBadgeClass(t.badgeStyle)||"Default"} ms-2">${t.badge||"Update"}</span>
-                      </div>
+                <div class="card-body">
+                    <div class="d-flex flex-row align-items-center">
+                      <h6 class="fw-bold mb-0 me-2">${t.firstName} ${t.lastName||""}</h6>
+                      <p class="mb-0 text-muted me-2">
+                        ${new Date(t.timestamp).toLocaleString("en-GB",{weekday:"short",year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:!1})}
+                      </p>
+                      <span class="badge ${this.getBadgeClass(t.badgeStyle)||"Default"} ms-2">${t.badge||"Update"}</span>
                     </div>
                     <div>
-                  <div class="card-body">
-                    <p class="mb-0 comment-text">${t.comment}</p>
+                    <p class="mb-0 p-1 comment-text">${t.comment}</p>
                   </div>
                 </div>
               `)):T`<p>No comments available.</p>`}
