@@ -10,25 +10,23 @@ class CommentsElement extends LitElement {
       groupName: 'NEO',
       version: '1.0',
       properties: {
-        firstName: {
+        firstName: { type: 'string', title: 'First name' },
+        lastName: { type: 'string', title: 'Last name' },
+        email: { type: 'string', title: 'Email Address' },
+        badge: {
           type: 'string',
-          description: 'First name',
-          title: 'First name',
+          description: 'Label for status badge e.g. Rejected, Approved, Return etc. Default blank value is Update',
+          title: 'Badge',
         },
-        lastName: {
+        badgeStyle: {
           type: 'string',
-          description: 'Last name',
-          title: 'Last name',
-        },
-        email: {
-          type: 'string',
-          description: 'Email Address',
-          title: 'Email Address',
-        },
-        task: {
-          type: 'string',
-          description: 'Task Name',
-          title: 'Task Name',
+          description: 'Select the style for the badge from the dropdown based on Bootstrap 5 badge',
+          title: 'Badge Style',
+          enum: [
+            'Default', 'Primary', 'Secondary', 'Success',
+            'Danger', 'Warning', 'Info', 'Light', 'Dark',
+          ],
+          defaultValue: 'Default',
         },
         inputobj: {
           type: 'object',
@@ -50,7 +48,8 @@ class CommentsElement extends LitElement {
                   firstName: { type: 'string', description: 'First Name', title: 'First Name' },
                   lastName: { type: 'string', description: 'Last Name', title: 'Last Name' },
                   email: { type: 'string', description: 'Email Address', title: 'Email Address' },
-                  task: { type: 'string', description: 'Task Name', title: 'Task Name' },
+                  badge: { type: 'string', description: 'Badge Status', title: 'Badge Status' },
+                  badgeStyle: { type: 'string', description: 'Badge Style', title: 'Badge Style' },
                   comment: { type: 'string', description: 'Comment', title: 'Comment' },
                   timestamp: { type: 'string', format: 'date-time', description: 'Log time', title: 'Log time' },
                 },
@@ -63,7 +62,8 @@ class CommentsElement extends LitElement {
                 firstName: { type: 'string', description: 'First Name', title: 'First Name' },
                 lastName: { type: 'string', description: 'Last Name', title: 'Last Name' },
                 email: { type: 'string', description: 'Email Address', title: 'Email Address' },
-                task: { type: 'string', description: 'Task Name', title: 'Task Name' },
+                badge: { type: 'string', description: 'Badge Status', title: 'Badge Status' },
+                badgeStyle: { type: 'string', description: 'Badge Style', title: 'Badge Style' },
                 comment: { type: 'string', description: 'Comment', title: 'Comment' },
                 timestamp: { type: 'string', format: 'date-time', description: 'Log time', title: 'Log time' },
               },
@@ -72,11 +72,7 @@ class CommentsElement extends LitElement {
         },
       },
       events: ['ntx-value-change'],
-      standardProperties: {
-        fieldLabel: true,
-        description: true,
-        readOnly: true,
-      },
+      standardProperties: { fieldLabel: true, description: true, readOnly: true },
     };
   }
 
@@ -139,6 +135,11 @@ class CommentsElement extends LitElement {
         background-color: #ccc;
         cursor: not-allowed;
       }
+
+      .badge-default {
+        background-color: var(--ntx-form-theme-color-primary-button-background, #e0e0e0);
+        color: var(--ntx-form-theme-color-primary-button-font, #000);
+      }
     `;
   }
 
@@ -166,7 +167,8 @@ class CommentsElement extends LitElement {
       firstName: this.inputobj?.firstName || 'Anonymous',
       lastName: this.inputobj?.lastName || '',
       email: this.inputobj?.email || 'N/A',
-      task: this.inputobj?.task?.trim() || 'Update',
+      badge: this.inputobj?.badge?.trim() || 'Update',
+      badgeStyle: this.inputobj?.badgeStyle || 'Default',
       comment: this.newComment,
       timestamp,
     };
@@ -206,7 +208,9 @@ class CommentsElement extends LitElement {
                               month: 'long',
                               day: 'numeric',
                             })}
-                            <span class="badge bg-primary ms-2">${item.task || 'Update'}</span>
+                            <span class="badge ${item.badgeStyle === 'Default' ? 'badge-default' : `bg-${item.badgeStyle.toLowerCase()}`} ms-2">
+                              ${item.badge || 'Update'}
+                            </span>
                           </p>
                         </div>
                         <p class="mb-0">${item.comment}</p>
