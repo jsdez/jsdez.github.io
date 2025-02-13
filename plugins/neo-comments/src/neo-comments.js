@@ -190,7 +190,7 @@ class CommentsElement extends LitElement {
         },
       },
       events: ['ntx-value-change'],
-      standardProperties: { fieldLabel: true, description: true, readOnly: true, visibility: true, required: true },
+      standardProperties: { fieldLabel: true, description: true, readOnly: true, visibility: true },
     };
   }
 
@@ -227,10 +227,6 @@ class CommentsElement extends LitElement {
     // Ensure that the render responds to `readonly` changes
     this.requestUpdate(); // Force re-render if readonly changes
     }
-  }
-
-  handleCommentChange(e) {
-    this.newComment = e.target.value;
   }
 
   addComment() {
