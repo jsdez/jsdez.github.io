@@ -223,7 +223,7 @@ class CommentsElement extends LitElement {
                               second: '2-digit',
                               hour12: false
                             })}
-                            <span class="badge ${this.getBadgeClass(item.badgeStyle)} ms-2">${item.badge || 'Update'}</span>
+                            <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">${item.badge || 'Update'}</span>
                           </p>
                         </div>
                         <p class="mb-0">${item.comment}</p>
