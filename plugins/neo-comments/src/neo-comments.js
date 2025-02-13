@@ -250,8 +250,8 @@ class CommentsElement extends LitElement {
           ? this.workingComments.map(
               (item) => html`
                 <div class="card comment-card mb-3">
-                  <div class="card-body">
-                    <div class="d-flex flex-row align-items-center">
+                   <div class="card-header">
+                      <div class="d-flex flex-row align-items-center">
                       <h6 class="fw-bold mb-0 me-2">${item.firstName} ${item.lastName || ''}</h6>
                       <p class="mb-0 text-muted me-2">
                         ${new Date(item.timestamp).toLocaleString('en-GB', {
@@ -267,6 +267,8 @@ class CommentsElement extends LitElement {
                       </p>
                       <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">${item.badge || 'Update'}</span>
                     </div>
+                    <div>
+                  <div class="card-body">
                     <p class="mb-0 comment-text">${item.comment}</p>
                   </div>
                 </div>
