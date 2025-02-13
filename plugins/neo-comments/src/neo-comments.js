@@ -159,10 +159,6 @@ class CommentsElement extends LitElement {
         color: var(--ntx-form-theme-color-primary-button-font, #000);
       }
       
-      .btn-default {
-        background-color: var(--ntx-form-theme-color-primary-button-background, #e0e0e0);
-        color: var(--ntx-form-theme-color-primary-button-font, #000);
-      }
   
       textarea {
         width: 100%;
@@ -178,7 +174,6 @@ class CommentsElement extends LitElement {
         padding: 0.5rem 1rem;
         font-size: 1rem;
         color: white;
-        background-color: #007bff;
         border: none;
         border-radius: 4px;
         cursor: pointer;
@@ -187,6 +182,24 @@ class CommentsElement extends LitElement {
       button:disabled {
         background-color: #ccc;
         cursor: not-allowed;
+      }
+
+      .btn-default {
+        background-color: var(--ntx-form-theme-color-primary-button-background);
+        border-color: var(--ntx-form-theme-color-primary-button-background);
+        border-radius: var(--ntx-form-theme-border-radius);
+        color: var(--ntx-form-theme-color-primary-button-font);
+        font-family: var(--ntx-form-theme-font-family);
+        font-size: var(--ntx-form-theme-text-label-size);
+      }
+      
+      .btn-default:hover {
+        background-color: var(--ntx-form-theme-color-primary-button-hover);
+      }
+
+      .btn-default:disabled {
+        background-color: var(--ntx-form-theme-color-primary-button-disabled);
+        border-color: var(--ntx-form-theme-color-primary-button-disabled);
       }
   
       .comment-text {
