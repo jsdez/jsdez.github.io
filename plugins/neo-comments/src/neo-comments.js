@@ -170,20 +170,6 @@ class CommentsElement extends LitElement {
         margin-bottom: 1rem;
       }
   
-      button {
-        padding: 0.5rem 1rem;
-        font-size: 1rem;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      }
-  
-      button:disabled {
-        background-color: #ccc;
-        cursor: not-allowed;
-      }
-
       .btn-default {
         background-color: var(--ntx-form-theme-color-primary-button-background);
         border-color: var(--ntx-form-theme-color-primary-button-background);
@@ -200,6 +186,7 @@ class CommentsElement extends LitElement {
       .btn-default:disabled {
         background-color: var(--ntx-form-theme-color-primary-button-disabled);
         border-color: var(--ntx-form-theme-color-primary-button-disabled);
+        color: var(--ntx-form-theme-color-primary-button-font);
       }
   
       .comment-text {
@@ -302,6 +289,7 @@ class CommentsElement extends LitElement {
         ></textarea>
         <button
           class="btn btn-default"
+          type="button"
           @click=${this.addComment}
           ?disabled=${!this.newComment.trim()}
         >
