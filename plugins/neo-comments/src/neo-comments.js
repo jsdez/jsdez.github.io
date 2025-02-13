@@ -36,7 +36,7 @@ class commentsElement extends LitElement {
           description: 'Workflow Comments Output - Do Not Use',
           isValueField: true,
           properties: {
-            comments: {
+            Comments: {
               type: 'array',
               description: 'Array of comments',
               items: {
@@ -50,9 +50,9 @@ class commentsElement extends LitElement {
                 },
               },
             },
-            mostRecentComment: {
+            Lastest: {
               type: 'object',
-              description: 'The most recently added comment',
+              description: 'Latest comment',
               properties: {
                 name: { type: 'string', description: 'Full name', title: 'Full name' },
                 email: { type: 'string', description: 'Email Address', title: 'Email Address' },
