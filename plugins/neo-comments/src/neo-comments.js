@@ -40,7 +40,7 @@ class commentsElement extends LitElement {
               type: 'object',
               description: 'Nested object storing multiple comments',
               title: 'Comments',
-              additionalProperties: {
+              Properties: {
                 type: 'object',
                 properties: {
                   name: {
