@@ -94,33 +94,72 @@ class CommentsElement extends LitElement {
         padding: 1rem;
         max-width: 100%;
       }
-
+  
       .comments-history {
         display: flex;
         flex-direction: column;
       }
-
-      .card {
+  
+      .comment-card {
         border: none;
         border-radius: 0;
         margin: 0;
         padding: 0;
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
         border-bottom: 1px solid #ddd;
       }
-
-      .card:first-child {
+  
+      .comment-card:first-child {
         border-top: 1px solid #ddd;
       }
-
+  
+      .comment-card:hover {
+        background-color: #f8f9fa; /* Light background on hover */
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow on hover */
+      }
+  
+      .comment-card.selected {
+        background-color: #e9ecef; /* Selected state color */
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Slightly stronger shadow */
+      }
+  
       .card-body {
         padding: 1rem;
       }
-
+  
+      .d-flex {
+        display: flex;
+      }
+  
+      .flex-row {
+        flex-direction: row;
+      }
+  
+      .align-items-center {
+        align-items: center;
+      }
+  
+      .me-2 {
+        margin-right: 0.5rem;
+      }
+  
+      .ms-2 {
+        margin-left: 0.5rem;
+      }
+  
+      .fw-bold {
+        font-weight: bold;
+      }
+  
+      .text-muted {
+        color: #6c757d;
+      }
+  
       .badge-default {
         background-color: var(--ntx-form-theme-color-primary-button-background, #e0e0e0);
         color: var(--ntx-form-theme-color-primary-button-font, #000);
       }
-
+  
       textarea {
         width: 100%;
         height: 100px;
@@ -130,7 +169,7 @@ class CommentsElement extends LitElement {
         border-radius: 4px;
         margin-bottom: 1rem;
       }
-
+  
       button {
         padding: 0.5rem 1rem;
         font-size: 1rem;
@@ -140,14 +179,18 @@ class CommentsElement extends LitElement {
         border-radius: 4px;
         cursor: pointer;
       }
-
+  
       button:disabled {
         background-color: #ccc;
         cursor: not-allowed;
       }
+  
+      .comment-text {
+        user-select: text;
+      }
     `;
   }
-
+  
   constructor() {
     super();
     this.firstName = '';
@@ -201,43 +244,39 @@ class CommentsElement extends LitElement {
   render() {
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-
+  
       <div class="comments-history">
         ${this.workingComments.length > 0
           ? this.workingComments.map(
               (item) => html`
-                <div class="card">
+                <div class="card comment-card mb-3">
                   <div class="card-body">
-                    <div class="d-flex flex-start">
-                      <div>
-                        <h6 class="fw-bold mb-1">${item.firstName} ${item.lastName || ''}</h6>
-                        <div class="d-flex align-items-center mb-3">
-                          <p class="mb-0 text-muted">
-                            ${new Date(item.timestamp).toLocaleString('en-GB', {
-                              weekday: 'short',
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                              hour12: false
-                            })}
-                            <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">${item.badge || 'Update'}</span>
-                          </p>
-                        </div>
-                        <p class="mb-0">${item.comment}</p>
-                      </div>
+                    <div class="d-flex flex-row align-items-center">
+                      <h6 class="fw-bold mb-0 me-2">${item.firstName} ${item.lastName || ''}</h6>
+                      <p class="mb-0 text-muted me-2">
+                        ${new Date(item.timestamp).toLocaleString('en-GB', {
+                          weekday: 'short',
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                          hour12: false,
+                        })}
+                      </p>
+                      <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">${item.badge || 'Update'}</span>
                     </div>
+                    <p class="mb-0 comment-text">${item.comment}</p>
                   </div>
                 </div>
               `
             )
           : html`<p>No comments available.</p>`}
       </div>
-
+  
       <div class="mt-4">
-        <h3>Add a Comment</h3>
+        <h6>Add a Comment</h6>
         <textarea
           class="form-control"
           .value=${this.newComment}
@@ -253,7 +292,7 @@ class CommentsElement extends LitElement {
         </button>
       </div>
     `;
-  }
+  }  
 
   // Helper method to apply the correct class based on badge style
   getBadgeClass(style) {
