@@ -1,8 +1,6 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, reactive } from 'lit';
 import { componentStyles } from './styles.js';
 import { sendIcon, deleteIcon } from './icons.js';
-import { state } from 'lit/decorators.js';
-
 class CommentsElement extends LitElement {
 
   static get styles() {
@@ -192,9 +190,6 @@ class CommentsElement extends LitElement {
     return comments.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }
   
-  @state()
-  currentPage = 1;
-
   get paginatedComments() {
     const comments = this.enableSorting
       ? this.sortComments([...this.workingComments])
