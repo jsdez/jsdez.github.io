@@ -104,26 +104,33 @@ class CommentsElement extends LitElement {
     this.firstName = '';
     this.lastName = '';
     this.email = '';
-    this.badge = 'Update';  // Default Badge
-    this.badgeStyle = 'Default';  // Default Badge Style
+    this.badge = 'Update';
+    this.badgeStyle = 'Default';
     this.inputobj = null;
     this.workingComments = [];
     this.newComment = '';
     this.deletableIndices = [];
     this.currentPage = 1;
     this.pageSize = 5;
+    this.enableSorting = true;
   }
+  
 
   updated(changedProperties) {
+    if (changedProperties.has('enablePages')) {
+      this.pageSize = this.enablePages || 0;
+    }
+  
     if (changedProperties.has('inputobj') && Array.isArray(this.inputobj?.comments)) {
       this.workingComments = [...this.inputobj.comments];
       this.deletableIndices = []; // Reset deletable indices when inputobj changes
     }
-
+  
     if (changedProperties.has('readOnly')) {
       this.requestUpdate();
     }
   }
+  
 
   addComment() {
     const timestamp = new Date().toISOString();
@@ -185,10 +192,14 @@ class CommentsElement extends LitElement {
   }
   
   get paginatedComments() {
+    const comments = this.enableSorting
+      ? this.sortComments([...this.workingComments])
+      : [...this.workingComments];
     const startIndex = (this.currentPage - 1) * this.pageSize;
     const endIndex = startIndex + this.pageSize;
-    return this.sortComments([...this.workingComments]).slice(startIndex, endIndex);
+    return comments.slice(startIndex, endIndex);
   }
+  
   
   changePage(direction) {
     const totalPages = Math.ceil(this.workingComments.length / this.pageSize);
@@ -198,7 +209,7 @@ class CommentsElement extends LitElement {
       this.currentPage--;
     }
     this.updateCommentsDisplay();
-  }
+  }  
   
   updateCommentsDisplay() {
     const mostRecentComment = this.paginatedComments[this.paginatedComments.length - 1] || null;
@@ -252,6 +263,17 @@ class CommentsElement extends LitElement {
                     </div>
                   </div>
                 </div>
+                <div class="sorting-controls mb-3">
+                <label>
+                  <input
+                    type="checkbox"
+                    @change="${(e) => (this.enableSorting = e.target.checked)}"
+                    ?checked="${this.enableSorting}"
+                  />
+                  Enable Sorting by Date
+                </label>
+              </div>
+
               `
             )
           : html`<p class="text-muted">No comments available.</p>`}
@@ -260,19 +282,19 @@ class CommentsElement extends LitElement {
       <!-- Pagination Controls -->
       ${this.workingComments.length > this.pageSize
         ? html`
-          <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="pagination-controls d-flex justify-content-between mt-3">
             <button
-              class="btn btn-secondary btn-sm"
-              @click=${() => this.changePage('prev')}
-              ?disabled=${this.currentPage === 1}
+              class="btn btn-outline-secondary"
+              @click="${() => this.changePage('prev')}"
+              ?disabled="${this.currentPage === 1}"
             >
               Previous
             </button>
             <span>Page ${this.currentPage} of ${Math.ceil(this.workingComments.length / this.pageSize)}</span>
             <button
-              class="btn btn-secondary btn-sm"
-              @click=${() => this.changePage('next')}
-              ?disabled=${this.currentPage >= Math.ceil(this.workingComments.length / this.pageSize)}
+              class="btn btn-outline-secondary"
+              @click="${() => this.changePage('next')}"
+              ?disabled="${this.currentPage === Math.ceil(this.workingComments.length / this.pageSize)}"
             >
               Next
             </button>
