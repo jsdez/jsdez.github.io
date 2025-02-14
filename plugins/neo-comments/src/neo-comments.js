@@ -52,11 +52,11 @@ class CommentsElement extends LitElement {
         outputobj: {
           title: 'Comments Output',
           type: 'object',
-          description: 'Workflow Comments Output. Do Not Use',
+          description: 'Workflow Comments Output Do Not Use',
           isValueField: true,
           properties: {
             Comments: {
-              type: 'array',
+              type: 'object',
               description: 'Array of comments',
               items: {
                 type: 'object',
