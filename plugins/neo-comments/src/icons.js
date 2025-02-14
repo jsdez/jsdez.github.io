@@ -15,7 +15,7 @@ export const sendIcon = html`
   </svg>
 `;
 
-export const trashIcon = html`
+export const deleteIcon = html`
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="16"
