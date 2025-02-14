@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { componentStyles } from './styles.js';
 import { sendIcon, deleteIcon } from './icons.js';
+import { state } from 'lit/decorators.js';
 
 class CommentsElement extends LitElement {
 
@@ -191,6 +192,9 @@ class CommentsElement extends LitElement {
     return comments.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }
   
+  @state()
+  currentPage = 1;
+
   get paginatedComments() {
     const comments = this.enableSorting
       ? this.sortComments([...this.workingComments])
@@ -199,8 +203,7 @@ class CommentsElement extends LitElement {
     const endIndex = startIndex + this.pageSize;
     return comments.slice(startIndex, endIndex);
   }
-  
-  
+
   changePage(direction) {
     const totalPages = Math.ceil(this.workingComments.length / this.pageSize);
     if (direction === 'next' && this.currentPage < totalPages) {
@@ -208,8 +211,7 @@ class CommentsElement extends LitElement {
     } else if (direction === 'prev' && this.currentPage > 1) {
       this.currentPage--;
     }
-    this.updateCommentsDisplay();
-  }  
+  }
   
   updateCommentsDisplay() {
     const mostRecentComment = this.paginatedComments[this.paginatedComments.length - 1] || null;
@@ -263,17 +265,6 @@ class CommentsElement extends LitElement {
                     </div>
                   </div>
                 </div>
-                <div class="sorting-controls mb-3">
-                <label>
-                  <input
-                    type="checkbox"
-                    @change="${(e) => (this.enableSorting = e.target.checked)}"
-                    ?checked="${this.enableSorting}"
-                  />
-                  Enable Sorting by Date
-                </label>
-              </div>
-
               `
             )
           : html`<p class="text-muted">No comments available.</p>`}
