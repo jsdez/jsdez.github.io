@@ -107,6 +107,8 @@ class CommentsElement extends LitElement {
     this.workingComments = [];
     this.newComment = '';
     this.deletableIndices = [];
+    this.currentPage = 1;
+    this.pageSize = 5;
   }
 
   updated(changedProperties) {
@@ -175,15 +177,46 @@ class CommentsElement extends LitElement {
     this.newComment = e.target.value;
   }
 
+  sortComments(comments) {
+    return comments.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  }
+  
+  get paginatedComments() {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const endIndex = startIndex + this.pageSize;
+    return this.sortComments([...this.workingComments]).slice(startIndex, endIndex);
+  }
+  
+  changePage(direction) {
+    const totalPages = Math.ceil(this.workingComments.length / this.pageSize);
+    if (direction === 'next' && this.currentPage < totalPages) {
+      this.currentPage++;
+    } else if (direction === 'prev' && this.currentPage > 1) {
+      this.currentPage--;
+    }
+    this.updateCommentsDisplay();
+  }
+  
+  updateCommentsDisplay() {
+    const mostRecentComment = this.paginatedComments[this.paginatedComments.length - 1] || null;
+    const outputobj = {
+      comments: this.paginatedComments,
+      mostRecentComment,
+    };
+    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: outputobj }));
+  }
+  
+
   render() {
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   
+      <!-- Comments History Section -->
       <div class="comments-history">
-        ${this.workingComments.length > 0
-          ? this.workingComments.map(
+        ${this.paginatedComments.length > 0
+          ? this.paginatedComments.map(
               (item, index) => html`
-                <div class="card comment-card">
+                <div class="card comment-card mb-2">
                   <div class="card-body">
                     <div class="d-flex flex-row align-items-center">
                       <h6 class="fw-bold mb-0 me-2">${item.firstName} ${item.lastName || ''}</h6>
@@ -200,11 +233,11 @@ class CommentsElement extends LitElement {
                         })}
                       </p>
                       <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">${item.badge || 'Update'}</span>
-                      ${this.deletableIndices.includes(index) && !this.readOnly
+                      ${this.deletableIndices.includes(this.workingComments.indexOf(item)) && !this.readOnly
                         ? html`
                           <button
                             class="btn btn-sm btn-danger ms-auto"
-                            @click=${() => this.deleteComment(index)}
+                            @click=${() => this.deleteComment(this.workingComments.indexOf(item))}
                           >
                             ${deleteIcon}
                           </button>
@@ -218,29 +251,57 @@ class CommentsElement extends LitElement {
                 </div>
               `
             )
-          : html``}
+          : html`<p class="text-muted">No comments available.</p>`}
       </div>
   
-      ${!this.readOnly ? html`
-        <div class="mt-4">
-          <textarea
-            class="comment-textarea"
-            .value=${this.newComment}
-            @input=${this.handleCommentChange}
-            placeholder="Write your comment here..."
-          ></textarea>
-          <button
-            class="btn btn-default d-flex align-items-center"
-            type="button"
-            @click=${this.addComment}
-            ?disabled=${!this.newComment.trim()}
-          >
-            ${sendIcon} Add Comment
-          </button>
-        </div>
-      ` : ''}
+      <!-- Pagination Controls -->
+      ${this.workingComments.length > this.pageSize
+        ? html`
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <button
+              class="btn btn-secondary btn-sm"
+              @click=${() => this.changePage('prev')}
+              ?disabled=${this.currentPage === 1}
+            >
+              Previous
+            </button>
+            <span>Page ${this.currentPage} of ${Math.ceil(this.workingComments.length / this.pageSize)}</span>
+            <button
+              class="btn btn-secondary btn-sm"
+              @click=${() => this.changePage('next')}
+              ?disabled=${this.currentPage >= Math.ceil(this.workingComments.length / this.pageSize)}
+            >
+              Next
+            </button>
+          </div>
+        `
+        : ''}
+  
+      <!-- Add Comment Section -->
+      ${!this.readOnly
+        ? html`
+          <div class="mt-4">
+            <textarea
+              class="form-control comment-textarea mb-2"
+              rows="3"
+              .value=${this.newComment}
+              @input=${this.handleCommentChange}
+              placeholder="Write your comment here..."
+            ></textarea>
+            <button
+              class="btn btn-primary d-flex align-items-center"
+              type="button"
+              @click=${this.addComment}
+              ?disabled=${!this.newComment.trim()}
+            >
+              ${sendIcon} Add Comment
+            </button>
+          </div>
+        `
+        : ''}
     `;
   }
+  
 
   // Helper method to apply the correct class based on badge style
   getBadgeClass(style) {
