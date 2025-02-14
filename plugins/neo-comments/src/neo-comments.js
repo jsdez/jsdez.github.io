@@ -1,6 +1,16 @@
 import { LitElement, html, css } from 'lit';
 import { componentStyles } from './styles.js';
 import { sendIcon, deleteIcon, commentsIcon } from './icons.js';
+
+const svgToBase64 = (svg) => {
+  // Ensure the SVG string is properly formatted (escape newlines, etc.)
+  const encoded = btoa(svg);
+  return `data:image/svg+xml;base64,${encoded}`;
+};
+
+// Convert the imported SVG to a Base64 URL
+const commentsIconBase64 = svgToBase64(commentsIcon);
+
 class CommentsElement extends LitElement {
 
   static get styles() {
@@ -12,7 +22,7 @@ class CommentsElement extends LitElement {
       controlName: 'neo-comments',
       fallbackDisableSubmit: false,
       description: 'Notes and comments',
-      iconUrl: commentsIcon,
+      iconUrl: commentsIconBase64,
       groupName: 'NEO',
       version: '1.0',
       properties: {
