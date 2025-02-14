@@ -155,20 +155,22 @@ class CommentsElement extends LitElement {
   deleteComment(index) {
     // Remove the comment at the specified index
     this.workingComments = this.workingComments.filter((_, i) => i !== index);
-
-    // Update the deletableIndices array
-    this.deletableIndices = this.deletableIndices.filter(i => i !== index);
-
+  
+    // Update the deletableIndices to reflect the shifted indices
+    this.deletableIndices = this.deletableIndices
+      .filter(i => i !== index) // Remove the deleted index
+      .map(i => (i > index ? i - 1 : i)); // Shift indices down for remaining comments after the deleted index
+  
     // Dispatch the updated outputobj
     const mostRecentComment = this.workingComments[this.workingComments.length - 1] || null;
     const outputobj = {
       comments: this.workingComments,
       mostRecentComment,
     };
-
+  
     this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: outputobj }));
   }
-
+  
   handleCommentChange(e) {
     this.newComment = e.target.value;
   }
@@ -239,7 +241,7 @@ class CommentsElement extends LitElement {
       ` : ''}
     `;
   }
-  
+
   // Helper method to apply the correct class based on badge style
   getBadgeClass(style) {
     const badgeClasses = {
