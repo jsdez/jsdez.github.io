@@ -92,9 +92,10 @@ class CommentsElement extends LitElement {
     inputobj: { type: Object },
     workingComments: { type: Array },
     newComment: { type: String },
-    readOnly: { type: Boolean }
+    readOnly: { type: Boolean },
+    deletableIndices: { type: Array },
   };
-  
+
   constructor() {
     super();
     this.firstName = '';
@@ -105,37 +106,41 @@ class CommentsElement extends LitElement {
     this.inputobj = null;
     this.workingComments = [];
     this.newComment = '';
+    this.deletableIndices = [];
   }
 
   updated(changedProperties) {
     if (changedProperties.has('inputobj') && Array.isArray(this.inputobj?.comments)) {
       this.workingComments = [...this.inputobj.comments];
+      this.deletableIndices = []; // Reset deletable indices when inputobj changes
     }
 
-      if (changedProperties.has('readOnly')) {
-    // Ensure that the render responds to `readonly` changes
-    this.requestUpdate(); // Force re-render if readonly changes
+    if (changedProperties.has('readOnly')) {
+      this.requestUpdate();
     }
   }
 
   addComment() {
     const timestamp = new Date().toISOString();
 
-    // Use the current standalone properties for the new comment
     const newEntry = {
       firstName: this.firstName || 'Anonymous',
       lastName: this.lastName || '',
       email: this.email || 'N/A',
-      badge: this.badge || 'Update',  // Dynamically use the badge property
-      badgeStyle: this.badgeStyle || 'Default',  // Dynamically use the badgeStyle property
+      badge: this.badge || 'Update',
+      badgeStyle: this.badgeStyle || 'Default',
       comment: this.newComment,
       timestamp,
     };
 
+    // Add the new comment to the workingComments array
     this.workingComments = [...this.workingComments, newEntry];
 
-    const mostRecentComment = newEntry;
+    // Mark the new comment as deletable
+    this.deletableIndices = [...this.deletableIndices, this.workingComments.length - 1];
 
+    // Dispatch the updated outputobj
+    const mostRecentComment = newEntry;
     const outputobj = {
       comments: this.workingComments,
       mostRecentComment,
@@ -143,7 +148,25 @@ class CommentsElement extends LitElement {
 
     this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: outputobj }));
 
+    // Clear the newComment field
     this.newComment = '';
+  }
+
+  deleteComment(index) {
+    // Remove the comment at the specified index
+    this.workingComments = this.workingComments.filter((_, i) => i !== index);
+
+    // Update the deletableIndices array
+    this.deletableIndices = this.deletableIndices.filter(i => i !== index);
+
+    // Dispatch the updated outputobj
+    const mostRecentComment = this.workingComments[this.workingComments.length - 1] || null;
+    const outputobj = {
+      comments: this.workingComments,
+      mostRecentComment,
+    };
+
+    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: outputobj }));
   }
 
   handleCommentChange(e) {
@@ -157,7 +180,7 @@ class CommentsElement extends LitElement {
       <div class="comments-history">
         ${this.workingComments.length > 0
           ? this.workingComments.map(
-              (item) => html`
+              (item, index) => html`
                 <div class="card comment-card">
                   <div class="card-body">
                     <div class="d-flex flex-row align-items-center">
@@ -175,6 +198,16 @@ class CommentsElement extends LitElement {
                         })}
                       </p>
                       <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">${item.badge || 'Update'}</span>
+                      ${this.deletableIndices.includes(index) && !this.readOnly
+                        ? html`
+                          <button
+                            class="btn btn-sm btn-danger ms-auto"
+                            @click=${() => this.deleteComment(index)}
+                          >
+                            ${deleteIcon} Delete
+                          </button>
+                        `
+                        : ''}
                     </div>
                     <div>
                       <p class="mb-0 py-3 comment-text">${item.comment}</p>
