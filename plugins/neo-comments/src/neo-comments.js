@@ -47,7 +47,7 @@ class CommentsElement extends LitElement {
           isValueField: true,
           properties: {
             Comments: {
-              type: 'array',
+              type: 'object',
               description: 'Array of comments',
               items: {
                 type: 'object',
@@ -206,7 +206,7 @@ class CommentsElement extends LitElement {
                             class="btn btn-sm btn-danger ms-auto"
                             @click=${() => this.deleteComment(index)}
                           >
-                            ${deleteIcon} Delete
+                            ${deleteIcon}
                           </button>
                         `
                         : ''}
