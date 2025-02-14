@@ -35,6 +35,9 @@ class CommentsElement extends LitElement {
           ],
           defaultValue: 'Default',
         },
+        allowDelete: { type: 'boolean', title: 'Allow Deleting' },
+        enablePages: { type: 'number', title: 'Comments per page', description: 'No value or 0 will show all comments, entering a number here will show that many comments per page e.g. 10 will result in all comments split 10 per page.',},
+        enableSorting: { type: 'boolean', title: 'Enable sorting by date' },
         inputobj: {
           type: 'object',
           title: 'Input Object',
