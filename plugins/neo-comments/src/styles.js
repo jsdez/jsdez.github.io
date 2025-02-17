@@ -106,8 +106,9 @@ export const componentStyles = css`
     margin-bottom: 1rem;
   }
 
-  .comment-textarea:focus, .comment-textarea:focus-visible {
+  .comment-textarea:focus {
     border-color: var(--ntx-form-theme-color-primary);
+    outline: 0;
   }
 
   .comment-text {
