@@ -94,6 +94,7 @@
   .comment-textarea {
     width: 100%;
     height: 100px;
+    min-height: 72px;
     padding: .4375rem .75rem;
     background: var(--ntx-form-theme-color-input-background);
     border-color: var(--ntx-form-theme-color-border);
