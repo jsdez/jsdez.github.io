@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { componentStyles } from './styles.js';
-import { sendIcon, deleteIcon } from './icons.js';
+import { sendIcon, deleteIcon, expandIcon } from './icons.js';
 
 class CommentsElement extends LitElement {
 
@@ -209,6 +209,7 @@ class CommentsElement extends LitElement {
             type="button"
             @click=${this.toggleShowAll}
           >
+            ${deleteIcon} 
             ${this.showAll ? 'Hide All Comments' : 'Show All Comments'}
           </button>
         ` : ''}
