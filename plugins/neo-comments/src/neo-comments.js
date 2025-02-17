@@ -125,10 +125,11 @@ class CommentsElement extends LitElement {
   // Adjust the comments array based on the historyLimit and showAll
   get displayedComments() {
     if (this.showAll) {
-      return this.workingComments;  // Show all comments if the "showAll" flag is true
+      return this.workingComments; // Display all comments when 'show all' is active
     }
-    return this.workingComments.slice(0, this.historyLimit);  // Show only the number of comments defined by historyLimit
+    return this.workingComments.slice(-this.historyLimit); // Display only the latest `historyLimit` comments
   }
+
 
   updated(changedProperties) {
     if (changedProperties.has('inputobj') && Array.isArray(this.inputobj?.comments)) {
