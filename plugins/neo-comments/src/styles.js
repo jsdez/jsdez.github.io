@@ -13,6 +13,25 @@ export const componentStyles = css`
     max-height: 600px;
     overflow-y: auto;
     scroll-behavior: smooth;
+    position: relative;
+  }
+
+  /* Shadow Effect */
+  .comments-history::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none;
+  }
+
+  .comments-history.scrolled::before {
+    opacity: 1;
   }
 
   .comment-card {

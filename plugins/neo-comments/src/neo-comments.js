@@ -109,6 +109,10 @@ class CommentsElement extends LitElement {
     this.deletableIndices = [];
   }
 
+  firstUpdated() {
+    this.shadowRoot.querySelector('.comments-history').addEventListener('scroll', this.handleScroll.bind(this));
+  }
+
   updated(changedProperties) {
     if (changedProperties.has('inputobj') && Array.isArray(this.inputobj?.comments)) {
       this.workingComments = [...this.inputobj.comments];
@@ -118,6 +122,26 @@ class CommentsElement extends LitElement {
     if (changedProperties.has('readOnly')) {
       this.requestUpdate();
     }
+
+    if (changedProperties.has('comments')) {
+      this.scrollToBottom();
+    }
+  }
+
+  handleScroll() {
+    const commentHistory = this.shadowRoot.querySelector('.comments-history');
+    if (commentHistory.scrollTop > 0) {
+      commentHistory.classList.add('scrolled');
+    } else {
+      commentHistory.classList.remove('scrolled');
+    }
+  }
+
+  scrollToBottom() {
+    const commentHistory = this.shadowRoot.querySelector('.comments-history');
+    requestAnimationFrame(() => {
+      commentHistory.scrollTop = commentHistory.scrollHeight;
+    });
   }
 
   addComment() {
