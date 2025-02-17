@@ -178,7 +178,7 @@ svg></svg>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   
       <!-- Show "Show All Comments" button if there are more comments than the limit -->
-      ${this.workingComments.length>this.historyLimit&&0!==this.historyLimit?H`
+       ${0!==this.historyLimit&&this.workingComments.length>this.historyLimit?H`
         <div class="d-flex justify-content-center mb-3">
           <button 
             class="btn btn-default d-flex align-items-center"
