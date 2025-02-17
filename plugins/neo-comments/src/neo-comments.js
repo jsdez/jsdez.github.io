@@ -36,6 +36,11 @@ class CommentsElement extends LitElement {
           defaultValue: 'Default',
         },
         email: { type: 'string', title: 'Email Address' },
+        defaultValue: {
+          type: 'object',
+          title: 'Input Object',
+          description: 'Enter the comments object from previous control here',
+        },
         outputobj: {
           title: 'Comments Output',
           type: 'object',
