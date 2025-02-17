@@ -10,9 +10,6 @@ export const componentStyles = css`
   .comments-history {
     display: flex;
     flex-direction: column;
-    max-height: 600px;
-    overflow-y: auto;
-    scroll-behavior: smooth;
     position: relative;
   }
 

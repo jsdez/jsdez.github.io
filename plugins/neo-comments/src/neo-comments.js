@@ -40,6 +40,11 @@ class CommentsElement extends LitElement {
           title: 'Input Object',
           description: 'Enter the comments object from previous control here',
         },
+        historyLimit: { 
+          type: 'number', 
+          title: 'Comment history display limit', 
+          description: 'Enter a number value of how many comments should be shown at all times, older comments are hidden'
+        },
         outputobj: {
           title: 'Comments Output',
           type: 'object',
@@ -94,6 +99,8 @@ class CommentsElement extends LitElement {
     newComment: { type: String },
     readOnly: { type: Boolean },
     deletableIndices: { type: Array },
+    historyLimit: { type: Number },
+    showAll: { type: Boolean },
   };
 
   constructor() {
@@ -107,6 +114,20 @@ class CommentsElement extends LitElement {
     this.workingComments = [];
     this.newComment = '';
     this.deletableIndices = [];
+    this.historyLimit = 5;
+    this.showAll = false;
+  }
+
+  toggleShowAll() {
+    this.showAll = !this.showAll;
+  }
+
+  // Adjust the comments array based on the historyLimit and showAll
+  get displayedComments() {
+    if (this.showAll) {
+      return this.workingComments;  // Show all comments if the "showAll" flag is true
+    }
+    return this.workingComments.slice(0, this.historyLimit);  // Show only the number of comments defined by historyLimit
   }
 
   updated(changedProperties) {
@@ -180,8 +201,18 @@ class CommentsElement extends LitElement {
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   
       <div class="comments-history">
-        ${this.workingComments.length > 0
-          ? this.workingComments.map(
+        <!-- Show "Show All Comments" button if there are more comments than the limit -->
+        ${this.workingComments.length > this.historyLimit ? html`
+          <button 
+            class="btn btn-link mb-3"
+            @click=${this.toggleShowAll}
+          >
+            ${this.showAll ? 'Hide All Comments' : 'Show All Comments'}
+          </button>
+        ` : ''}
+        
+        ${this.displayedComments.length > 0
+          ? this.displayedComments.map(
               (item, index) => html`
                 <div class="card comment-card">
                   <div class="card-body">
