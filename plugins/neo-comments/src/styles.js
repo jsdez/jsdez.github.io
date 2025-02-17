@@ -5,6 +5,7 @@ export const componentStyles = css`
   :host {
     display: block;
     max-width: 100%;
+    font-family: var(--ntx-form-theme-font-family);
   }
 
   .comments-history {
