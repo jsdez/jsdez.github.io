@@ -43,7 +43,8 @@ class CommentsElement extends LitElement {
         historyLimit: { 
           type: 'integer', 
           title: 'Comment history display limit', 
-          description: 'Enter a number value of how many comments should be shown, older comments are hidden, entering 0 will show all comments'
+          description: 'Enter a number value of how many comments should be shown, older comments are hidden, entering 0 will show all comments, default is 5.',
+          defaultValue: 5,
         },
         outputobj: {
           title: 'Comments Output',
