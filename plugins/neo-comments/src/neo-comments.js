@@ -201,19 +201,18 @@ class CommentsElement extends LitElement {
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   
-      <div class="comments-history">
-        <!-- Show "Show All Comments" button if there are more comments than the limit -->
+      <!-- Show "Show All Comments" button if there are more comments than the limit -->
         ${this.workingComments.length > this.historyLimit ? html`
           <button 
             class="btn btn-default d-flex align-items-center"
             type="button"
             @click=${this.toggleShowAll}
           >
-            ${deleteIcon} 
+            ${expandIcon} 
             ${this.showAll ? 'Hide All Comments' : 'Show All Comments'}
           </button>
         ` : ''}
-        
+      <div class="comments-history">
         ${this.displayedComments.length > 0
           ? this.displayedComments.map(
               (item, index) => html`

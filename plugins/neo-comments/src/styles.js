@@ -125,6 +125,7 @@ export const componentStyles = css`
   
   .btn-default:hover {
     background-color: var(--ntx-form-theme-color-primary-button-hover);
+    color: var(--ntx-form-theme-color-primary-button-font);
   }
 
   .btn-default:disabled {
