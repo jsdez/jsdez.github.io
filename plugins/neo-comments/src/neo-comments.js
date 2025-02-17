@@ -41,7 +41,7 @@ class CommentsElement extends LitElement {
           description: 'Enter the comments object from previous control here',
         },
         historyLimit: { 
-          type: 'number', 
+          type: 'integer', 
           title: 'Comment history display limit', 
           description: 'Enter a number value of how many comments should be shown at all times, older comments are hidden'
         },
