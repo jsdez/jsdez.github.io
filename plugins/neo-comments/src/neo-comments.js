@@ -109,10 +109,6 @@ class CommentsElement extends LitElement {
     this.deletableIndices = [];
   }
 
-  connectedCallback() {
-    this.commentContainer = this.querySelector('.comments-history'); // Adjust selector if necessary
-  }
-
   updated(changedProperties) {
     if (changedProperties.has('inputobj') && Array.isArray(this.inputobj?.comments)) {
       this.workingComments = [...this.inputobj.comments];
@@ -122,37 +118,11 @@ class CommentsElement extends LitElement {
     if (changedProperties.has('readOnly')) {
       this.requestUpdate();
     }
-
-    if (changedProperties.has('comments')) {
-      this.scrollToBottom();
-    }
-  }
-
-  handleScroll() {
-    const commentHistory = this.shadowRoot.querySelector('.comments-history');
-    if (commentHistory.scrollTop > 0) {
-      commentHistory.classList.add('scrolled');
-    } else {
-      commentHistory.classList.remove('scrolled');
-    }
-  }
-
-  scrollToBottom() {
-    if (this.commentContainer) {
-      this.commentContainer.scrollTop = this.commentContainer.scrollHeight;
-    }
   }
 
   addComment() {
     const timestamp = new Date().toISOString();
-  
-    // Create comment element (assuming you have a method to generate it)
-    const comment = document.createElement('div');
-    comment.textContent = this.newComment;
-    comment.classList.add('comment-item'); // Ensure this class exists in your styles
-  
-    this.commentContainer.appendChild(comment);
-  
+
     const newEntry = {
       firstName: this.firstName || 'Anonymous',
       lastName: this.lastName || '',
@@ -162,25 +132,22 @@ class CommentsElement extends LitElement {
       comment: this.newComment,
       timestamp,
     };
-  
+
     // Add the new comment to the workingComments array
     this.workingComments = [...this.workingComments, newEntry];
-  
+
     // Mark the new comment as deletable
     this.deletableIndices = [...this.deletableIndices, this.workingComments.length - 1];
-  
+
     // Dispatch the updated outputobj
     const mostRecentComment = newEntry;
     const outputobj = {
       comments: this.workingComments,
       mostRecentComment,
     };
-  
+
     this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: outputobj }));
-  
-    // Scroll to the bottom after adding the comment
-    this.scrollToBottom();
-  
+
     // Clear the newComment field
     this.newComment = '';
   }
