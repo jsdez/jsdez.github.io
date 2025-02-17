@@ -43,7 +43,7 @@ class CommentsElement extends LitElement {
         historyLimit: { 
           type: 'integer', 
           title: 'Comment history display limit', 
-          description: 'Enter a number value of how many comments should be shown at all times, older comments are hidden'
+          description: 'Enter a number value of how many comments should be shown, older comments are hidden, entering 0 will show all comments'
         },
         outputobj: {
           title: 'Comments Output',
@@ -198,11 +198,14 @@ class CommentsElement extends LitElement {
   }
 
   render() {
+    const showAllComments = this.historyLimit === 0 || this.showAll;
+    const displayedComments = showAllComments ? this.workingComments : this.workingComments.slice(-this.historyLimit);
+  
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   
       <!-- Show "Show All Comments" button if there are more comments than the limit -->
-      ${this.workingComments.length > this.historyLimit ? html`
+      ${this.workingComments.length > this.historyLimit && this.historyLimit !== 0 ? html`
         <div class="d-flex justify-content-center mb-3">
           <button 
             class="btn btn-default d-flex align-items-center"
