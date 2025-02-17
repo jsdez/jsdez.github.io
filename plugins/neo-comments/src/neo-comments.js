@@ -35,8 +35,7 @@ class CommentsElement extends LitElement {
           ],
           defaultValue: 'Default',
         },
-        email: { type: 'string', title: 'Email Address' },
-        defaultValue: {
+        inputobj: {
           type: 'object',
           title: 'Input Object',
           description: 'Enter the comments object from previous control here',
@@ -80,7 +79,7 @@ class CommentsElement extends LitElement {
         },
       },
       events: ['ntx-value-change'],
-      standardProperties: { fieldLabel: true, description: true, readOnly: true, visibility: true, placeholder: true, defaultValue: true },
+      standardProperties: { fieldLabel: true, description: true, readOnly: true, visibility: true},
     };
   }
 
@@ -90,12 +89,10 @@ class CommentsElement extends LitElement {
     email: { type: String },
     badge: { type: String },
     badgeStyle: { type: String },
-    defaultValue: { type: Object },
+    inputobj: { type: Object },
     workingComments: { type: Array },
     newComment: { type: String },
     readOnly: { type: Boolean },
-    placeholder: { type: String},
-    defaultValue: { type: Object},
     deletableIndices: { type: Array },
   };
 
@@ -106,16 +103,16 @@ class CommentsElement extends LitElement {
     this.email = '';
     this.badge = 'Update';  // Default Badge
     this.badgeStyle = 'Default';  // Default Badge Style
-    this.defaultValue = null;
+    this.inputobj = null;
     this.workingComments = [];
     this.newComment = '';
     this.deletableIndices = [];
   }
 
   updated(changedProperties) {
-    if (changedProperties.has('defaultValue') && Array.isArray(this.defaultValue?.comments)) {
-      this.workingComments = [...this.defaultValue.comments];
-      this.deletableIndices = []; // Reset deletable indices when defaultValue changes
+    if (changedProperties.has('inputobj') && Array.isArray(this.inputobj?.comments)) {
+      this.workingComments = [...this.inputobj.comments];
+      this.deletableIndices = []; // Reset deletable indices when inputobj changes
     }
 
     if (changedProperties.has('readOnly')) {
