@@ -205,7 +205,8 @@ class CommentsElement extends LitElement {
         <!-- Show "Show All Comments" button if there are more comments than the limit -->
         ${this.workingComments.length > this.historyLimit ? html`
           <button 
-            class="btn btn-link mb-3"
+            class="btn btn-default d-flex align-items-center"
+            type="button"
             @click=${this.toggleShowAll}
           >
             ${this.showAll ? 'Hide All Comments' : 'Show All Comments'}
