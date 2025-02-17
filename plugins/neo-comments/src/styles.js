@@ -95,7 +95,7 @@ export const componentStyles = css`
   .comment-textarea {
     width: 100%;
     height: 100px;
-    padding: 0.5rem;
+    padding: .4375rem .75rem;
     background: var(--ntx-form-theme-color-input-background);
     border-color: var(--ntx-form-theme-color-border);
     border-radius: var(--ntx-form-theme-border-radius);
@@ -106,7 +106,7 @@ export const componentStyles = css`
     margin-bottom: 1rem;
   }
 
-  .comment-textarea:focus {
+  .comment-textarea:focus, .comment-textarea:focus-visible {
     border-color: var(--ntx-form-theme-color-primary);
   }
 

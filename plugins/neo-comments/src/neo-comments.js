@@ -210,7 +210,7 @@ class CommentsElement extends LitElement {
             @click=${this.toggleShowAll}
           >
             ${expandIcon} 
-            ${this.showAll ? 'Hide All Comments' : 'Show All Comments'}
+            ${this.showAll ? ' Hide All Comments' : ' Show All Comments'}
           </button>
         </div>
       ` : ''}
