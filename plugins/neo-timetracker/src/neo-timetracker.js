@@ -6,7 +6,7 @@ class timetrackerElement extends LitElement {
       controlName: 'neo-timetracker',
       fallbackDisableSubmit: false,
       description: '',
-      iconUrl: "",
+      iconUrl: '',
       groupName: '',
       version: 'NEO',
       properties: {
@@ -74,7 +74,15 @@ class timetrackerElement extends LitElement {
   }
 
   static properties = {
-    src: '',
+    address: { type: String },
+    contract: { type: String },
+    work: { type: String },
+    qty: { type: Number },
+    price: { type: Number },
+    total: { type: Number },
+    comments: { type: String },
+    daydate: { type: String },
+    addItem: { type: Boolean, reflect: true }, // Make sure it's reactive
     items: { type: Array },
   };
 
@@ -89,6 +97,7 @@ class timetrackerElement extends LitElement {
   constructor() {
     super();
     this.items = [];
+    this.addItem = false; // Default state
     console.log('timetrackerElement initialized');
   }
 
@@ -96,6 +105,7 @@ class timetrackerElement extends LitElement {
     if (changedProperties.has('addItem') && this.addItem) {
       console.log('addItem changed to true');
       this.addNewItem();
+      this.addItem = false; // Reset to prevent continuous additions
     }
   }
 
@@ -146,7 +156,7 @@ class timetrackerElement extends LitElement {
 
   render() {
     return html`
-    <div>${this.addItem}</div>
+      <div>Add Item Value: ${this.addItem}</div>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
       <div>Timesheet Table Loading...</div>
       ${this.generateTableHTML()}
