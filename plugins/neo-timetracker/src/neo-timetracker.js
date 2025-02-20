@@ -31,7 +31,7 @@ class TimetrackerElement extends LitElement {
           isValueField: true,
           properties: {
             Comments: {
-              type: 'array',
+              type: 'object',
               description: 'Array of timesheets',
               items: {
                 type: 'object',
