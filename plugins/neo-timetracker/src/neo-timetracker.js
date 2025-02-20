@@ -134,6 +134,8 @@ class timetrackerElement extends LitElement {
   }
 
   generateTableHTML() {
+    if (!this.items.length) return '<div>No timesheet entries available.</div>';
+    
     let htmlContent = '<table class="table table-striped"><thead><tr><th>Address</th><th>Contract</th><th>Work</th><th>Quantity</th><th>Price</th><th>Total</th><th>Comments</th><th>Day Date</th></tr></thead><tbody>';
     this.items.forEach(item => {
       htmlContent += `<tr><td>${item.address}</td><td>${item.contract}</td><td>${item.work}</td><td>${item.qty}</td><td>${item.price}</td><td>${item.total}</td><td>${item.comments}</td><td>${item.daydate}</td></tr>`;
