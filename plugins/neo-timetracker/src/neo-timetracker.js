@@ -7,8 +7,8 @@ class TimetrackerElement extends LitElement {
       fallbackDisableSubmit: false,
       description: '',
       iconUrl: "",
-      groupName: '',
-      version: 'NEO',
+      groupName: 'NEO',
+      version: '1.0',
       properties: {
         address: { type: 'string', title: 'Address' },
         contract: { type: 'string', title: 'Contract' },
