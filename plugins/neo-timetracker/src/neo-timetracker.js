@@ -1,14 +1,14 @@
 import { LitElement, html, css } from 'lit';
 
-class TimetrackerElement extends LitElement {
+class timetrackerElement extends LitElement {
   static getMetaConfig() {
     return {
       controlName: 'neo-timetracker',
       fallbackDisableSubmit: false,
       description: '',
       iconUrl: "",
-      groupName: 'NEO',
-      version: '1.0',
+      groupName: '',
+      version: 'NEO',
       properties: {
         address: { type: 'string', title: 'Address' },
         contract: { type: 'string', title: 'Contract' },
@@ -74,98 +74,81 @@ class TimetrackerElement extends LitElement {
   }
 
   static properties = {
-    entries: { type: Array },
+    src: '',
+    items: { type: Array },
   };
+
+  static get styles() {
+    return css`
+      :host {
+        display: block;
+      }
+    `;
+  }
 
   constructor() {
     super();
-    this.entries = [];
+    this.items = [];
+    console.log('timetrackerElement initialized');
   }
 
   updated(changedProperties) {
     if (changedProperties.has('addItem') && this.addItem) {
-      this.addEntry();
+      console.log('addItem changed to true');
+      this.addNewItem();
     }
   }
 
-  addEntry() {
+  addNewItem() {
+    console.log('Adding new item with properties:', {
+      address: this.address,
+      contract: this.contract,
+      work: this.work,
+      qty: this.qty,
+      price: this.price,
+      total: this.total,
+      comments: this.comments,
+      daydate: this.daydate,
+    });
+
     const newItem = {
-      address: this.address || '',
-      contract: this.contract || '',
-      work: this.work || '',
-      qty: this.qty || 0,
-      price: this.price || 0,
-      total: this.total || 0,
-      comments: this.comments || '',
-      daydate: this.daydate || new Date().toISOString(),
+      address: this.address,
+      contract: this.contract,
+      work: this.work,
+      qty: this.qty,
+      price: this.price,
+      total: this.total,
+      comments: this.comments,
+      daydate: this.daydate,
     };
 
-    this.entries = [...this.entries, newItem];
-    this.clearFields();
-    this.dispatchUpdate();
+    this.items = [...this.items, newItem];
+    this.outputobj = {
+      Comments: this.items,
+      mostRecentTimesheet: newItem,
+      timesheethtml: this.generateTableHTML(),
+    };
+
+    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: this.outputobj }));
+    console.log('Dispatched ntx-value-change event', this.outputobj);
   }
 
-  clearFields() {
-    this.address = '';
-    this.contract = '';
-    this.work = '';
-    this.qty = 0;
-    this.price = 0;
-    this.total = 0;
-    this.comments = '';
-    this.daydate = '';
-    this.addItem = false;
-  }
-
-  dispatchUpdate() {
-    const timesheetHTML = `
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>Address</th>
-            <th>Contract</th>
-            <th>Work</th>
-            <th>Quantity</th>
-            <th>Price</th>
-            <th>Total</th>
-            <th>Comments</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${this.entries.map(entry => `
-            <tr>
-              <td>${entry.address}</td>
-              <td>${entry.contract}</td>
-              <td>${entry.work}</td>
-              <td>${entry.qty}</td>
-              <td>${entry.price}</td>
-              <td>${entry.total}</td>
-              <td>${entry.comments}</td>
-              <td>${entry.daydate}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>`;
-
-    this.dispatchEvent(new CustomEvent('ntx-value-change', {
-      detail: {
-        outputobj: {
-          Comments: this.entries,
-          mostRecentTimesheet: this.entries[this.entries.length - 1],
-          timesheethtml: timesheetHTML,
-        },
-      },
-      bubbles: true,
-      composed: true,
-    }));
+  generateTableHTML() {
+    let htmlContent = '<table class="table table-striped"><thead><tr><th>Address</th><th>Contract</th><th>Work</th><th>Quantity</th><th>Price</th><th>Total</th><th>Comments</th><th>Day Date</th></tr></thead><tbody>';
+    this.items.forEach(item => {
+      htmlContent += `<tr><td>${item.address}</td><td>${item.contract}</td><td>${item.work}</td><td>${item.qty}</td><td>${item.price}</td><td>${item.total}</td><td>${item.comments}</td><td>${item.daydate}</td></tr>`;
+    });
+    htmlContent += '</tbody></table>';
+    return htmlContent;
   }
 
   render() {
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-      ${this.entries.length > 0 ? html`${this.dispatchUpdate()}` : ''}
+      <div>Timesheet Table Loading...</div>
+      ${this.generateTableHTML()}
     `;
   }
 }
 
-customElements.define('neo-timetracker', TimetrackerElement);
+customElements.define('neo-timetracker', timetrackerElement);
