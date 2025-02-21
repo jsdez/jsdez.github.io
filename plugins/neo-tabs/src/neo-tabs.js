@@ -38,12 +38,8 @@ class TabsElement extends LitElement {
     this.currenttab = '';
   }
 
-  firstUpdated() {
-    this.processProperties();
-  }
-
   updated(changedProperties) {
-    if (['tabs', 'hidetabs', 'disabletabs', 'defaulttab'].some(prop => changedProperties.has(prop))) {
+    if (changedProperties.has('tabs') || changedProperties.has('hidetabs') || changedProperties.has('disabletabs') || changedProperties.has('defaulttab')) {
       this.processProperties();
     }
   }
@@ -52,45 +48,34 @@ class TabsElement extends LitElement {
     this.tabs = this.parseList(this.tabs);
     this.hidetabs = this.parseList(this.hidetabs);
     this.disabletabs = this.parseList(this.disabletabs);
-
-    // Remove duplicates
-    this.tabs = [...new Set(this.tabs)];
+    
+    this.tabs = [...new Set(this.tabs)]; // Remove duplicates
     this.hidetabs = [...new Set(this.hidetabs)];
     this.disabletabs = [...new Set(this.disabletabs)];
 
-    if (this.defaulttab && this.tabs.includes(this.defaulttab)) {
+    if (this.defaulttab && this.tabs.includes(this.defaulttab) && this.currenttab !== this.defaulttab) {
       this.setCurrentTab(this.defaulttab);
     }
   }
 
   parseList(value) {
     if (!value) return [];
-
-    let str = String(value).trim();
-    try {
-      if (str.startsWith("[") && str.endsWith("]")) {
-        const parsedArray = JSON.parse(str.replace(/'/g, '"'));
-        if (Array.isArray(parsedArray)) {
-          return [...new Set(parsedArray.map(item => item.trim()))];
-        }
-      }
-    } catch (error) {
-      console.warn("Failed to parse JSON-like array:", error);
-    }
-
-    const separators = [",", ";"];
-    for (let separator of separators) {
-      if (str.includes(separator)) {
-        return [...new Set(str.split(separator).map(item => item.trim()))];
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : value.split(/[;,]/).map(v => v.trim());
+      } catch {
+        return value.split(/[;,]/).map(v => v.trim());
       }
     }
-
-    return [str];
+    return Array.isArray(value) ? value : [];
   }
 
   setCurrentTab(tab) {
-    this.currenttab = tab;
-    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: { value: tab } }));
+    if (this.currenttab !== tab) {
+      this.currenttab = tab;
+      this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: { value: tab } }));
+    }
   }
 
   render() {
