@@ -38,10 +38,8 @@ class TabsElement extends LitElement {
     this.currenttab = '';
   }
 
-  updated(changedProperties) {
-    if (changedProperties.has('tabs') || changedProperties.has('hidetabs') || changedProperties.has('disabletabs') || changedProperties.has('defaulttab')) {
-      this.processProperties();
-    }
+  firstUpdated() {
+    this.processProperties();
   }
 
   processProperties() {
@@ -53,7 +51,7 @@ class TabsElement extends LitElement {
     this.hidetabs = [...new Set(this.hidetabs)];
     this.disabletabs = [...new Set(this.disabletabs)];
 
-    if (this.defaulttab && this.tabs.includes(this.defaulttab) && this.currenttab !== this.defaulttab) {
+    if (this.defaulttab && this.tabs.includes(this.defaulttab)) {
       this.setCurrentTab(this.defaulttab);
     }
   }
@@ -62,20 +60,17 @@ class TabsElement extends LitElement {
     if (!value) return [];
     if (typeof value === 'string') {
       try {
-        const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? parsed : value.split(/[;,]/).map(v => v.trim());
+        return JSON.parse(value);
       } catch {
-        return value.split(/[;,]/).map(v => v.trim());
+        return value.split(',').map(v => v.trim());
       }
     }
     return Array.isArray(value) ? value : [];
   }
 
   setCurrentTab(tab) {
-    if (this.currenttab !== tab) {
-      this.currenttab = tab;
-      this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: { value: tab } }));
-    }
+    this.currenttab = tab;
+    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: { value: tab } }));
   }
 
   render() {
