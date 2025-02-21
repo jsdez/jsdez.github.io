@@ -36,6 +36,10 @@ class TabsElement extends LitElement {
     this.disabletabs = [];
     this.defaulttab = '';
     this.currenttab = '';
+    // New properties for processed arrays
+    this.processedTabs = [];
+    this.processedHideTabs = [];
+    this.processedDisableTabs = [];
   }
 
   firstUpdated() {
@@ -43,20 +47,22 @@ class TabsElement extends LitElement {
   }
 
   processProperties() {
-    this.tabs = this.parseList(this.tabs);
-    this.hidetabs = this.parseList(this.hidetabs);
-    this.disabletabs = this.parseList(this.disabletabs);
+    this.processedTabs = this.processValueToArray(this.tabs);
+    this.processedHideTabs = this.processValueToArray(this.hidetabs);
+    this.processedDisableTabs = this.processValueToArray(this.disabletabs);
     
-    this.tabs = [...new Set(this.tabs)]; // Remove duplicates
-    this.hidetabs = [...new Set(this.hidetabs)];
-    this.disabletabs = [...new Set(this.disabletabs)];
+    // Remove duplicates from processed arrays
+    this.processedTabs = [...new Set(this.processedTabs)];
+    this.processedHideTabs = [...new Set(this.processedHideTabs)];
+    this.processedDisableTabs = [...new Set(this.processedDisableTabs)];
 
-    if (this.defaulttab && this.tabs.includes(this.defaulttab)) {
+    if (this.defaulttab && this.processedTabs.includes(this.defaulttab)) {
       this.setCurrentTab(this.defaulttab);
     }
   }
 
-  parseList(value) {
+  // Method to process value strings into arrays
+  processValueToArray(value) {
     if (!value || typeof value !== 'string') return [];
     
     // Try JSON parsing first, handling different formats
@@ -83,11 +89,11 @@ class TabsElement extends LitElement {
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
       <ul class="nav nav-tabs">
-        ${this.tabs.filter(tab => !this.hidetabs.includes(tab)).map(tab => html`
+        ${this.processedTabs.filter(tab => !this.processedHideTabs.includes(tab)).map(tab => html`
           <li class="nav-item">
             <button 
               class="nav-link ${this.currenttab === tab ? 'active' : ''}"
-              ?disabled=${this.disabletabs.includes(tab)}
+              ?disabled=${this.processedDisableTabs.includes(tab)}
               @click=${() => this.setCurrentTab(tab)}
             >
               ${tab}
