@@ -44,6 +44,10 @@ class TabsElement extends LitElement {
 
   firstUpdated() {
     this.processProperties();
+    // Log to ensure data is processed correctly
+    console.log('Processed Tabs:', this.processedTabs);
+    console.log('Processed Hide Tabs:', this.processedHideTabs);
+    console.log('Processed Disable Tabs:', this.processedDisableTabs);
   }
 
   processProperties() {
@@ -55,6 +59,12 @@ class TabsElement extends LitElement {
     this.processedTabs = [...new Set(this.processedTabs)];
     this.processedHideTabs = [...new Set(this.processedHideTabs)];
     this.processedDisableTabs = [...new Set(this.processedDisableTabs)];
+
+    // Log after processing to ensure correct data
+    console.log('After Processing:');
+    console.log('Processed Tabs:', this.processedTabs);
+    console.log('Processed Hide Tabs:', this.processedHideTabs);
+    console.log('Processed Disable Tabs:', this.processedDisableTabs);
 
     if (this.defaulttab && this.processedTabs.includes(this.defaulttab)) {
       this.setCurrentTab(this.defaulttab);
