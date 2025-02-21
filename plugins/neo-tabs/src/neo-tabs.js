@@ -57,20 +57,26 @@ class TabsElement extends LitElement {
   }
 
   parseList(value) {
-    if (!value) return [];
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value.split(',').map(v => v.trim());
-      }
+    if (!value || typeof value !== 'string') return [];
+    
+    // Try JSON parsing first, handling different formats
+    try {
+      let parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(v => v.toString().trim());
+    } catch (e) {
+      // Fallback to manual splitting
+      return value.includes(';') 
+        ? value.split(';').map(v => v.trim())
+        : value.split(',').map(v => v.trim());
     }
-    return Array.isArray(value) ? value : [];
+    return [];
   }
 
   setCurrentTab(tab) {
-    this.currenttab = tab;
-    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: { value: tab } }));
+    if (this.currenttab !== tab) {
+      this.currenttab = tab;
+      this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: { value: tab } }));
+    }
   }
 
   render() {
@@ -81,8 +87,8 @@ class TabsElement extends LitElement {
           <li class="nav-item">
             <button 
               class="nav-link ${this.currenttab === tab ? 'active' : ''}"
-              ?disabled="${this.disabletabs.includes(tab)}"
-              @click="${() => this.setCurrentTab(tab)}"
+              ?disabled=${this.disabletabs.includes(tab)}
+              @click=${() => this.setCurrentTab(tab)}
             >
               ${tab}
             </button>
