@@ -42,12 +42,19 @@ class TabsElement extends LitElement {
     this.processProperties();
   }
 
+  updated(changedProperties) {
+    if (['tabs', 'hidetabs', 'disabletabs', 'defaulttab'].some(prop => changedProperties.has(prop))) {
+      this.processProperties();
+    }
+  }
+
   processProperties() {
     this.tabs = this.parseList(this.tabs);
     this.hidetabs = this.parseList(this.hidetabs);
     this.disabletabs = this.parseList(this.disabletabs);
-    
-    this.tabs = [...new Set(this.tabs)]; // Remove duplicates
+
+    // Remove duplicates
+    this.tabs = [...new Set(this.tabs)];
     this.hidetabs = [...new Set(this.hidetabs)];
     this.disabletabs = [...new Set(this.disabletabs)];
 
@@ -58,14 +65,27 @@ class TabsElement extends LitElement {
 
   parseList(value) {
     if (!value) return [];
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value.split(',').map(v => v.trim());
+
+    let str = String(value).trim();
+    try {
+      if (str.startsWith("[") && str.endsWith("]")) {
+        const parsedArray = JSON.parse(str.replace(/'/g, '"'));
+        if (Array.isArray(parsedArray)) {
+          return [...new Set(parsedArray.map(item => item.trim()))];
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to parse JSON-like array:", error);
+    }
+
+    const separators = [",", ";"];
+    for (let separator of separators) {
+      if (str.includes(separator)) {
+        return [...new Set(str.split(separator).map(item => item.trim()))];
       }
     }
-    return Array.isArray(value) ? value : [];
+
+    return [str];
   }
 
   setCurrentTab(tab) {
