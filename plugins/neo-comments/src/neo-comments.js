@@ -20,6 +20,7 @@ class CommentsElement extends LitElement {
         firstName: { type: 'string', title: 'First name' },
         lastName: { type: 'string', title: 'Last name' },
         email: { type: 'string', title: 'Email Address' },
+        taskowner: { type: 'string', title: 'Task Owner' },
         badge: {
           type: 'string',
           description: 'Label for status badge e.g. Rejected, Approved, Return etc. Default blank value is Update',
@@ -93,6 +94,7 @@ class CommentsElement extends LitElement {
     firstName: { type: String },
     lastName: { type: String },
     email: { type: String },
+    taskowner: { type: String },
     badge: { type: String },
     badgeStyle: { type: String },
     inputobj: { type: Object },
@@ -109,6 +111,7 @@ class CommentsElement extends LitElement {
     this.firstName = '';
     this.lastName = '';
     this.email = '';
+    this.taskowner = '';
     this.badge = 'Update';  // Default Badge
     this.badgeStyle = 'Default';  // Default Badge Style
     this.inputobj = null;
@@ -227,6 +230,9 @@ class CommentsElement extends LitElement {
                   <div class="card-body">
                     <div class="d-flex flex-row align-items-center">
                       <h6 class="fw-bold mb-0 me-2">${item.firstName} ${item.lastName || ''}</h6>
+                      ${item.taskowner ? html`
+                        <span class="badge bg-info text-white ms-2">${item.taskowner}</span>
+                      ` : ''}
                       <p class="mb-0 text-muted me-2">
                         ${new Date(item.timestamp).toLocaleString('en-GB', {
                           weekday: 'short',
@@ -239,17 +245,15 @@ class CommentsElement extends LitElement {
                           hour12: false,
                         })}
                       </p>
-                      <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">${item.badge || 'Update'}</span>
-                      ${this.deletableIndices.includes(index) && !this.readOnly
-                        ? html`
-                          <button
-                            class="btn btn-sm btn-danger ms-auto"
-                            @click=${() => this.deleteComment(index)}
-                          >
-                            ${deleteIcon}
-                          </button>
-                        `
-                        : ''}
+                      <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-auto">
+                        ${item.badge || 'Update'}
+                      </span>
+
+                      ${this.deletableIndices.includes(index) && !this.readOnly ? html`
+                        <button class="btn btn-sm btn-danger ms-2" @click=${() => this.deleteComment(index)}>
+                          ${deleteIcon}
+                        </button>
+                      ` : ''}
                     </div>
                     <div>
                       <p class="mb-0 py-3 comment-text">${item.comment}</p>
