@@ -245,10 +245,10 @@ class CommentsElement extends LitElement {
         </div>
       ` : ''}
   
-      <div class="comments-history ${hasCommentsBorder ? 'comments-border' : ''} ${hasCommentsStriped ? 'comments-striped' : ''}">
-        ${this.displayedComments.length > 0
+      ${this.displayedComments.length > 0
           ? this.displayedComments.map(
               (item, index) => html`
+              <div class="comments-history ${hasCommentsBorder ? 'comments-border' : ''} ${hasCommentsStriped ? 'comments-striped' : ''}">
                 <div class="card comment-card">
                   <div class="card-body">
                     <div class="d-flex flex-row align-items-center">
@@ -282,10 +282,10 @@ class CommentsElement extends LitElement {
                     </div>
                   </div>
                 </div>
-              `
-            )
-          : html``}
-      </div>
+              </div>
+            `
+          )
+        : html``}
   
       ${!this.readOnly ? html`
         <div class="mt-4">

@@ -223,32 +223,32 @@ svg></svg>
         </div>
       `:""}
   
-      <div class="comments-history ${t?"comments-border":""} ${e?"comments-striped":""}">
-        ${this.displayedComments.length>0?this.displayedComments.map(((t,e)=>P`
+      ${this.displayedComments.length>0?this.displayedComments.map(((i,s)=>P`
+              <div class="comments-history ${t?"comments-border":""} ${e?"comments-striped":""}">
                 <div class="card comment-card">
                   <div class="card-body">
                     <div class="d-flex flex-row align-items-center">
-                      <h6 class="fw-bold mb-0 me-2">${t.firstName} ${t.lastName||""}</h6>
+                      <h6 class="fw-bold mb-0 me-2">${i.firstName} ${i.lastName||""}</h6>
                       <p class="mb-0 text-muted me-2">
-                        ${new Date(t.timestamp).toLocaleString("en-GB",{weekday:"short",year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:!1})}
+                        ${new Date(i.timestamp).toLocaleString("en-GB",{weekday:"short",year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:!1})}
                       </p>
-                      <span class="badge ${this.getBadgeClass(t.badgeStyle)||"Default"} ms-2">${t.badge||"Update"}</span>
-                      ${this.deletableIndices.includes(e)&&!this.readOnly?P`
+                      <span class="badge ${this.getBadgeClass(i.badgeStyle)||"Default"} ms-2">${i.badge||"Update"}</span>
+                      ${this.deletableIndices.includes(s)&&!this.readOnly?P`
                           <button
                             class="btn btn-sm btn-danger ms-auto"
-                            @click=${()=>this.deleteComment(e)}
+                            @click=${()=>this.deleteComment(s)}
                           >
                             ${st}
                           </button>
                         `:""}
                     </div>
                     <div>
-                      <p class="mb-0 py-3 comment-text">${t.comment}</p>
+                      <p class="mb-0 py-3 comment-text">${i.comment}</p>
                     </div>
                   </div>
                 </div>
-              `)):P``}
-      </div>
+              </div>
+            `)):P``}
   
       ${this.readOnly?"":P`
         <div class="mt-4">
