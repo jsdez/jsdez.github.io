@@ -217,12 +217,14 @@ svg></svg>
       ${this.historyLimit>0&&this.workingComments.length>this.historyLimit?P`
         <div class="d-flex justify-content-center mb-3">
           <button 
-            class="btn btn-default d-flex align-items-center"
+            class="btn btn-default rounded-pill d-flex align-items-center"
             type="button"
             @click=${this.toggleShowAll}
           >
             ${ot} 
+            <div class="ms-1">
             ${this.showAll?" Hide All Comments":" Show All Comments"}
+            </div>
           </button>
         </div>
       `:""}

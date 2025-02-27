@@ -237,12 +237,14 @@ class CommentsElement extends LitElement {
       ${this.historyLimit > 0 && this.workingComments.length > this.historyLimit ? html`
         <div class="d-flex justify-content-center mb-3">
           <button 
-            class="btn btn-default d-flex align-items-center"
+            class="btn btn-default rounded-pill d-flex align-items-center"
             type="button"
             @click=${this.toggleShowAll}
           >
             ${expandIcon} 
+            <div class="ms-1">
             ${this.showAll ? ' Hide All Comments' : ' Show All Comments'}
+            </div>
           </button>
         </div>
       ` : ''}
@@ -309,7 +311,7 @@ class CommentsElement extends LitElement {
         </div>
       ` : ''}
     `;
-  }  
+  }
   
   // Helper method to apply the correct class based on badge style
   getBadgeClass(style) {
