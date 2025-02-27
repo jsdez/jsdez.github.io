@@ -223,90 +223,90 @@ class CommentsElement extends LitElement {
   render() {
     const showAllComments = this.historyLimit === 0 || this.showAll;
     const displayedComments = showAllComments ? this.workingComments : this.workingComments.slice(-this.historyLimit);
-
-    // Determine if the 'commentsBorder' and 'commentsStriped' should be applied
-    const hasCommentsBorder = this.commentsBorder;
-    const hasCommentsStriped = this.commentsStriped;
-
+  
+    // Conditionally adding classes for commentsBorder and commentsStriped
+    const commentsHistoryClasses = [
+      this.commentsBorder ? 'comments-border' : '',
+      this.commentsStriped ? 'comments-striped' : ''
+    ].filter(Boolean).join(' ');
+  
     return html`
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-
-        <!-- Show "Show All Comments" button if there are more comments than the limit -->
-        ${this.historyLimit > 0 && this.workingComments.length > this.historyLimit ? html`
-            <div class="d-flex justify-content-center mb-3">
-                <button 
-                    class="btn btn-default d-flex align-items-center"
-                    type="button"
-                    @click=${this.toggleShowAll}
-                >
-                    ${expandIcon} 
-                    ${this.showAll ? ' Hide All Comments' : ' Show All Comments'}
-                </button>
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+      
+      ${this.historyLimit > 0 && this.workingComments.length > this.historyLimit ? html`
+        <div class="d-flex justify-content-center mb-3">
+          <button 
+            class="btn btn-default d-flex align-items-center"
+            type="button"
+            @click=${this.toggleShowAll}
+          >
+            ${expandIcon} 
+            ${this.showAll ? ' Hide All Comments' : ' Show All Comments'}
+          </button>
+        </div>
+      ` : ''}
+  
+      ${this.displayedComments.length > 0 ? this.displayedComments.map((item, index) => html`
+        <div class="comments-history ${commentsHistoryClasses}">
+          <div class="card comment-card">
+            <div class="card-body">
+              <div class="d-flex flex-row align-items-center">
+                <h6 class="fw-bold mb-0">${item.firstName} ${item.lastName || ''}</h6>
+                ${item.taskowner ? html`
+                  <span class="badge bg-light text-dark ms-2">${item.taskowner}</span>
+                ` : ''}
+                ${this.deletableIndices.includes(index) && !this.readOnly ? html`
+                  <button class="btn btn-sm btn-danger ms-auto" @click=${() => this.deleteComment(index)}>
+                    ${deleteIcon}
+                  </button>
+                ` : ''}
+              </div>
+              <div class="d-flex flex-row align-items-center">
+                <p class="mb-0 text-muted comment-date">
+                  ${new Date(item.timestamp).toLocaleString('en-GB', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false,
+                  })}
+                </p>
+                <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">
+                  ${item.badge || 'Update'}
+                </span>
+              </div>
+              <div>
+                <p class="mb-0 py-3 comment-text">${item.comment}</p>
+              </div>
             </div>
-        ` : ''}
-
-        ${this.displayedComments.length > 0
-            ? this.displayedComments.map((item, index) => html`
-                <div class="comments-history ${hasCommentsBorder ? 'comments-border' : ''}">
-                    <div class="card comment-card ${hasCommentsStriped && index % 2 !== 0 ? 'striped' : ''}" 
-                         style="${!hasCommentsStriped && index !== 0 ? 'border-top: 1px solid #ddd;' : ''}">
-                        <div class="card-body">
-                            <div class="d-flex flex-row align-items-center">
-                                <h6 class="fw-bold mb-0 me-2">${item.firstName} ${item.lastName || ''}</h6>
-                                <p class="mb-0 text-muted me-2">
-                                    ${new Date(item.timestamp).toLocaleString('en-GB', {
-                                        weekday: 'short',
-                                        year: 'numeric',
-                                        month: 'short',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        second: '2-digit',
-                                        hour12: false,
-                                    })}
-                                </p>
-                                <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">${item.badge || 'Update'}</span>
-                                ${this.deletableIndices.includes(index) && !this.readOnly
-                                    ? html`
-                                        <button
-                                            class="btn btn-sm btn-danger ms-auto"
-                                            @click=${() => this.deleteComment(index)}
-                                        >
-                                            ${deleteIcon}
-                                        </button>
-                                    `
-                                    : ''}
-                            </div>
-                            <div>
-                                <p class="mb-0 py-3 comment-text">${item.comment}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `)
-        : html``}
-
-        ${!this.readOnly ? html`
-            <div class="mt-4">
-                <textarea
-                    class="comment-textarea"
-                    .value=${this.newComment}
-                    @input=${this.handleCommentChange}
-                    placeholder="Write your comment here..."
-                ></textarea>
-                <button
-                    class="btn btn-default d-flex align-items-center"
-                    type="button"
-                    @click=${this.addComment}
-                    ?disabled=${!this.newComment.trim()}
-                >
-                    ${sendIcon} Add Comment
-                </button>
-            </div>
-        ` : ''}
+          </div>
+        </div>
+      `) : html``}
+  
+      ${!this.readOnly ? html`
+        <div class="mt-4">
+          <textarea
+            class="comment-textarea"
+            .value=${this.newComment}
+            @input=${this.handleCommentChange}
+            placeholder="Write your comment here..."
+          ></textarea>
+          <button
+            class="btn btn-default d-flex align-items-center"
+            type="button"
+            @click=${this.addComment}
+            ?disabled=${!this.newComment.trim()}
+          >
+            ${sendIcon} Add Comment
+          </button>
+        </div>
+      ` : ''}
     `;
-}
-
+  }
+  
   // Helper method to apply the correct class based on badge style
   getBadgeClass(style) {
     const badgeClasses = {
