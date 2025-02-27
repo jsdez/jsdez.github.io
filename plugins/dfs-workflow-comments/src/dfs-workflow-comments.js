@@ -232,7 +232,8 @@ class CommentsElement extends LitElement {
   
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  
+      
+      <!-- Show "Show All Comments" button if there are more comments than the limit -->
       ${this.historyLimit > 0 && this.workingComments.length > this.historyLimit ? html`
         <div class="d-flex justify-content-center mb-3">
           <button 
@@ -246,6 +247,7 @@ class CommentsElement extends LitElement {
         </div>
       ` : ''}
   
+      <!-- Display the comments with applied styles -->
       ${displayedComments.length > 0 ? html`
         <div class="comments-history ${commentsHistoryClasses}">
           ${displayedComments.map((item, index) => html`
