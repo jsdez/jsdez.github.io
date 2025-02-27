@@ -42,17 +42,17 @@ export const componentStyles = css`
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
   }
 
-  /* Apply alternating row colors only when commentsStriped is true */
-  :host([commentsStriped]) .comment-card:nth-child(odd) {
+  /* Apply alternating row colors when commentsStriped is true */
+  .comments-history[commentsStriped] .comment-card:nth-child(odd) {
     background-color: var(--ntx-form-theme-color-form-background);
   }
 
-  :host([commentsStriped]) .comment-card:nth-child(even) {
+  .comments-history[commentsStriped] .comment-card:nth-child(even) {
     background-color: var(--ntx-form-theme-color-form-background-alternate-contrast);
   }
 
-  /* Apply border between comments when commentsStriped is false and commentsBorder is true */
-  :host([commentsBorder]:not([commentsStriped])) .comment-card:not(:first-child) {
+  /* Apply border between comments when commentsBorder is true and commentsStriped is false */
+  .comments-history[commentsBorder]:not([commentsStriped]) .comment-card:not(:first-child) {
     border-top-style: solid;
     border-top-width: 1px;
     border-color: var(--ntx-form-theme-color-border);

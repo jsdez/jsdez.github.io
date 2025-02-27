@@ -225,7 +225,7 @@ class CommentsElement extends LitElement {
     const displayedComments = showAllComments ? this.workingComments : this.workingComments.slice(-this.historyLimit);
   
     // Conditional classes based on commentsBorder and commentsStriped
-    const commentCardClasses = `${this.commentsBorder ? 'border' : 'border-0'} ${this.commentsStriped ? 'bg-light' : ''}`;
+    const commentsHistoryClasses = `${this.commentsBorder ? 'comments-border' : ''} ${this.commentsStriped ? 'comments-striped' : ''}`;
   
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -246,7 +246,7 @@ class CommentsElement extends LitElement {
   
       ${this.displayedComments.length > 0 ? this.displayedComments.map(
         (item, index) => html`
-          <div class="comments-history ${commentCardClasses}">
+          <div class="comments-history ${commentsHistoryClasses}">
             <div class="card comment-card">
               <div class="card-body">
                 <div class="d-flex flex-row align-items-center">
@@ -305,7 +305,7 @@ class CommentsElement extends LitElement {
         </div>
       ` : ''}
     `;
-  }
+  }  
   
   // Helper method to apply the correct class based on badge style
   getBadgeClass(style) {
