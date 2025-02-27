@@ -224,11 +224,14 @@ class CommentsElement extends LitElement {
     const showAllComments = this.historyLimit === 0 || this.showAll;
     const displayedComments = showAllComments ? this.workingComments : this.workingComments.slice(-this.historyLimit);
   
+    // Conditional classes based on commentsBorder and commentsStriped
+    const commentCardClasses = `${this.commentsBorder ? 'border' : 'border-0'} ${this.commentsStriped ? 'bg-light' : ''}`;
+  
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   
       <!-- Show "Show All Comments" button if there are more comments than the limit -->
-       ${this.historyLimit > 0 && this.workingComments.length > this.historyLimit ? html`
+      ${this.historyLimit > 0 && this.workingComments.length > this.historyLimit ? html`
         <div class="d-flex justify-content-center mb-3">
           <button 
             class="btn btn-default d-flex align-items-center"
@@ -240,9 +243,10 @@ class CommentsElement extends LitElement {
           </button>
         </div>
       ` : ''}
+  
       ${this.displayedComments.length > 0 ? this.displayedComments.map(
-      (item, index) => html`
-        <div class="comments-history ${this.commentsBorder ? '' : 'border-0'}">
+        (item, index) => html`
+          <div class="comments-history ${commentCardClasses}">
             <div class="card comment-card">
               <div class="card-body">
                 <div class="d-flex flex-row align-items-center">
@@ -302,7 +306,7 @@ class CommentsElement extends LitElement {
       ` : ''}
     `;
   }
-
+  
   // Helper method to apply the correct class based on badge style
   getBadgeClass(style) {
     const badgeClasses = {
