@@ -254,8 +254,11 @@ class CommentsElement extends LitElement {
                 <div class="d-flex flex-row align-items-center">
                   <h6 class="fw-bold mb-0">${item.firstName} ${item.lastName || ''}</h6>
                   ${item.taskowner ? html`
-                    <span class="badge bg-light text-dark ms-2">${item.taskowner}</span>
+                    <span class="badge bg-secondary rounded-pill text-dark ms-2">${item.taskowner}</span>
                   ` : ''}
+                  <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} rounded-pill ms-2">
+                    ${item.badge || 'Update'}
+                  </span>
                   ${this.deletableIndices.includes(index) && !this.readOnly ? html`
                     <button class="btn btn-sm btn-danger ms-auto" @click=${() => this.deleteComment(index)}>
                       ${deleteIcon}
@@ -275,9 +278,6 @@ class CommentsElement extends LitElement {
                       hour12: false,
                     })}
                   </p>
-                  <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">
-                    ${item.badge || 'Update'}
-                  </span>
                 </div>
                 <div>
                   <p class="mb-0 py-3 comment-text">${item.comment}</p>

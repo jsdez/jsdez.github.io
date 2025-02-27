@@ -234,8 +234,11 @@ svg></svg>
                 <div class="d-flex flex-row align-items-center">
                   <h6 class="fw-bold mb-0">${t.firstName} ${t.lastName||""}</h6>
                   ${t.taskowner?P`
-                    <span class="badge bg-light text-dark ms-2">${t.taskowner}</span>
+                    <span class="badge bg-secondary rounded-pill text-dark ms-2">${t.taskowner}</span>
                   `:""}
+                  <span class="badge ${this.getBadgeClass(t.badgeStyle)||"Default"} rounded-pill ms-2">
+                    ${t.badge||"Update"}
+                  </span>
                   ${this.deletableIndices.includes(e)&&!this.readOnly?P`
                     <button class="btn btn-sm btn-danger ms-auto" @click=${()=>this.deleteComment(e)}>
                       ${st}
@@ -246,9 +249,6 @@ svg></svg>
                   <p class="mb-0 text-muted comment-date">
                     ${new Date(t.timestamp).toLocaleString("en-GB",{weekday:"short",year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:!1})}
                   </p>
-                  <span class="badge ${this.getBadgeClass(t.badgeStyle)||"Default"} ms-2">
-                    ${t.badge||"Update"}
-                  </span>
                 </div>
                 <div>
                   <p class="mb-0 py-3 comment-text">${t.comment}</p>
