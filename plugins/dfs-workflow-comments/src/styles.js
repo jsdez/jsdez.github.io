@@ -1,139 +1,173 @@
-// styles.js
 import { css } from 'lit';
 
 export const componentStyles = css`
-  :host {
-    display: block;
-    max-width: 100%;
-    font-family: var(--ntx-form-theme-font-family);
-  }
+:host {
+  display: block;
+  max-width: 100%;
+  font-family: var(--ntx-form-theme-font-family);
+}
 
-  .comments-history {
-    display: flex;
-    flex-direction: column;
-    position: relative;
-  }
+.comments-history {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden; /* Ensures rounded corners apply correctly */
+}
 
-  /* Shadow Effect */
-  .comments-history::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 20px;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), transparent);
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-    pointer-events: none;
-  }
+.comments-history.comments-border {
+  border-radius: var(--ntx-form-theme-border-radius);
+  border-color: var(--ntx-form-theme-color-border)!important;
+  border: 1px solid;
+}
 
-  .comments-history.scrolled::before {
-    opacity: 1;
-  }
+/* Shadow Effect */
+.comments-history::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  pointer-events: none;
+}
 
-  .comment-card {
-    border: none;
-    border-radius: 0;
-    margin: 0;
-    padding: 0;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
-    border-bottom: 1px solid #ddd;
-  }
+.comments-history.scrolled::before {
+  opacity: 1;
+}
 
-  .comment-card:first-child {
-    border-top: 1px solid #ddd;
-    margin-top: 1rem;
-  }
+.comment-card {
+  border: none; /* Remove borders */
+  margin: 0;
+  padding: 0.5rem;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
 
-  .comment-card:hover {
-    background-color: #f8f9fa; /* Light background on hover */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow on hover */
-  }
+/* Apply alternating row colors when commentsStriped class is applied */
+.comments-history.comments-striped .comment-card:nth-child(odd) {
+  background-color: var(--ntx-form-theme-color-form-background);
+}
 
-  .comment-card.selected {
-    background-color: #e9ecef; /* Selected state color */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Slightly stronger shadow */
-  }
+.comments-history.comments-striped .comment-card:nth-child(even) {
+  background-color: var(--ntx-form-theme-color-form-background-alternate-contrast);
+}
 
-  .card-body {
-    padding: 1rem;
-  }
+/* Apply border between comments when commentsBorder class is applied */
+.comments-history .comment-card:not(:first-child) {
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-color: var(--ntx-form-theme-color-border);
+  border-radius: 0;
+}
 
-  .d-flex {
-    display: flex;
-  }
+/* First comment gets top rounded corners */
+.comments-history .comment-card:first-child {
+  border-top-left-radius: var(--ntx-form-theme-border-radius);
+  border-top-right-radius: var(--ntx-form-theme-border-radius);
+}
 
-  .flex-row {
-    flex-direction: row;
-  }
+/* Last comment gets bottom rounded corners */
+.comments-history .comment-card:last-child {
+  border-bottom-left-radius: var(--ntx-form-theme-border-radius);
+  border-bottom-right-radius: var(--ntx-form-theme-border-radius);
+}
 
-  .align-items-center {
-    align-items: center;
-  }
+/* Hover effect */
+.comment-card:hover {
+  background-color: var(--ntx-form-theme-color-input-background);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
 
-  .me-2 {
-    margin-right: 0.5rem;
-  }
+/* Selected state */
+.comment-card.selected {
+  background-color: var(--ntx-form-theme-color-border);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
 
-  .ms-2 {
-    margin-left: 0.5rem;
-  }
+.comment-date {
+  font-size: 14px;
+}
 
-  .fw-bold {
-    font-weight: bold;
-  }
+.card-body {
+  padding: 0.5rem;
+}
 
-  .text-muted {
-    color: #6c757d;
-  }
+.d-flex {
+  display: flex;
+}
 
-  .badge-default {
-    background-color: var(--ntx-form-theme-color-primary-button-background, #e0e0e0);
-    color: var(--ntx-form-theme-color-primary-button-font, #000);
-  }
-  
-  .comment-textarea {
-    width: 100%;
-    height: 100px;
-    min-height: 72px;
-    padding: .4375rem .75rem;
-    background: var(--ntx-form-theme-color-input-background);
-    border-color: var(--ntx-form-theme-color-border);
-    border-radius: var(--ntx-form-theme-border-radius);
-    caret-color: var(--ntx-form-theme-color-input-text);
-    color: var(--ntx-form-theme-color-input-text);
-    font-family: var(--ntx-form-theme-font-family);
-    font-size: var(--ntx-form-theme-text-input-size);
-    margin-bottom: 1rem;
-  }
+.flex-row {
+  flex-direction: row;
+}
 
-  .comment-textarea:focus {
-    border-color: var(--ntx-form-theme-color-primary);
-    outline: 0;
-  }
+.align-items-center {
+  align-items: center;
+}
 
-  .comment-text {
-    user-select: text;
-  }
+.me-2 {
+  margin-right: 0.5rem;
+}
 
-  .btn-default {
-    background-color: var(--ntx-form-theme-color-primary-button-background);
-    border-color: var(--ntx-form-theme-color-primary-button-background);
-    border-radius: var(--ntx-form-theme-border-radius);
-    color: var(--ntx-form-theme-color-primary-button-font);
-    font-family: var(--ntx-form-theme-font-family);
-    font-size: var(--ntx-form-theme-text-label-size);
-  }
-  
-  .btn-default:hover {
-    background-color: var(--ntx-form-theme-color-primary-button-hover);
-    color: var(--ntx-form-theme-color-primary-button-font);
-  }
+.ms-2 {
+  margin-left: 0.5rem;
+}
 
-  .btn-default:disabled {
-    background-color: var(--ntx-form-theme-color-primary-button-disabled);
-    border-color: var(--ntx-form-theme-color-primary-button-disabled);
-    color: var(--ntx-form-theme-color-primary-button-font);
-  }
+.fw-bold {
+  font-weight: bold;
+}
+
+.text-muted {
+  color: #6c757d;
+}
+
+.badge-default {
+  background-color: var(--ntx-form-theme-color-primary-button-background, #e0e0e0);
+  color: var(--ntx-form-theme-color-primary-button-font, #000);
+}
+
+.comment-textarea {
+  width: 100%;
+  height: 100px;
+  min-height: 72px;
+  padding: 0.4375rem 0.75rem;
+  background: var(--ntx-form-theme-color-input-background);
+  border-color: var(--ntx-form-theme-color-border);
+  border-radius: var(--ntx-form-theme-border-radius);
+  caret-color: var(--ntx-form-theme-color-input-text);
+  color: var(--ntx-form-theme-color-input-text);
+  font-family: var(--ntx-form-theme-font-family);
+  font-size: var(--ntx-form-theme-text-input-size);
+  margin-bottom: 1rem;
+}
+
+.comment-textarea:focus {
+  border-color: var(--ntx-form-theme-color-primary);
+  outline: 0;
+}
+
+.comment-text {
+  user-select: text;
+}
+
+.btn-default {
+  background-color: var(--ntx-form-theme-color-primary-button-background);
+  border-color: var(--ntx-form-theme-color-primary-button-background);
+  border-radius: var(--ntx-form-theme-border-radius);
+  color: var(--ntx-form-theme-color-primary-button-font);
+  font-family: var(--ntx-form-theme-font-family);
+  font-size: var(--ntx-form-theme-text-label-size);
+}
+
+.btn-default:hover {
+  background-color: var(--ntx-form-theme-color-primary-button-hover);
+  color: var(--ntx-form-theme-color-primary-button-font);
+}
+
+.btn-default:disabled {
+  background-color: var(--ntx-form-theme-color-primary-button-disabled);
+  border-color: var(--ntx-form-theme-color-primary-button-disabled);
+  color: var(--ntx-form-theme-color-primary-button-font);
+}
 `;

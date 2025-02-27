@@ -14,12 +14,23 @@ class CommentsElement extends LitElement {
       fallbackDisableSubmit: false,
       description: 'Notes and comments',
       iconUrl:'https://jsdez.github.io/plugins/dfs-workflow-comments/dist/icon.svg',
-      groupName: 'Plugins',
+      groupName: 'NEO',
       version: '1.0',
       properties: {
+        commentsBorder: {
+          title: 'Show Border on comments',
+          type: 'boolean',
+          defaultValue: true,
+        },
+        commentsStriped: {
+          title: 'Striped comments',
+          type: 'boolean',
+          defaultValue: true,
+        },
         firstName: { type: 'string', title: 'First name' },
         lastName: { type: 'string', title: 'Last name' },
         email: { type: 'string', title: 'Email Address' },
+        taskowner: { type: 'string', title: 'Task Owner' },
         badge: {
           type: 'string',
           description: 'Label for status badge e.g. Rejected, Approved, Return etc. Default blank value is Update',
@@ -53,7 +64,7 @@ class CommentsElement extends LitElement {
           isValueField: true,
           properties: {
             Comments: {
-              type: 'array',
+              type: 'object',
               description: 'Array of comments',
               items: {
                 type: 'object',
@@ -90,9 +101,12 @@ class CommentsElement extends LitElement {
   }
 
   static properties = {
+    commentsBorder: { type: Boolean },
+    commentsStriped: { type: Boolean },
     firstName: { type: String },
     lastName: { type: String },
     email: { type: String },
+    taskowner: { type: String },
     badge: { type: String },
     badgeStyle: { type: String },
     inputobj: { type: Object },
@@ -106,9 +120,12 @@ class CommentsElement extends LitElement {
 
   constructor() {
     super();
+    this.commentsBorder = true;
+    this.commentsStriped = true;
     this.firstName = '';
     this.lastName = '';
     this.email = '';
+    this.taskowner = '';
     this.badge = 'Update';  // Default Badge
     this.badgeStyle = 'Default';  // Default Badge Style
     this.inputobj = null;
@@ -131,13 +148,17 @@ class CommentsElement extends LitElement {
     return this.workingComments.slice(-this.historyLimit); // Display only the latest `historyLimit` comments
   }
 
-
   updated(changedProperties) {
     if (changedProperties.has('inputobj') && Array.isArray(this.inputobj?.comments)) {
       this.workingComments = [...this.inputobj.comments];
       this.deletableIndices = []; // Reset deletable indices when inputobj changes
     }
-
+  
+    // Check for changes to commentsBorder or commentsStriped and trigger re-render
+    if (changedProperties.has('commentsBorder') || changedProperties.has('commentsStriped')) {
+      this.requestUpdate();
+    }
+  
     if (changedProperties.has('readOnly')) {
       this.requestUpdate();
     }
@@ -150,6 +171,7 @@ class CommentsElement extends LitElement {
       firstName: this.firstName || 'Anonymous',
       lastName: this.lastName || '',
       email: this.email || 'N/A',
+      taskowner: this.taskowner || '',
       badge: this.badge || 'Update',
       badgeStyle: this.badgeStyle || 'Default',
       comment: this.newComment,
@@ -202,11 +224,16 @@ class CommentsElement extends LitElement {
     const showAllComments = this.historyLimit === 0 || this.showAll;
     const displayedComments = showAllComments ? this.workingComments : this.workingComments.slice(-this.historyLimit);
   
+    // Conditionally adding classes for commentsBorder and commentsStriped
+    const commentsHistoryClasses = [
+      this.commentsBorder ? 'comments-border' : '',
+      this.commentsStriped ? 'comments-striped' : ''
+    ].filter(Boolean).join(' ');
+  
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   
-      <!-- Show "Show All Comments" button if there are more comments than the limit -->
-       ${this.historyLimit > 0 && this.workingComments.length > this.historyLimit ? html`
+      ${this.historyLimit > 0 && this.workingComments.length > this.historyLimit ? html`
         <div class="d-flex justify-content-center mb-3">
           <button 
             class="btn btn-default d-flex align-items-center"
@@ -218,48 +245,48 @@ class CommentsElement extends LitElement {
           </button>
         </div>
       ` : ''}
-
-      <div class="comments-history">
-        ${this.displayedComments.length > 0
-          ? this.displayedComments.map(
-              (item, index) => html`
-                <div class="card comment-card">
-                  <div class="card-body">
-                    <div class="d-flex flex-row align-items-center">
-                      <h6 class="fw-bold mb-0 me-2">${item.firstName} ${item.lastName || ''}</h6>
-                      <p class="mb-0 text-muted me-2">
-                        ${new Date(item.timestamp).toLocaleString('en-GB', {
-                          weekday: 'short',
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                          hour12: false,
-                        })}
-                      </p>
-                      <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">${item.badge || 'Update'}</span>
-                      ${this.deletableIndices.includes(index) && !this.readOnly
-                        ? html`
-                          <button
-                            class="btn btn-sm btn-danger ms-auto"
-                            @click=${() => this.deleteComment(index)}
-                          >
-                            ${deleteIcon}
-                          </button>
-                        `
-                        : ''}
-                    </div>
-                    <div>
-                      <p class="mb-0 py-3 comment-text">${item.comment}</p>
-                    </div>
-                  </div>
+  
+      ${displayedComments.length > 0 ? html`
+        <div class="comments-history ${commentsHistoryClasses}">
+          ${displayedComments.map((item, index) => html`
+            <div class="card comment-card">
+              <div class="card-body">
+                <div class="d-flex flex-row align-items-center">
+                  <h6 class="fw-bold mb-0">${item.firstName} ${item.lastName || ''}</h6>
+                  ${item.taskowner ? html`
+                    <span class="badge bg-secondary rounded-pill text-dark ms-2">${item.taskowner}</span>
+                  ` : ''}
+                  <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} rounded-pill ms-2">
+                    ${item.badge || 'Update'}
+                  </span>
+                  ${this.deletableIndices.includes(index) && !this.readOnly ? html`
+                    <button class="btn btn-sm btn-danger ms-auto" @click=${() => this.deleteComment(index)}>
+                      ${deleteIcon}
+                    </button>
+                  ` : ''}
                 </div>
-              `
-            )
-          : html``}
-      </div>
+                <div class="d-flex flex-row align-items-center">
+                  <p class="mb-0 text-muted comment-date">
+                    ${new Date(item.timestamp).toLocaleString('en-GB', {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: false,
+                    })}
+                  </p>
+                </div>
+                <div>
+                  <p class="mb-0 py-3 comment-text">${item.comment}</p>
+                </div>
+              </div>
+            </div>
+          `)}
+        </div>
+      ` : html``}
   
       ${!this.readOnly ? html`
         <div class="mt-4">
@@ -280,8 +307,8 @@ class CommentsElement extends LitElement {
         </div>
       ` : ''}
     `;
-  }
-
+  }  
+  
   // Helper method to apply the correct class based on badge style
   getBadgeClass(style) {
     const badgeClasses = {
