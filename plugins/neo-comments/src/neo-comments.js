@@ -17,6 +17,16 @@ class CommentsElement extends LitElement {
       groupName: 'NEO',
       version: '1.0',
       properties: {
+        commentsBorder: {
+          title: 'Show Border on comments',
+          type: 'boolean',
+          defaultValue: true,
+        },
+        commentsStriped: {
+          title: 'Striped comments',
+          type: 'boolean',
+          defaultValue: true,
+        },
         firstName: { type: 'string', title: 'First name' },
         lastName: { type: 'string', title: 'Last name' },
         email: { type: 'string', title: 'Email Address' },
@@ -91,6 +101,8 @@ class CommentsElement extends LitElement {
   }
 
   static properties = {
+    commentsBorder: { type: Boolean },
+    commentsStriped: { type: Boolean },
     firstName: { type: String },
     lastName: { type: String },
     email: { type: String },
@@ -108,6 +120,8 @@ class CommentsElement extends LitElement {
 
   constructor() {
     super();
+    this.commentsBorder = true;
+    this.commentsStriped = true;
     this.firstName = '';
     this.lastName = '';
     this.email = '';
@@ -223,7 +237,7 @@ class CommentsElement extends LitElement {
         </div>
       ` : ''}
 
-      <div class="comments-history">
+      <div class="comments-history ${this.commentsBorder ? '' : 'border-0'}">
         ${this.displayedComments.length > 0
           ? this.displayedComments.map(
               (item, index) => html`
