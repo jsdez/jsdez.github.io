@@ -11,6 +11,9 @@
   flex-direction: column;
   position: relative;
   overflow: hidden; /* Ensures rounded corners apply correctly */
+}
+
+.comments-history .comments-border {
   border-radius: var(--ntx-form-theme-border-radius);
   border-color: var(--ntx-form-theme-color-border);
   border: 1px solid;
@@ -51,10 +54,11 @@
 }
 
 /* Apply border between comments when commentsBorder class is applied */
-.comments-history.comments-border .comment-card:not(:first-child) {
+.comments-history .comment-card:not(:first-child) {
   border-top-style: solid;
   border-top-width: 1px;
   border-color: var(--ntx-form-theme-color-border);
+  border-radius: 0;
 }
 
 /* First comment gets top rounded corners */
