@@ -153,7 +153,7 @@ class CommentsElement extends LitElement {
       firstName: this.firstName || 'Anonymous',
       lastName: this.lastName || '',
       email: this.email || 'N/A',
-      email: this.taskowner || '',
+      taskowner: this.taskowner || '',
       badge: this.badge || 'Update',
       badgeStyle: this.badgeStyle || 'Default',
       comment: this.newComment,
