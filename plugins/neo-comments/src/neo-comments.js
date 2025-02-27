@@ -148,13 +148,17 @@ class CommentsElement extends LitElement {
     return this.workingComments.slice(-this.historyLimit); // Display only the latest `historyLimit` comments
   }
 
-
   updated(changedProperties) {
     if (changedProperties.has('inputobj') && Array.isArray(this.inputobj?.comments)) {
       this.workingComments = [...this.inputobj.comments];
       this.deletableIndices = []; // Reset deletable indices when inputobj changes
     }
-
+  
+    // Check for changes to commentsBorder or commentsStriped and trigger re-render
+    if (changedProperties.has('commentsBorder') || changedProperties.has('commentsStriped')) {
+      this.requestUpdate();
+    }
+  
     if (changedProperties.has('readOnly')) {
       this.requestUpdate();
     }
