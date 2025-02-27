@@ -57,7 +57,7 @@ export const componentStyles = css`
   }
 
   .card-body {
-    padding: 1rem;
+    padding: .5rem;
   }
 
   .d-flex {
