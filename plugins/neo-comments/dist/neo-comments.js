@@ -15,7 +15,7 @@
 
 .comments-history.comments-border {
   border-radius: var(--ntx-form-theme-border-radius);
-  border-color: var(--ntx-form-theme-color-border);
+  border-color: var(--ntx-form-theme-color-border)!important;
   border: 1px solid;
 }
 
