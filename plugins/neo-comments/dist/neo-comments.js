@@ -206,66 +206,67 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrows-expand" viewBox="0 0 16 16">
   <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8M7.646.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 1.707V5.5a.5.5 0 0 1-1 0V1.707L6.354 2.854a.5.5 0 1 1-.708-.708zM8 10a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 14.293V10.5A.5.5 0 0 1 8 10"/>
 svg></svg>
-`);class rt extends Y{static get styles(){return et}static getMetaConfig(){return{controlName:"neo-comments",fallbackDisableSubmit:!1,description:"Notes and comments",iconUrl:"https://jsdez.github.io/plugins/neo-comments/dist/icon.svg",groupName:"NEO",version:"1.0",properties:{commentsBorder:{title:"Show Border on comments",type:"boolean",defaultValue:!0},commentsStriped:{title:"Striped comments",type:"boolean",defaultValue:!0},firstName:{type:"string",title:"First name"},lastName:{type:"string",title:"Last name"},email:{type:"string",title:"Email Address"},taskowner:{type:"string",title:"Task Owner"},badge:{type:"string",description:"Label for status badge e.g. Rejected, Approved, Return etc. Default blank value is Update",title:"Badge"},badgeStyle:{type:"string",description:"Select the style for the badge from the dropdown based on Bootstrap 5 badge",title:"Badge Style",enum:["Default","Primary","Secondary","Success","Danger","Warning","Info","Light","Dark"],defaultValue:"Default"},inputobj:{type:"object",title:"Input Object",description:"Enter the comments object from previous control here"},historyLimit:{type:"integer",title:"Comment history display limit",description:"Enter a number value of how many comments should be shown, older comments are hidden, entering 0 will show all comments, default is 5.",defaultValue:5},outputobj:{title:"Comments Output",type:"object",description:"Workflow Comments Output Do Not Use",isValueField:!0,properties:{Comments:{type:"object",description:"Array of comments",items:{type:"object",properties:{firstName:{type:"string",description:"First Name",title:"First Name"},lastName:{type:"string",description:"Last Name",title:"Last Name"},email:{type:"string",description:"Email Address",title:"Email Address"},badge:{type:"string",description:"Badge Status",title:"Badge Status"},badgeStyle:{type:"string",description:"Badge Style",title:"Badge Style"},comment:{type:"string",description:"Comment",title:"Comment"},timestamp:{type:"string",format:"date-time",description:"Log time",title:"Log time"}}}},mostRecentComment:{type:"object",description:"Latest comment",properties:{firstName:{type:"string",description:"First Name",title:"First Name"},lastName:{type:"string",description:"Last Name",title:"Last Name"},email:{type:"string",description:"Email Address",title:"Email Address"},badge:{type:"string",description:"Badge Status",title:"Badge Status"},badgeStyle:{type:"string",description:"Badge Style",title:"Badge Style"},comment:{type:"string",description:"Comment",title:"Comment"},timestamp:{type:"string",format:"date-time",description:"Log time",title:"Log time"}}}}}},events:["ntx-value-change"],standardProperties:{fieldLabel:!0,description:!0,readOnly:!0,visibility:!0}}}static properties={commentsBorder:{type:Boolean},commentsStriped:{type:Boolean},firstName:{type:String},lastName:{type:String},email:{type:String},taskowner:{type:String},badge:{type:String},badgeStyle:{type:String},inputobj:{type:Object},workingComments:{type:Array},newComment:{type:String},readOnly:{type:Boolean},deletableIndices:{type:Array},historyLimit:{type:Number},showAll:{type:Boolean}};constructor(){super(),this.commentsBorder=!0,this.commentsStriped=!0,this.firstName="",this.lastName="",this.email="",this.taskowner="",this.badge="Update",this.badgeStyle="Default",this.inputobj=null,this.workingComments=[],this.newComment="",this.deletableIndices=[],this.historyLimit=5,this.showAll=!1}toggleShowAll(){this.showAll=!this.showAll}get displayedComments(){return this.showAll?this.workingComments:this.workingComments.slice(-this.historyLimit)}updated(t){t.has("inputobj")&&Array.isArray(this.inputobj?.comments)&&(this.workingComments=[...this.inputobj.comments],this.deletableIndices=[]),(t.has("commentsBorder")||t.has("commentsStriped"))&&this.requestUpdate(),t.has("readOnly")&&this.requestUpdate()}addComment(){const t=(new Date).toISOString(),e={firstName:this.firstName||"Anonymous",lastName:this.lastName||"",email:this.email||"N/A",taskowner:this.taskowner||"",badge:this.badge||"Update",badgeStyle:this.badgeStyle||"Default",comment:this.newComment,timestamp:t};this.workingComments=[...this.workingComments,e],this.deletableIndices=[...this.deletableIndices,this.workingComments.length-1];const i=e,s={comments:this.workingComments,mostRecentComment:i};this.dispatchEvent(new CustomEvent("ntx-value-change",{detail:s})),this.newComment=""}deleteComment(t){this.workingComments=this.workingComments.filter(((e,i)=>i!==t)),this.deletableIndices=this.deletableIndices.filter((e=>e!==t)).map((e=>e>t?e-1:e));const e=this.workingComments[this.workingComments.length-1]||null,i={comments:this.workingComments,mostRecentComment:e};this.dispatchEvent(new CustomEvent("ntx-value-change",{detail:i}))}handleCommentChange(t){this.newComment=t.target.value}render(){0===this.historyLimit||this.showAll?this.workingComments:this.workingComments.slice(-this.historyLimit);const t=this.commentsBorder&&!this.commentsStriped,e=this.commentsStriped;return P`
-      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  
-      <!-- Show "Show All Comments" button if there are more comments than the limit -->
-      ${this.historyLimit>0&&this.workingComments.length>this.historyLimit?P`
-        <div class="d-flex justify-content-center mb-3">
-          <button 
-            class="btn btn-default d-flex align-items-center"
-            type="button"
-            @click=${this.toggleShowAll}
-          >
-            ${ot} 
-            ${this.showAll?" Hide All Comments":" Show All Comments"}
-          </button>
-        </div>
-      `:""}
-  
-      ${this.displayedComments.length>0?this.displayedComments.map(((i,s)=>P`
-              <div class="comments-history ${t?"comments-border":""} ${e?"comments-striped":""}">
-                <div class="card comment-card">
-                  <div class="card-body">
-                    <div class="d-flex flex-row align-items-center">
-                      <h6 class="fw-bold mb-0 me-2">${i.firstName} ${i.lastName||""}</h6>
-                      <p class="mb-0 text-muted me-2">
-                        ${new Date(i.timestamp).toLocaleString("en-GB",{weekday:"short",year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:!1})}
-                      </p>
-                      <span class="badge ${this.getBadgeClass(i.badgeStyle)||"Default"} ms-2">${i.badge||"Update"}</span>
-                      ${this.deletableIndices.includes(s)&&!this.readOnly?P`
-                          <button
-                            class="btn btn-sm btn-danger ms-auto"
-                            @click=${()=>this.deleteComment(s)}
-                          >
-                            ${st}
-                          </button>
-                        `:""}
+`);class rt extends Y{static get styles(){return et}static getMetaConfig(){return{controlName:"neo-comments",fallbackDisableSubmit:!1,description:"Notes and comments",iconUrl:"https://jsdez.github.io/plugins/neo-comments/dist/icon.svg",groupName:"NEO",version:"1.0",properties:{commentsBorder:{title:"Show Border on comments",type:"boolean",defaultValue:!0},commentsStriped:{title:"Striped comments",type:"boolean",defaultValue:!0},firstName:{type:"string",title:"First name"},lastName:{type:"string",title:"Last name"},email:{type:"string",title:"Email Address"},taskowner:{type:"string",title:"Task Owner"},badge:{type:"string",description:"Label for status badge e.g. Rejected, Approved, Return etc. Default blank value is Update",title:"Badge"},badgeStyle:{type:"string",description:"Select the style for the badge from the dropdown based on Bootstrap 5 badge",title:"Badge Style",enum:["Default","Primary","Secondary","Success","Danger","Warning","Info","Light","Dark"],defaultValue:"Default"},inputobj:{type:"object",title:"Input Object",description:"Enter the comments object from previous control here"},historyLimit:{type:"integer",title:"Comment history display limit",description:"Enter a number value of how many comments should be shown, older comments are hidden, entering 0 will show all comments, default is 5.",defaultValue:5},outputobj:{title:"Comments Output",type:"object",description:"Workflow Comments Output Do Not Use",isValueField:!0,properties:{Comments:{type:"object",description:"Array of comments",items:{type:"object",properties:{firstName:{type:"string",description:"First Name",title:"First Name"},lastName:{type:"string",description:"Last Name",title:"Last Name"},email:{type:"string",description:"Email Address",title:"Email Address"},badge:{type:"string",description:"Badge Status",title:"Badge Status"},badgeStyle:{type:"string",description:"Badge Style",title:"Badge Style"},comment:{type:"string",description:"Comment",title:"Comment"},timestamp:{type:"string",format:"date-time",description:"Log time",title:"Log time"}}}},mostRecentComment:{type:"object",description:"Latest comment",properties:{firstName:{type:"string",description:"First Name",title:"First Name"},lastName:{type:"string",description:"Last Name",title:"Last Name"},email:{type:"string",description:"Email Address",title:"Email Address"},badge:{type:"string",description:"Badge Status",title:"Badge Status"},badgeStyle:{type:"string",description:"Badge Style",title:"Badge Style"},comment:{type:"string",description:"Comment",title:"Comment"},timestamp:{type:"string",format:"date-time",description:"Log time",title:"Log time"}}}}}},events:["ntx-value-change"],standardProperties:{fieldLabel:!0,description:!0,readOnly:!0,visibility:!0}}}static properties={commentsBorder:{type:Boolean},commentsStriped:{type:Boolean},firstName:{type:String},lastName:{type:String},email:{type:String},taskowner:{type:String},badge:{type:String},badgeStyle:{type:String},inputobj:{type:Object},workingComments:{type:Array},newComment:{type:String},readOnly:{type:Boolean},deletableIndices:{type:Array},historyLimit:{type:Number},showAll:{type:Boolean}};constructor(){super(),this.commentsBorder=!0,this.commentsStriped=!0,this.firstName="",this.lastName="",this.email="",this.taskowner="",this.badge="Update",this.badgeStyle="Default",this.inputobj=null,this.workingComments=[],this.newComment="",this.deletableIndices=[],this.historyLimit=5,this.showAll=!1}toggleShowAll(){this.showAll=!this.showAll}get displayedComments(){return this.showAll?this.workingComments:this.workingComments.slice(-this.historyLimit)}updated(t){t.has("inputobj")&&Array.isArray(this.inputobj?.comments)&&(this.workingComments=[...this.inputobj.comments],this.deletableIndices=[]),(t.has("commentsBorder")||t.has("commentsStriped"))&&this.requestUpdate(),t.has("readOnly")&&this.requestUpdate()}addComment(){const t=(new Date).toISOString(),e={firstName:this.firstName||"Anonymous",lastName:this.lastName||"",email:this.email||"N/A",taskowner:this.taskowner||"",badge:this.badge||"Update",badgeStyle:this.badgeStyle||"Default",comment:this.newComment,timestamp:t};this.workingComments=[...this.workingComments,e],this.deletableIndices=[...this.deletableIndices,this.workingComments.length-1];const i=e,s={comments:this.workingComments,mostRecentComment:i};this.dispatchEvent(new CustomEvent("ntx-value-change",{detail:s})),this.newComment=""}deleteComment(t){this.workingComments=this.workingComments.filter(((e,i)=>i!==t)),this.deletableIndices=this.deletableIndices.filter((e=>e!==t)).map((e=>e>t?e-1:e));const e=this.workingComments[this.workingComments.length-1]||null,i={comments:this.workingComments,mostRecentComment:e};this.dispatchEvent(new CustomEvent("ntx-value-change",{detail:i}))}handleCommentChange(t){this.newComment=t.target.value}render(){0===this.historyLimit||this.showAll?this.workingComments:this.workingComments.slice(-this.historyLimit);const t=this.commentsBorder,e=this.commentsStriped;return P`
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+        <!-- Show "Show All Comments" button if there are more comments than the limit -->
+        ${this.historyLimit>0&&this.workingComments.length>this.historyLimit?P`
+            <div class="d-flex justify-content-center mb-3">
+                <button 
+                    class="btn btn-default d-flex align-items-center"
+                    type="button"
+                    @click=${this.toggleShowAll}
+                >
+                    ${ot} 
+                    ${this.showAll?" Hide All Comments":" Show All Comments"}
+                </button>
+            </div>
+        `:""}
+
+        ${this.displayedComments.length>0?this.displayedComments.map(((i,s)=>P`
+                <div class="comments-history ${t?"comments-border":""}">
+                    <div class="card comment-card ${e&&s%2!=0?"striped":""}" 
+                         style="${e||0===s?"":"border-top: 1px solid #ddd;"}">
+                        <div class="card-body">
+                            <div class="d-flex flex-row align-items-center">
+                                <h6 class="fw-bold mb-0 me-2">${i.firstName} ${i.lastName||""}</h6>
+                                <p class="mb-0 text-muted me-2">
+                                    ${new Date(i.timestamp).toLocaleString("en-GB",{weekday:"short",year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:!1})}
+                                </p>
+                                <span class="badge ${this.getBadgeClass(i.badgeStyle)||"Default"} ms-2">${i.badge||"Update"}</span>
+                                ${this.deletableIndices.includes(s)&&!this.readOnly?P`
+                                        <button
+                                            class="btn btn-sm btn-danger ms-auto"
+                                            @click=${()=>this.deleteComment(s)}
+                                        >
+                                            ${st}
+                                        </button>
+                                    `:""}
+                            </div>
+                            <div>
+                                <p class="mb-0 py-3 comment-text">${i.comment}</p>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                      <p class="mb-0 py-3 comment-text">${i.comment}</p>
-                    </div>
-                  </div>
                 </div>
-              </div>
             `)):P``}
-  
-      ${this.readOnly?"":P`
-        <div class="mt-4">
-          <textarea
-            class="comment-textarea"
-            .value=${this.newComment}
-            @input=${this.handleCommentChange}
-            placeholder="Write your comment here..."
-          ></textarea>
-          <button
-            class="btn btn-default d-flex align-items-center"
-            type="button"
-            @click=${this.addComment}
-            ?disabled=${!this.newComment.trim()}
-          >
-            ${it} Add Comment
-          </button>
-        </div>
-      `}
+
+        ${this.readOnly?"":P`
+            <div class="mt-4">
+                <textarea
+                    class="comment-textarea"
+                    .value=${this.newComment}
+                    @input=${this.handleCommentChange}
+                    placeholder="Write your comment here..."
+                ></textarea>
+                <button
+                    class="btn btn-default d-flex align-items-center"
+                    type="button"
+                    @click=${this.addComment}
+                    ?disabled=${!this.newComment.trim()}
+                >
+                    ${it} Add Comment
+                </button>
+            </div>
+        `}
     `}getBadgeClass(t){const e={Default:"badge badge-default",Primary:"badge bg-primary text-white",Secondary:"badge bg-secondary text-white",Success:"badge bg-success text-white",Danger:"badge bg-danger text-white",Warning:"badge bg-warning text-dark",Info:"badge bg-info",Light:"badge bg-light text-dark",Dark:"badge bg-dark text-white"};return e[t]||e.Default}}customElements.define("neo-comments",rt)})();
