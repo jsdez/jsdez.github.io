@@ -232,16 +232,16 @@ class CommentsElement extends LitElement {
                     <div class="d-flex flex-row align-items-center">
                       <h6 class="fw-bold mb-0">${item.firstName} ${item.lastName || ''}</h6>
                       ${item.taskowner ? html`
-                        <span class="badge bg-info text-white ms-2">${item.taskowner}</span>
+                        <span class="badge bg-light text-dark ms-2">${item.taskowner}</span>
                       ` : ''}
                       ${this.deletableIndices.includes(index) && !this.readOnly ? html`
-                        <button class="btn btn-sm btn-danger ms-2" @click=${() => this.deleteComment(index)}>
+                        <button class="btn btn-sm btn-danger ms-auto" @click=${() => this.deleteComment(index)}>
                           ${deleteIcon}
                         </button>
                       ` : ''}
                     </div>
                     <div class="d-flex flex-row align-items-center">
-                      <p class="mb-0 text-muted">
+                      <p class="mb-0 text-muted comment-date">
                         ${new Date(item.timestamp).toLocaleString('en-GB', {
                           weekday: 'short',
                           year: 'numeric',

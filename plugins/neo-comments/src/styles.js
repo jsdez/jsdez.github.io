@@ -33,27 +33,36 @@ export const componentStyles = css`
   }
 
   .comment-card {
-    border: none;
+    border: none; /* Remove borders */
     border-radius: 0;
     margin: 0;
     padding: 0;
     transition: background-color 0.3s ease, box-shadow 0.3s ease;
-    border-bottom: 1px solid #ddd;
   }
 
-  .comment-card:first-child {
-    border-top: 1px solid #ddd;
-    margin-top: 1rem;
+  /* Apply alternating row colors using the theme variable */
+  .comment-card:nth-child(odd) {
+    background-color: var(--ntx-form-theme-color-form-background); /* Default form background */
   }
 
+  .comment-card:nth-child(even) {
+    background-color: var(--ntx-form-theme-color-form-background-alternate-contrast); /* Alternate contrast color */
+  }
+
+  /* Hover effect */
   .comment-card:hover {
-    background-color: #f8f9fa; /* Light background on hover */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow on hover */
+    background-color: var(--ntx-form-theme-color-input-background); /* Use input background for hover effect */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   }
 
+  /* Selected state */
   .comment-card.selected {
-    background-color: #e9ecef; /* Selected state color */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Slightly stronger shadow */
+    background-color: var(--ntx-form-theme-color-border); /* Slightly darker contrast */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  .comment-date {
+    font-size: 14px;
   }
 
   .card-body {
