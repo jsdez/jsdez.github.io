@@ -232,7 +232,7 @@ class CommentsElement extends LitElement {
   
     return html`
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-      
+  
       ${this.historyLimit > 0 && this.workingComments.length > this.historyLimit ? html`
         <div class="d-flex justify-content-center mb-3">
           <button 
@@ -246,45 +246,47 @@ class CommentsElement extends LitElement {
         </div>
       ` : ''}
   
-      ${this.displayedComments.length > 0 ? this.displayedComments.map((item, index) => html`
+      ${displayedComments.length > 0 ? html`
         <div class="comments-history ${commentsHistoryClasses}">
-          <div class="card comment-card">
-            <div class="card-body">
-              <div class="d-flex flex-row align-items-center">
-                <h6 class="fw-bold mb-0">${item.firstName} ${item.lastName || ''}</h6>
-                ${item.taskowner ? html`
-                  <span class="badge bg-light text-dark ms-2">${item.taskowner}</span>
-                ` : ''}
-                ${this.deletableIndices.includes(index) && !this.readOnly ? html`
-                  <button class="btn btn-sm btn-danger ms-auto" @click=${() => this.deleteComment(index)}>
-                    ${deleteIcon}
-                  </button>
-                ` : ''}
-              </div>
-              <div class="d-flex flex-row align-items-center">
-                <p class="mb-0 text-muted comment-date">
-                  ${new Date(item.timestamp).toLocaleString('en-GB', {
-                    weekday: 'short',
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false,
-                  })}
-                </p>
-                <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">
-                  ${item.badge || 'Update'}
-                </span>
-              </div>
-              <div>
-                <p class="mb-0 py-3 comment-text">${item.comment}</p>
+          ${displayedComments.map((item, index) => html`
+            <div class="card comment-card">
+              <div class="card-body">
+                <div class="d-flex flex-row align-items-center">
+                  <h6 class="fw-bold mb-0">${item.firstName} ${item.lastName || ''}</h6>
+                  ${item.taskowner ? html`
+                    <span class="badge bg-light text-dark ms-2">${item.taskowner}</span>
+                  ` : ''}
+                  ${this.deletableIndices.includes(index) && !this.readOnly ? html`
+                    <button class="btn btn-sm btn-danger ms-auto" @click=${() => this.deleteComment(index)}>
+                      ${deleteIcon}
+                    </button>
+                  ` : ''}
+                </div>
+                <div class="d-flex flex-row align-items-center">
+                  <p class="mb-0 text-muted comment-date">
+                    ${new Date(item.timestamp).toLocaleString('en-GB', {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: false,
+                    })}
+                  </p>
+                  <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">
+                    ${item.badge || 'Update'}
+                  </span>
+                </div>
+                <div>
+                  <p class="mb-0 py-3 comment-text">${item.comment}</p>
+                </div>
               </div>
             </div>
-          </div>
+          `)}
         </div>
-      `) : html``}
+      ` : html``}
   
       ${!this.readOnly ? html`
         <div class="mt-4">
@@ -305,7 +307,7 @@ class CommentsElement extends LitElement {
         </div>
       ` : ''}
     `;
-  }
+  }  
   
   // Helper method to apply the correct class based on badge style
   getBadgeClass(style) {
