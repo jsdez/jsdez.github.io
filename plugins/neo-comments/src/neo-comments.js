@@ -240,50 +240,47 @@ class CommentsElement extends LitElement {
           </button>
         </div>
       ` : ''}
-
-      <div class="comments-history ${this.commentsBorder ? '' : 'border-0'}">
-        ${this.displayedComments.length > 0
-          ? this.displayedComments.map(
-              (item, index) => html`
-                <div class="card comment-card">
-                  <div class="card-body">
-                    <div class="d-flex flex-row align-items-center">
-                      <h6 class="fw-bold mb-0">${item.firstName} ${item.lastName || ''}</h6>
-                      ${item.taskowner ? html`
-                        <span class="badge bg-light text-dark ms-2">${item.taskowner}</span>
-                      ` : ''}
-                      ${this.deletableIndices.includes(index) && !this.readOnly ? html`
-                        <button class="btn btn-sm btn-danger ms-auto" @click=${() => this.deleteComment(index)}>
-                          ${deleteIcon}
-                        </button>
-                      ` : ''}
-                    </div>
-                    <div class="d-flex flex-row align-items-center">
-                      <p class="mb-0 text-muted comment-date">
-                        ${new Date(item.timestamp).toLocaleString('en-GB', {
-                          weekday: 'short',
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                          hour12: false,
-                        })}
-                      </p>
-                      <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">
-                        ${item.badge || 'Update'}
-                      </span>
-                    </div>
-                    <div>
-                      <p class="mb-0 py-3 comment-text">${item.comment}</p>
-                    </div>
-                  </div>
+      ${this.displayedComments.length > 0 ? this.displayedComments.map(
+      (item, index) => html`
+        <div class="comments-history ${this.commentsBorder ? '' : 'border-0'}">
+            <div class="card comment-card">
+              <div class="card-body">
+                <div class="d-flex flex-row align-items-center">
+                  <h6 class="fw-bold mb-0">${item.firstName} ${item.lastName || ''}</h6>
+                  ${item.taskowner ? html`
+                    <span class="badge bg-light text-dark ms-2">${item.taskowner}</span>
+                  ` : ''}
+                  ${this.deletableIndices.includes(index) && !this.readOnly ? html`
+                    <button class="btn btn-sm btn-danger ms-auto" @click=${() => this.deleteComment(index)}>
+                      ${deleteIcon}
+                    </button>
+                  ` : ''}
                 </div>
-              `
-            )
-          : html``}
-      </div>
+                <div class="d-flex flex-row align-items-center">
+                  <p class="mb-0 text-muted comment-date">
+                    ${new Date(item.timestamp).toLocaleString('en-GB', {
+                      weekday: 'short',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: false,
+                    })}
+                  </p>
+                  <span class="badge ${this.getBadgeClass(item.badgeStyle) || 'Default'} ms-2">
+                    ${item.badge || 'Update'}
+                  </span>
+                </div>
+                <div>
+                  <p class="mb-0 py-3 comment-text">${item.comment}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `)
+      : html``}
   
       ${!this.readOnly ? html`
         <div class="mt-4">
