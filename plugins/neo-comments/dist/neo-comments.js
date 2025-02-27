@@ -13,7 +13,7 @@
   overflow: hidden; /* Ensures rounded corners apply correctly */
 }
 
-.comments-history .comments-border {
+.comments-history.comments-border {
   border-radius: var(--ntx-form-theme-border-radius);
   border-color: var(--ntx-form-theme-color-border);
   border: 1px solid;
