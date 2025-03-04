@@ -14,7 +14,7 @@ class CommentsElement extends LitElement {
       fallbackDisableSubmit: false,
       description: 'Notes and comments',
       iconUrl:'https://jsdez.github.io/plugins/dfs-workflow-comments/dist/icon.svg',
-      groupName: 'NEO',
+      groupName: 'DFS',
       version: '1.0',
       properties: {
         commentsBorder: {
@@ -64,7 +64,7 @@ class CommentsElement extends LitElement {
           isValueField: true,
           properties: {
             Comments: {
-              type: 'object',
+              type: 'array',
               description: 'Array of comments',
               items: {
                 type: 'object',
