@@ -63,7 +63,7 @@ class CommentsElement extends LitElement {
           description: 'Workflow Comments Output Do Not Use',
           isValueField: true,
           properties: {
-            Comments: {
+            comments: {
               type: 'array',
               description: 'Array of comments',
               items: {
