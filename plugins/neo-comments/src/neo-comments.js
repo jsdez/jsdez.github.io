@@ -181,43 +181,40 @@ class CommentsElement extends LitElement {
       timestamp,
     };
   
-    // Add the new comment to the workingComments array
+    // Update the working comments array
     this.workingComments = [...this.workingComments, newEntry];
   
-    // Mark the new comment as deletable
-    this.deletableIndices = [...this.deletableIndices, this.workingComments.length - 1];
-  
-    // Update the component's outputobj property
-    this.outputobj = {
-      comments: this.workingComments,
+    // Ensure outputobj is a new object to trigger reactivity
+    this.outputobj = Object.assign({}, this.outputobj, {
+      comments: [...this.workingComments],
       mostRecentComment: newEntry,
-    };
+    });
   
-    // Dispatch the updated outputobj
+    console.log("Dispatching event with outputobj:", this.outputobj);
+  
     this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: this.outputobj }));
   
-    // Clear the newComment field
     this.newComment = '';
   }
+  
   
   deleteComment(index) {
     // Remove the comment at the specified index
     this.workingComments = this.workingComments.filter((_, i) => i !== index);
   
-    // Update the deletableIndices to reflect the shifted indices
-    this.deletableIndices = this.deletableIndices
-      .filter(i => i !== index) // Remove the deleted index
-      .map(i => (i > index ? i - 1 : i)); // Shift indices down for remaining comments after the deleted index
+    // Get the most recent comment after deletion
+    const mostRecentComment = this.workingComments[this.workingComments.length - 1] || null;
   
-    // Update the component's outputobj property
-    this.outputobj = {
-      comments: this.workingComments,
-      mostRecentComment: this.workingComments[this.workingComments.length - 1] || null,
-    };
+    // Ensure outputobj is updated correctly
+    this.outputobj = Object.assign({}, this.outputobj, {
+      comments: [...this.workingComments],
+      mostRecentComment: mostRecentComment,
+    });
   
-    // Dispatch the updated outputobj
+    console.log("Dispatching event with updated outputobj:", this.outputobj);
+  
     this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: this.outputobj }));
-  }
+  }  
   
   handleCommentChange(e) {
     this.newComment = e.target.value;
