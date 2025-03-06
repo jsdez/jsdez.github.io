@@ -161,7 +161,7 @@ class CommentsElement extends LitElement {
               type: 'object',
               description: 'Array of comments',
               items: {
-                type: 'object',
+                type: 'array',
                 properties: {
                   firstName: { type: 'string', description: 'First Name', title: 'First Name' },
                   lastName: { type: 'string', description: 'Last Name', title: 'Last Name' },
