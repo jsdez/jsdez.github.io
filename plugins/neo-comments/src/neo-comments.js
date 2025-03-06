@@ -118,6 +118,7 @@ class CommentsElement extends LitElement {
     deletableIndices: { type: Array },
     historyLimit: { type: Number },
     showAll: { type: Boolean },
+    outputobj: { type: Object },
   };
 
   constructor() {
@@ -168,7 +169,7 @@ class CommentsElement extends LitElement {
 
   addComment() {
     const timestamp = new Date().toISOString();
-
+  
     const newEntry = {
       firstName: this.firstName || 'Anonymous',
       lastName: this.lastName || '',
@@ -179,26 +180,26 @@ class CommentsElement extends LitElement {
       comment: this.newComment,
       timestamp,
     };
-
+  
     // Add the new comment to the workingComments array
     this.workingComments = [...this.workingComments, newEntry];
-
+  
     // Mark the new comment as deletable
     this.deletableIndices = [...this.deletableIndices, this.workingComments.length - 1];
-
-    // Dispatch the updated outputobj
-    const mostRecentComment = newEntry;
-    const outputobj = {
+  
+    // Update the component's outputobj property
+    this.outputobj = {
       comments: this.workingComments,
-      mostRecentComment,
+      mostRecentComment: newEntry,
     };
-
-    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: outputobj }));
-
+  
+    // Dispatch the updated outputobj
+    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: this.outputobj }));
+  
     // Clear the newComment field
     this.newComment = '';
   }
-
+  
   deleteComment(index) {
     // Remove the comment at the specified index
     this.workingComments = this.workingComments.filter((_, i) => i !== index);
@@ -208,14 +209,14 @@ class CommentsElement extends LitElement {
       .filter(i => i !== index) // Remove the deleted index
       .map(i => (i > index ? i - 1 : i)); // Shift indices down for remaining comments after the deleted index
   
-    // Dispatch the updated outputobj
-    const mostRecentComment = this.workingComments[this.workingComments.length - 1] || null;
-    const outputobj = {
+    // Update the component's outputobj property
+    this.outputobj = {
       comments: this.workingComments,
-      mostRecentComment,
+      mostRecentComment: this.workingComments[this.workingComments.length - 1] || null,
     };
   
-    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: outputobj }));
+    // Dispatch the updated outputobj
+    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: this.outputobj }));
   }
   
   handleCommentChange(e) {
