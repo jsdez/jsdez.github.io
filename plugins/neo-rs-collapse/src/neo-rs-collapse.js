@@ -10,20 +10,25 @@ class CollapseElement extends LitElement {
       groupName: 'NEO',
       version: '1.0',
       properties: {
+        targetClass: {
+          type: 'string',
+          title: 'Repeating Section CSS Class',
+          description: 'Please enter the class used to target the repeating section'
+        },
+        nameInputClass: {
+          type: 'string',
+          title: 'Input Name CSS Class',
+          description: 'If you wish to have a dynamic section name, Please enter the class used to target input inside the section containing the section name'
+        },
         sectionName: {
           type: 'string',
-          title: 'Section Name',
-          description: 'If you wish to name each section, enter it here, the name will be used followed by a number, e.g. entering Item will result in Item 1, Item 2,...'
+          title: 'Manual Section Name',
+          description: 'If you wish to name each section the same, enter it here, the name will be used followed by a number, e.g. entering Item will result in Item 1, Item 2,...'
         },
         sectionCount: {
           title: 'Section Count',
           type: 'number',
           description: 'Please enter a formula which counts the repeating section using the count() function e.g. count([Form].[Repeating section 1])',
-        },
-        targetClass: {
-          type: 'string',
-          title: 'Repeating Section CSS Class',
-          description: 'Please enter the class used to target the repeating section'
         },
         showIcon: {
           title: 'Show Icon',
@@ -45,6 +50,7 @@ class CollapseElement extends LitElement {
 
   static properties = {
     sectionName: { type: String },
+    nameInputClass: { type: String },
     sectionCount: { type: Number },
     targetClass: { type: String },
     showIcon: { type: Boolean },
@@ -54,6 +60,7 @@ class CollapseElement extends LitElement {
   constructor() {
     super();
     this.sectionName = 'Section';
+    this.nameInputClass = '';
     this.sectionCount = 0;
     this.targetClass = '';
     this.showIcon = true;
@@ -61,14 +68,93 @@ class CollapseElement extends LitElement {
     this.lastOpenIndex = -1;
     this.isInitializing = false;
     this.previousSectionCount = 0;
+    this.nameInputObservers = new Map();
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    this._initTimer = setTimeout(() => {
-      this.initCollapsibleSections();
-      this.observeRepeatingSection();
-    }, 200);
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    // Clean up all observers when component is disconnected
+    this.nameInputObservers.forEach(observer => observer.disconnect());
+    this.nameInputObservers.clear();
+  }
+
+  getSectionName(section, index) {
+    // If nameInputClass is specified, try to find the input with that class
+    if (this.nameInputClass) {
+      // First try to find a direct input element with the class
+      const nameInput = section.querySelector(`.${this.nameInputClass} input`);
+      if (nameInput && nameInput.value) {
+        return nameInput.value;
+      }
+      
+      // Try to find any element with the class that might contain the value
+      const nameElement = section.querySelector(`.${this.nameInputClass}`);
+      if (nameElement) {
+        // Check various ways the value might be stored
+        if (nameElement.value) return nameElement.value;
+        if (nameElement.textContent && nameElement.textContent.trim()) return nameElement.textContent.trim();
+        if (nameElement.innerText && nameElement.innerText.trim()) return nameElement.innerText.trim();
+      }
+    }
+    
+    // Fall back to sectionName with numbering if specified
+    if (this.sectionName) {
+      return `${this.sectionName} ${index + 1}`;
+    }
+    
+    // Default to generic "Section" with numbering
+    return `Section ${index + 1}`;
+  }
+
+  setupNameInputObserver(section, index) {
+    if (!this.nameInputClass) return;
+
+    // Find the name input element
+    const nameInput = section.querySelector(`.${this.nameInputClass} input`) || 
+                     section.querySelector(`.${this.nameInputClass}`);
+    if (!nameInput) return;
+
+    // Clean up any existing observer for this section
+    if (this.nameInputObservers.has(section)) {
+      this.nameInputObservers.get(section).disconnect();
+      this.nameInputObservers.delete(section);
+    }
+
+    const updateSectionName = () => {
+      const overlay = section.querySelector('.ntx-repeating-section-overlay');
+      if (!overlay) return;
+      
+      const label = overlay.querySelector('.section-label');
+      if (label) {
+        label.textContent = this.getSectionName(section, index);
+      }
+    };
+
+    // Create a new observer for this input
+    const observer = new MutationObserver(updateSectionName);
+    
+    // Observe both value changes and character data (for contenteditable)
+    observer.observe(nameInput, {
+      attributes: true,
+      attributeFilter: ['value'],
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+
+    // Also listen for input events (for immediate feedback)
+    const inputHandler = () => updateSectionName();
+    nameInput.addEventListener('input', inputHandler);
+    
+    // Store the observer and handler for cleanup
+    this.nameInputObservers.set(section, {
+      observer,
+      inputHandler,
+      element: nameInput
+    });
+
+    // Initial update
+    updateSectionName();
   }
 
   createChevronIcon(isExpanded) {
@@ -116,17 +202,13 @@ class CollapseElement extends LitElement {
         return;
       }
 
-      // Determine if a new section was added
       const wasNewSectionAdded = sections.length > this.previousSectionCount;
-
-      // If a new section was added, set last open index to the new section
       if (wasNewSectionAdded) {
         this.lastOpenIndex = sections.length - 1;
       } else if (this.lastOpenIndex >= sections.length || this.lastOpenIndex < -1) {
         this.lastOpenIndex = sections.length - 1;
       }
 
-      // Determine the section to keep open
       const sectionToOpen = this.lastOpenIndex === -1 
         ? sections.length - 1 
         : Math.min(this.lastOpenIndex, sections.length - 1);
@@ -152,13 +234,11 @@ class CollapseElement extends LitElement {
         }
 
         const overlay = section.querySelector('.ntx-repeating-section-overlay');
-
         if (!overlay) {
           console.error(`No overlay found for section ${index}`);
           return;
         }
 
-        // Styling and labeling logic
         Object.assign(overlay.style, {
           cursor: 'pointer',
           padding: '0px 0px 0px 10px',
@@ -171,27 +251,23 @@ class CollapseElement extends LitElement {
           gap: '10px'
         });
 
-        // Clear existing overlay content
         overlay.innerHTML = '';
-
-        // Create container for icon and label
         const contentContainer = document.createElement('div');
         contentContainer.style.display = 'flex';
         contentContainer.style.alignItems = 'center';
         contentContainer.style.gap = '10px';
         contentContainer.style.width = '100%';
 
-        // Add chevron icon if enabled
         if (this.showIcon) {
           const isExpanded = index === sectionToOpen;
           const chevron = this.createChevronIcon(isExpanded);
           contentContainer.appendChild(chevron);
         }
 
-        // Add section label if enabled
         if (this.showName) {
           const sectionLabel = document.createElement('span');
-          sectionLabel.textContent = `${this.sectionName} ${index + 1}`;
+          sectionLabel.textContent = this.getSectionName(section, index);
+          sectionLabel.classList.add('section-label');
           sectionLabel.style.fontWeight = 'bold';
           sectionLabel.style.marginRight = 'auto';
           contentContainer.appendChild(sectionLabel);
@@ -199,12 +275,10 @@ class CollapseElement extends LitElement {
 
         overlay.appendChild(contentContainer);
 
-        // Set initial visibility
         const isVisible = index === sectionToOpen;
         contentToToggle.style.display = isVisible ? 'block' : 'none';
         overlay.style.backgroundColor = isVisible ? '#e0e0e0' : '#f0f0f0';
 
-        // Toggle event listener
         overlay.onclick = (event) => {
           if (event.target.closest('.ntx-repeating-section-remove-button')) return;
 
@@ -231,39 +305,34 @@ class CollapseElement extends LitElement {
             }
           });
         };
+
+        // Set up observation for name input changes
+        this.setupNameInputObserver(section, index);
       });
 
-      // Update last open index
       this.lastOpenIndex = sectionToOpen;
-
-      // Update previous section count
       this.previousSectionCount = sections.length;
     } catch (error) {
       console.error('Error in initCollapsibleSections:', error);
     } finally {
-      // Always reset initialization flag
       this.isInitializing = false;
     }
   }
 
   observeRepeatingSection() {
     const repeatingSection = document.querySelector(`.${this.targetClass}`);
-
     if (!repeatingSection) return;
 
     const observer = new MutationObserver(() => {
-      // Debounce the initialization
       clearTimeout(this._observerTimer);
       this._observerTimer = setTimeout(() => {
         const updatedSections = repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
-
         if (updatedSections.length === 0) {
           this.lastOpenIndex = -1;
           this.previousSectionCount = 0;
         } else if (this.lastOpenIndex >= updatedSections.length) {
           this.lastOpenIndex = updatedSections.length - 1;
         }
-
         this.initCollapsibleSections();
       }, 100);
     });
