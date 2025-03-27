@@ -60,7 +60,6 @@ class CollapseElement extends LitElement {
   constructor() {
     super();
     this.sectionName = 'Section';
-    this.nameInputClass = '';
     this.sectionCount = 0;
     this.targetClass = '';
     this.showIcon = true;
@@ -100,26 +99,6 @@ class CollapseElement extends LitElement {
     if (use) {
       use.setAttribute('href', isExpanded ? '#chevron-down' : '#chevron-right');
     }
-  }
-
-  getSectionName(section, index) {
-    // First try to find the input with nameInputClass
-    if (this.nameInputClass) {
-      const nameInput = section.querySelector(`.${this.nameInputClass} input`);
-      if (nameInput?.nameInput.value) {
-        return nameInput.value;
-      }
-      
-      // Fallback to any element with the class
-      const nameElement = section.querySelector(`.${this.nameInputClass}`);
-      if (nameElement) {
-        if (nameElement.value) return nameElement.value;
-        if (nameElement.textContent) return nameElement.textContent.trim();
-      }
-    }
-    
-    // Fall back to sectionName with numbering
-    return `${this.sectionName || 'Section'} ${index + 1}`;
   }
 
   initCollapsibleSections() {
@@ -218,8 +197,7 @@ class CollapseElement extends LitElement {
         // Add section label if enabled
         if (this.showName) {
           const sectionLabel = document.createElement('span');
-          sectionLabel.textContent = this.getSectionName(section, index);  // Modified this line
-          sectionLabel.classList.add('section-label');
+          sectionLabel.textContent = `${this.sectionName} ${index + 1}`;
           sectionLabel.style.fontWeight = 'bold';
           sectionLabel.style.marginRight = 'auto';
           contentContainer.appendChild(sectionLabel);
