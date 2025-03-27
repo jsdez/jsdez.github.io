@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600;700;800;900&display=swap');
+
+:root {
+    --ntx-form-theme-font-family: "Montserrat", "Open Sans", "Helvetica", "Arial", sans-serif;
+}
+
+/* Apply font family to all text inside ntx-form-runtime */
+ntx-form-runtime {
+    font-family: var(--ntx-form-theme-font-family);
+}
+
+/* Heading Styles Inside ntx-form-runtime */
+ntx-form-runtime h1,
+ntx-form-runtime h3,
+ntx-form-runtime h5 {
+    color: #26bf4a !important;
+}
+
+ntx-form-runtime h2,
+ntx-form-runtime h4,
+ntx-form-runtime h6 {
+    color: #1c75c2 !important;
+}
+
+[dir] .nx-theme-styles .nx-theme-label-1 {
+    font-weight: bold;
+    font-size: 0.92em;
+    color:#2f2e2e
+}
+
+[dir] .nx-theme-styles .nx-theme-label-1 .nx-required-star {
+    color: #1c75c2;
+}
+.nx-form-label .nx-help-link, .nx-form-label .nx-required-star {
+    color: #1c75c2;
+    margin-left: 5px;
+}
+
+[dir] .nx-theme-styles .nx-theme-radio-1 .nx-radio input[type=radio]:not(:disabled) + .nx-radio-container .nx-radio-faux {
+    background-color: #FFFFFF;
+    border-color: #3b3b3b!important;
+}
