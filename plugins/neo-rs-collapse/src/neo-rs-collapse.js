@@ -51,6 +51,7 @@ class CollapseElement extends LitElement {
 
   static properties = {
     sectionName: { type: String },
+    nameInputClass: { type: String },
     sectionCount: { type: Number },
     targetClass: { type: String },
     showIcon: { type: Boolean },
@@ -60,6 +61,7 @@ class CollapseElement extends LitElement {
   constructor() {
     super();
     this.sectionName = 'Section';
+    this.nameInputClass = '';
     this.sectionCount = 0;
     this.targetClass = '';
     this.showIcon = true;
@@ -104,39 +106,39 @@ class CollapseElement extends LitElement {
   initCollapsibleSections() {
     if (this.isInitializing) return;
     this.isInitializing = true;
-
+  
     try {
       const repeatingSection = document.querySelector(`.${this.targetClass}`);
-
+  
       if (!repeatingSection) {
         console.error(`No repeating section found with class: ${this.targetClass}`);
         this.isInitializing = false;
         return;
       }
-
+  
       const sections = repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
-
+  
       if (sections.length === 0) {
         console.error('No sections found to make collapsible');
         this.isInitializing = false;
         return;
       }
-
+  
       // Determine if a new section was added
       const wasNewSectionAdded = sections.length > this.previousSectionCount;
-
+  
       // If a new section was added, set last open index to the new section
       if (wasNewSectionAdded) {
         this.lastOpenIndex = sections.length - 1;
       } else if (this.lastOpenIndex >= sections.length || this.lastOpenIndex < -1) {
         this.lastOpenIndex = sections.length - 1;
       }
-
+  
       // Determine the section to keep open
       const sectionToOpen = this.lastOpenIndex === -1 
         ? sections.length - 1 
         : Math.min(this.lastOpenIndex, sections.length - 1);
-
+  
       sections.forEach((section, index) => {
         const contentSelectors = [
           '.nx-form-runtime-light',
@@ -145,25 +147,25 @@ class CollapseElement extends LitElement {
           '.ng-star-inserted > div',
           '.nx-form-runtime-section'
         ];
-
+  
         let contentToToggle = null;
         for (const selector of contentSelectors) {
           contentToToggle = section.querySelector(selector);
           if (contentToToggle) break;
         }
-
+  
         if (!contentToToggle) {
           console.error(`No content found to toggle for section ${index}`);
           return;
         }
-
+  
         const overlay = section.querySelector('.ntx-repeating-section-overlay');
-
+  
         if (!overlay) {
           console.error(`No overlay found for section ${index}`);
           return;
         }
-
+  
         // Styling and labeling logic
         Object.assign(overlay.style, {
           cursor: 'pointer',
@@ -176,56 +178,66 @@ class CollapseElement extends LitElement {
           alignItems: 'center',
           gap: '10px'
         });
-
+  
         // Clear existing overlay content
         overlay.innerHTML = '';
-
+  
         // Create container for icon and label
         const contentContainer = document.createElement('div');
         contentContainer.style.display = 'flex';
         contentContainer.style.alignItems = 'center';
         contentContainer.style.gap = '10px';
         contentContainer.style.width = '100%';
-
+  
         // Add chevron icon if enabled
         if (this.showIcon) {
           const isExpanded = index === sectionToOpen;
           const chevron = this.createChevronIcon(isExpanded);
           contentContainer.appendChild(chevron);
         }
-
+  
         // Add section label if enabled
-        if (this.showName) {
-          const sectionLabel = document.createElement('span');
-          sectionLabel.textContent = `${this.sectionName} ${index + 1}`;
-          sectionLabel.style.fontWeight = 'bold';
-          sectionLabel.style.marginRight = 'auto';
-          contentContainer.appendChild(sectionLabel);
+        let sectionLabel = '';
+        if (this.nameInputClass) {
+          const input = section.querySelector(`input.${this.nameInputClass}`);
+          if (input && input.value) {
+            sectionLabel = input.value;
+          }
         }
-
+  
+        if (!sectionLabel) {
+          sectionLabel = this.sectionName || 'Section';
+        }
+  
+        const sectionLabelElement = document.createElement('span');
+        sectionLabelElement.textContent = `${sectionLabel} ${index + 1}`;
+        sectionLabelElement.style.fontWeight = 'bold';
+        sectionLabelElement.style.marginRight = 'auto';
+        contentContainer.appendChild(sectionLabelElement);
+  
         overlay.appendChild(contentContainer);
-
+  
         // Set initial visibility
         const isVisible = index === sectionToOpen;
         contentToToggle.style.display = isVisible ? 'block' : 'none';
         overlay.style.backgroundColor = isVisible ? '#e0e0e0' : '#f0f0f0';
-
+  
         // Toggle event listener
         overlay.onclick = (event) => {
           if (event.target.closest('.ntx-repeating-section-remove-button')) return;
-
+  
           this.lastOpenIndex = index;
-
+  
           sections.forEach((s, i) => {
             let content = null;
             for (const selector of contentSelectors) {
               content = s.querySelector(selector);
               if (content) break;
             }
-
+  
             const sectionOverlay = s.querySelector('.ntx-repeating-section-overlay');
             const chevron = sectionOverlay?.querySelector('svg');
-
+  
             if (content && sectionOverlay) {
               const isExpanded = i === index;
               content.style.display = isExpanded ? 'block' : 'none';
@@ -238,10 +250,10 @@ class CollapseElement extends LitElement {
           });
         };
       });
-
+  
       // Update last open index
       this.lastOpenIndex = sectionToOpen;
-
+  
       // Update previous section count
       this.previousSectionCount = sections.length;
     } catch (error) {
@@ -251,6 +263,7 @@ class CollapseElement extends LitElement {
       this.isInitializing = false;
     }
   }
+  
 
   observeRepeatingSection() {
     const repeatingSection = document.querySelector(`.${this.targetClass}`);
