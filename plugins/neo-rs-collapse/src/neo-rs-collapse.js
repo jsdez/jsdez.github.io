@@ -124,22 +124,8 @@ class CollapseElement extends LitElement {
         return;
       }
   
-      // Determine if a new section was added
-      const wasNewSectionAdded = sections.length > this.previousSectionCount;
-  
-      // If a new section was added, set last open index to the new section
-      if (wasNewSectionAdded) {
-        this.lastOpenIndex = sections.length - 1;
-      } else if (this.lastOpenIndex >= sections.length || this.lastOpenIndex < -1) {
-        this.lastOpenIndex = sections.length - 1;
-      }
-  
-      // Determine the section to keep open
-      const sectionToOpen = this.lastOpenIndex === -1
-        ? sections.length - 1
-        : Math.min(this.lastOpenIndex, sections.length - 1);
-  
-      sections.forEach((section, index) => {
+      // Loop over each section
+      for (const [index, section] of sections.entries()) {
         const contentSelectors = [
           '.nx-form-runtime-light',
           '.nx-form-runtime',
@@ -156,14 +142,14 @@ class CollapseElement extends LitElement {
   
         if (!contentToToggle) {
           console.error(`No content found to toggle for section ${index}`);
-          return;
+          continue;
         }
   
         const overlay = section.querySelector('.ntx-repeating-section-overlay');
   
         if (!overlay) {
           console.error(`No overlay found for section ${index}`);
-          return;
+          continue;
         }
   
         // Styling and labeling logic
@@ -191,16 +177,18 @@ class CollapseElement extends LitElement {
   
         // Add chevron icon if enabled
         if (this.showIcon) {
-          const isExpanded = index === sectionToOpen;
+          const isExpanded = index === this.lastOpenIndex;
           const chevron = this.createChevronIcon(isExpanded);
           contentContainer.appendChild(chevron);
         }
   
         // Add section label if enabled
         let sectionLabel = '';
-        const input = section.querySelector(`input.${this.nameInputClass}`);
-        if (input?.input.value) {
-          sectionLabel = input.value;
+        if (this.nameInputClass) {
+          const input = section.querySelector(`input.${this.nameInputClass}`);
+          if (input && input.value) {
+            sectionLabel = input.value;
+          }
         }
   
         if (!sectionLabel) {
@@ -216,7 +204,7 @@ class CollapseElement extends LitElement {
         overlay.appendChild(contentContainer);
   
         // Set initial visibility
-        const isVisible = index === sectionToOpen;
+        const isVisible = index === this.lastOpenIndex;
         contentToToggle.style.display = isVisible ? 'block' : 'none';
         overlay.style.backgroundColor = isVisible ? '#e0e0e0' : '#f0f0f0';
   
@@ -247,27 +235,18 @@ class CollapseElement extends LitElement {
             }
           });
         };
-      });
+      }
   
       // Update last open index
-      this.lastOpenIndex = sectionToOpen;
-  
-      // Update previous section count
-      this.previousSectionCount = sections.length;
-  
-      // Call the method to start observing input changes
-      this.observeInputChanges();
+      this.lastOpenIndex = this.lastOpenIndex === -1 ? sections.length - 1 : Math.min(this.lastOpenIndex, sections.length - 1);
   
     } catch (error) {
       console.error('Error in initCollapsibleSections:', error);
     } finally {
-      // Always reset initialization flag
       this.isInitializing = false;
     }
-  }
+  }  
   
-  
-
   observeRepeatingSection() {
     const repeatingSection = document.querySelector(`.${this.targetClass}`);
 
