@@ -60,27 +60,18 @@ class CollapseElement extends LitElement {
     this.showName = true;
     this.lastOpenIndex = -1;
     this.isInitializing = false;
+    this.previousSectionCount = 0;
   }
 
   connectedCallback() {
     super.connectedCallback();
-    // Debounce initialization
     this._initTimer = setTimeout(() => {
       this.initCollapsibleSections();
       this.observeRepeatingSection();
     }, 200);
   }
 
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    // Clear any pending timers
-    if (this._initTimer) {
-      clearTimeout(this._initTimer);
-    }
-  }
-
   initCollapsibleSections() {
-    // Prevent recursive calls
     if (this.isInitializing) return;
     this.isInitializing = true;
 
@@ -101,8 +92,13 @@ class CollapseElement extends LitElement {
         return;
       }
 
-      // Adjust last open index if it's out of bounds
-      if (this.lastOpenIndex >= sections.length || this.lastOpenIndex < -1) {
+      // Determine if a new section was added
+      const wasNewSectionAdded = sections.length > this.previousSectionCount;
+
+      // If a new section was added, set last open index to the new section
+      if (wasNewSectionAdded) {
+        this.lastOpenIndex = sections.length - 1;
+      } else if (this.lastOpenIndex >= sections.length || this.lastOpenIndex < -1) {
         this.lastOpenIndex = sections.length - 1;
       }
 
@@ -138,7 +134,7 @@ class CollapseElement extends LitElement {
           return;
         }
 
-        // Styling and labeling logic remains the same as previous version
+        // Styling and labeling logic remains the same
         Object.assign(overlay.style, {
           cursor: 'pointer',
           padding: '10px',
@@ -194,6 +190,9 @@ class CollapseElement extends LitElement {
 
       // Update last open index
       this.lastOpenIndex = sectionToOpen;
+
+      // Update previous section count
+      this.previousSectionCount = sections.length;
     } catch (error) {
       console.error('Error in initCollapsibleSections:', error);
     } finally {
@@ -215,6 +214,7 @@ class CollapseElement extends LitElement {
 
         if (updatedSections.length === 0) {
           this.lastOpenIndex = -1;
+          this.previousSectionCount = 0;
         } else if (this.lastOpenIndex >= updatedSections.length) {
           this.lastOpenIndex = updatedSections.length - 1;
         }
