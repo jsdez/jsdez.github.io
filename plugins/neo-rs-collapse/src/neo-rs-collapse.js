@@ -61,7 +61,7 @@ class CollapseElement extends LitElement {
   constructor() {
     super();
     this.sectionName = 'Section';
-    this.nameInputClass = '';
+    this.nameInputClass = 'section-name';
     this.sectionCount = 0;
     this.targetClass = '';
     this.showIcon = true;
