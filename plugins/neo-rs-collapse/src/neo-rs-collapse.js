@@ -135,8 +135,8 @@ class CollapseElement extends LitElement {
       }
   
       // Determine the section to keep open
-      const sectionToOpen = this.lastOpenIndex === -1 
-        ? sections.length - 1 
+      const sectionToOpen = this.lastOpenIndex === -1
+        ? sections.length - 1
         : Math.min(this.lastOpenIndex, sections.length - 1);
   
       sections.forEach((section, index) => {
@@ -198,11 +198,9 @@ class CollapseElement extends LitElement {
   
         // Add section label if enabled
         let sectionLabel = '';
-        if (this.nameInputClass) {
-          const input = section.querySelector(`input.${this.nameInputClass}`);
-          if (input && input.value) {
-            sectionLabel = input.value;
-          }
+        const input = section.querySelector(`input.${this.nameInputClass}`);
+        if (input?.input.value) {
+          sectionLabel = input.value;
         }
   
         if (!sectionLabel) {
@@ -242,7 +240,7 @@ class CollapseElement extends LitElement {
               const isExpanded = i === index;
               content.style.display = isExpanded ? 'block' : 'none';
               sectionOverlay.style.backgroundColor = isExpanded ? '#e0e0e0' : '#f0f0f0';
-              
+  
               if (chevron) {
                 this.updateChevronState(chevron, isExpanded);
               }
@@ -256,6 +254,10 @@ class CollapseElement extends LitElement {
   
       // Update previous section count
       this.previousSectionCount = sections.length;
+  
+      // Call the method to start observing input changes
+      this.observeInputChanges();
+  
     } catch (error) {
       console.error('Error in initCollapsibleSections:', error);
     } finally {
@@ -263,6 +265,7 @@ class CollapseElement extends LitElement {
       this.isInitializing = false;
     }
   }
+  
   
 
   observeRepeatingSection() {
@@ -290,6 +293,27 @@ class CollapseElement extends LitElement {
     observer.observe(repeatingSection, { childList: true, subtree: true });
   }
 
+  observeInputChanges() {
+    const repeatingSection = document.querySelector(`.${this.targetClass}`);
+    if (!repeatingSection) return;
+  
+    const inputs = repeatingSection.querySelectorAll(`input.${this.nameInputClass}`);
+  
+    // Replacing forEach with for...of loop
+    for (const input of inputs) {
+      input.addEventListener('input', (event) => {
+        const section = event.target.closest('.ntx-repeating-section-repeated-section');
+        if (!section) return;
+  
+        const sectionLabel = section.querySelector('.ntx-repeating-section-overlay span');
+        if (sectionLabel) {
+          // Update the label with the new input value
+          sectionLabel.textContent = `${event.target.value} ${this.getSectionIndex(section) + 1}`;
+        }
+      });
+    }
+  }
+  
   render() {
     return null;
   }
