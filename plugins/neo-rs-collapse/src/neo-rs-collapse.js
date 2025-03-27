@@ -71,6 +71,30 @@ class CollapseElement extends LitElement {
     }, 200);
   }
 
+  createChevronIcon(isExpanded) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('version', '1.1');
+    svg.setAttribute('width', '16');
+    svg.setAttribute('height', '16');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.classList.add('nx-icon--allow-events');
+    svg.style.transition = 'transform 0.2s ease-in-out';
+
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', isExpanded ? '#chevron-down' : '#chevron-right');
+    svg.appendChild(use);
+
+    return svg;
+  }
+
+  updateChevronState(chevron, isExpanded) {
+    if (!chevron) return;
+    const use = chevron.querySelector('use');
+    if (use) {
+      use.setAttribute('href', isExpanded ? '#chevron-down' : '#chevron-right');
+    }
+  }
+
   initCollapsibleSections() {
     if (this.isInitializing) return;
     this.isInitializing = true;
@@ -134,7 +158,7 @@ class CollapseElement extends LitElement {
           return;
         }
 
-        // Styling and labeling logic remains the same
+        // Styling and labeling logic
         Object.assign(overlay.style, {
           cursor: 'pointer',
           padding: '10px',
@@ -147,20 +171,35 @@ class CollapseElement extends LitElement {
           gap: '10px'
         });
 
-        // Remove existing label
-        const existingLabel = overlay.querySelector('.section-label');
-        if (existingLabel) existingLabel.remove();
+        // Clear existing overlay content
+        overlay.innerHTML = '';
 
-        // Create section label
-        const sectionLabel = document.createElement('span');
-        sectionLabel.textContent = `${this.sectionName} ${index + 1}`;
-        sectionLabel.classList.add('section-label');
-        sectionLabel.style.fontWeight = 'bold';
-        sectionLabel.style.marginRight = 'auto';
+        // Create container for icon and label
+        const contentContainer = document.createElement('div');
+        contentContainer.style.display = 'flex';
+        contentContainer.style.alignItems = 'center';
+        contentContainer.style.gap = '10px';
+        contentContainer.style.width = '100%';
 
-        overlay.insertBefore(sectionLabel, overlay.firstChild);
+        // Add chevron icon if enabled
+        if (this.showIcon) {
+          const isExpanded = index === sectionToOpen;
+          const chevron = this.createChevronIcon(isExpanded);
+          contentContainer.appendChild(chevron);
+        }
 
-        // Determine visibility
+        // Add section label if enabled
+        if (this.showName) {
+          const sectionLabel = document.createElement('span');
+          sectionLabel.textContent = `${this.sectionName} ${index + 1}`;
+          sectionLabel.style.fontWeight = 'bold';
+          sectionLabel.style.marginRight = 'auto';
+          contentContainer.appendChild(sectionLabel);
+        }
+
+        overlay.appendChild(contentContainer);
+
+        // Set initial visibility
         const isVisible = index === sectionToOpen;
         contentToToggle.style.display = isVisible ? 'block' : 'none';
         overlay.style.backgroundColor = isVisible ? '#e0e0e0' : '#f0f0f0';
@@ -179,10 +218,16 @@ class CollapseElement extends LitElement {
             }
 
             const sectionOverlay = s.querySelector('.ntx-repeating-section-overlay');
+            const chevron = sectionOverlay?.querySelector('svg');
 
             if (content && sectionOverlay) {
-              content.style.display = i === index ? 'block' : 'none';
-              sectionOverlay.style.backgroundColor = i === index ? '#e0e0e0' : '#f0f0f0';
+              const isExpanded = i === index;
+              content.style.display = isExpanded ? 'block' : 'none';
+              sectionOverlay.style.backgroundColor = isExpanded ? '#e0e0e0' : '#f0f0f0';
+              
+              if (chevron) {
+                this.updateChevronState(chevron, isExpanded);
+              }
             }
           });
         };
