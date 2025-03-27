@@ -186,11 +186,12 @@ class CollapseElement extends LitElement {
         let sectionLabel = '';
         if (this.nameInputClass) {
           const input = section.querySelector(`input.${this.nameInputClass}`);
-          if (input && input.value) {
+          if (input?.input.value) {
             sectionLabel = input.value;
           }
         }
   
+        // Fallback to sectionName if no input value is found
         if (!sectionLabel) {
           sectionLabel = this.sectionName || 'Section';
         }
@@ -245,7 +246,8 @@ class CollapseElement extends LitElement {
     } finally {
       this.isInitializing = false;
     }
-  }  
+  }
+  
   
   observeRepeatingSection() {
     const repeatingSection = document.querySelector(`.${this.targetClass}`);
