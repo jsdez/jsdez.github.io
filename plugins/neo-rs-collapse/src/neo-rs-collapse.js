@@ -58,12 +58,16 @@ class CollapseElement extends LitElement {
     this.targetClass = '';
     this.showIcon = true;
     this.showName = true;
-    this.lastOpenIndex = 0; // Tracks the last open section index
+    this.lastOpenIndex = -1; // Change initial value to -1
   }
 
   connectedCallback() {
     super.connectedCallback();
-    setTimeout(() => this.initCollapsibleSections(), 100);
+    // Use requestAnimationFrame for more reliable initialization
+    requestAnimationFrame(() => {
+      this.initCollapsibleSections();
+      this.observeRepeatingSection();
+    });
   }
 
   initCollapsibleSections() {
@@ -79,6 +83,11 @@ class CollapseElement extends LitElement {
     if (sections.length === 0) {
       console.error('No sections found to make collapsible');
       return;
+    }
+
+    // Adjust last open index if it's out of bounds
+    if (this.lastOpenIndex >= sections.length) {
+      this.lastOpenIndex = sections.length - 1;
     }
 
     sections.forEach((section, index) => {
@@ -133,8 +142,14 @@ class CollapseElement extends LitElement {
 
       overlay.insertBefore(sectionLabel, overlay.firstChild);
 
-      // **Maintain open state**
-      contentToToggle.style.display = index === this.lastOpenIndex ? 'block' : 'none';
+      // Determine whether this section should be visible
+      const shouldBeVisible = 
+        this.lastOpenIndex === -1 ? // If no section was previously open
+          index === sections.length - 1 : // Show the last section
+          index === this.lastOpenIndex; // Show the previously open section
+
+      contentToToggle.style.display = shouldBeVisible ? 'block' : 'none';
+      overlay.style.backgroundColor = shouldBeVisible ? '#e0e0e0' : '#f0f0f0';
 
       overlay.addEventListener('click', (event) => {
         if (event.target.closest('.ntx-repeating-section-remove-button')) {
@@ -161,8 +176,10 @@ class CollapseElement extends LitElement {
       });
     });
 
-    // Ensure last section added remains open
-    this.lastOpenIndex = sections.length - 1;
+    // Ensure a section is open (last section or the last known open section)
+    this.lastOpenIndex = this.lastOpenIndex === -1 
+      ? sections.length - 1 
+      : Math.min(this.lastOpenIndex, sections.length - 1);
   }
 
   observeRepeatingSection() {
@@ -174,11 +191,18 @@ class CollapseElement extends LitElement {
       const updatedSections = repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
 
       if (updatedSections.length === 0) {
-        this.lastOpenIndex = 0;
-      } else if (this.lastOpenIndex >= updatedSections.length) {
-        this.lastOpenIndex = updatedSections.length - 1;
+        // If all sections are removed, reset
+        this.lastOpenIndex = -1;
+      } else {
+        // Adjust lastOpenIndex if it's out of bounds
+        if (this.lastOpenIndex >= updatedSections.length) {
+          // If the previously open section is deleted, 
+          // default to the last section
+          this.lastOpenIndex = updatedSections.length - 1;
+        }
       }
 
+      // Reinitialize collapsible sections
       this.initCollapsibleSections();
     });
 
