@@ -74,9 +74,9 @@ class CollapseElement extends LitElement {
   createChevronIcon(isExpanded) {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('version', '1.1');
-    svg.setAttribute('width', '16');
-    svg.setAttribute('height', '16');
-    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '34');
+    svg.setAttribute('height', '34');
+    svg.setAttribute('viewBox', '0 0 36 36');
     svg.classList.add('nx-icon--allow-events');
     svg.style.transition = 'transform 0.2s ease-in-out';
 
@@ -161,7 +161,7 @@ class CollapseElement extends LitElement {
         // Styling and labeling logic
         Object.assign(overlay.style, {
           cursor: 'pointer',
-          padding: '10px',
+          padding: '0px 0px 0px 10px',
           backgroundColor: '#f0f0f0',
           border: '1px solid #ddd',
           userSelect: 'none',
