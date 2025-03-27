@@ -119,6 +119,7 @@ class CollapseElement extends LitElement {
       sectionLabel.textContent = `${this.sectionName} ${index + 1}`;
       sectionLabel.classList.add('section-label'); // Add a class for easy identification
       sectionLabel.style.fontWeight = 'bold';
+      sectionLabel.style.marginRight = 'auto';
   
       overlay.insertBefore(sectionLabel, overlay.firstChild);
   
