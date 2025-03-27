@@ -293,24 +293,18 @@ class CollapseElement extends LitElement {
     }
   }
 
+  // Debugging function to render the values of the properties
   renderPropertiesPreview() {
-    const config = this.constructor.getMetaConfig();
-    const properties = config.properties;
-
     return html`
       <div style="padding: 10px; background-color: #f4f4f4; border: 1px solid #ddd;">
-        <h3>Properties Preview</h3>
+        <h3>Properties Debug Preview</h3>
         <ul>
-          ${Object.keys(properties).map((key) => {
-            const prop = properties[key];
-            return html`
-              <li>
-                <strong>${prop.title}:</strong> ${prop.description || 'No description available'}<br>
-                <em>Type: ${prop.type}</em><br>
-                ${prop.defaultValue !== undefined ? html`<em>Default: ${prop.defaultValue}</em>` : ''}
-              </li>
-            `;
-          })}
+          <li><strong>sectionName:</strong> ${this.sectionName}</li>
+          <li><strong>nameInputClass:</strong> ${this.nameInputClass}</li>
+          <li><strong>sectionCount:</strong> ${this.sectionCount}</li>
+          <li><strong>targetClass:</strong> ${this.targetClass}</li>
+          <li><strong>showIcon:</strong> ${this.showIcon}</li>
+          <li><strong>showName:</strong> ${this.showName}</li>
         </ul>
       </div>
     `;
