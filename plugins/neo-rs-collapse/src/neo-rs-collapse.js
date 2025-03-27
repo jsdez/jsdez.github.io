@@ -292,9 +292,34 @@ class CollapseElement extends LitElement {
       });
     }
   }
+
+  renderPropertiesPreview() {
+    const config = this.constructor.getMetaConfig();
+    const properties = config.properties;
+
+    return html`
+      <div style="padding: 10px; background-color: #f4f4f4; border: 1px solid #ddd;">
+        <h3>Properties Preview</h3>
+        <ul>
+          ${Object.keys(properties).map((key) => {
+            const prop = properties[key];
+            return html`
+              <li>
+                <strong>${prop.title}:</strong> ${prop.description || 'No description available'}<br>
+                <em>Type: ${prop.type}</em><br>
+                ${prop.defaultValue !== undefined ? html`<em>Default: ${prop.defaultValue}</em>` : ''}
+              </li>
+            `;
+          })}
+        </ul>
+      </div>
+    `;
+  }
   
   render() {
-    return null;
+    return html`
+      ${this.renderPropertiesPreview()}
+    `;
   }
 }
 
