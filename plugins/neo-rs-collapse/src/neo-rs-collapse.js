@@ -58,128 +58,148 @@ class CollapseElement extends LitElement {
     this.targetClass = '';
     this.showIcon = true;
     this.showName = true;
-    this.lastOpenIndex = -1; // Change initial value to -1
+    this.lastOpenIndex = -1;
+    this.isInitializing = false;
   }
 
   connectedCallback() {
     super.connectedCallback();
-    // Use requestAnimationFrame for more reliable initialization
-    requestAnimationFrame(() => {
+    // Debounce initialization
+    this._initTimer = setTimeout(() => {
       this.initCollapsibleSections();
       this.observeRepeatingSection();
-    });
+    }, 200);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    // Clear any pending timers
+    if (this._initTimer) {
+      clearTimeout(this._initTimer);
+    }
   }
 
   initCollapsibleSections() {
-    const repeatingSection = document.querySelector(`.${this.targetClass}`);
+    // Prevent recursive calls
+    if (this.isInitializing) return;
+    this.isInitializing = true;
 
-    if (!repeatingSection) {
-      console.error(`No repeating section found with class: ${this.targetClass}`);
-      return;
-    }
+    try {
+      const repeatingSection = document.querySelector(`.${this.targetClass}`);
 
-    const sections = repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
-
-    if (sections.length === 0) {
-      console.error('No sections found to make collapsible');
-      return;
-    }
-
-    // Adjust last open index if it's out of bounds
-    if (this.lastOpenIndex >= sections.length) {
-      this.lastOpenIndex = sections.length - 1;
-    }
-
-    sections.forEach((section, index) => {
-      const contentSelectors = [
-        '.nx-form-runtime-light',
-        '.nx-form-runtime',
-        '[data-form-content]',
-        '.ng-star-inserted > div',
-        '.nx-form-runtime-section'
-      ];
-
-      let contentToToggle = null;
-      for (const selector of contentSelectors) {
-        contentToToggle = section.querySelector(selector);
-        if (contentToToggle) break;
-      }
-
-      if (!contentToToggle) {
-        console.error(`No content found to toggle for section ${index}`);
+      if (!repeatingSection) {
+        console.error(`No repeating section found with class: ${this.targetClass}`);
+        this.isInitializing = false;
         return;
       }
 
-      const overlay = section.querySelector('.ntx-repeating-section-overlay');
+      const sections = repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
 
-      if (!overlay) {
-        console.error(`No overlay found for section ${index}`);
+      if (sections.length === 0) {
+        console.error('No sections found to make collapsible');
+        this.isInitializing = false;
         return;
       }
 
-      Object.assign(overlay.style, {
-        cursor: 'pointer',
-        padding: '10px',
-        backgroundColor: '#f0f0f0',
-        border: '1px solid #ddd',
-        userSelect: 'none',
-        display: 'flex',
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        gap: '10px'
-      });
+      // Adjust last open index if it's out of bounds
+      if (this.lastOpenIndex >= sections.length || this.lastOpenIndex < -1) {
+        this.lastOpenIndex = sections.length - 1;
+      }
 
-      // Prevent duplicate labels
-      const existingLabel = overlay.querySelector('.section-label');
-      if (existingLabel) existingLabel.remove();
+      // Determine the section to keep open
+      const sectionToOpen = this.lastOpenIndex === -1 
+        ? sections.length - 1 
+        : Math.min(this.lastOpenIndex, sections.length - 1);
 
-      // Add section number text
-      const sectionLabel = document.createElement('span');
-      sectionLabel.textContent = `${this.sectionName} ${index + 1}`;
-      sectionLabel.classList.add('section-label');
-      sectionLabel.style.fontWeight = 'bold';
-      sectionLabel.style.marginRight = 'auto';
+      sections.forEach((section, index) => {
+        const contentSelectors = [
+          '.nx-form-runtime-light',
+          '.nx-form-runtime',
+          '[data-form-content]',
+          '.ng-star-inserted > div',
+          '.nx-form-runtime-section'
+        ];
 
-      overlay.insertBefore(sectionLabel, overlay.firstChild);
+        let contentToToggle = null;
+        for (const selector of contentSelectors) {
+          contentToToggle = section.querySelector(selector);
+          if (contentToToggle) break;
+        }
 
-      // Determine whether this section should be visible
-      const shouldBeVisible = 
-        this.lastOpenIndex === -1 ? // If no section was previously open
-          index === sections.length - 1 : // Show the last section
-          index === this.lastOpenIndex; // Show the previously open section
-
-      contentToToggle.style.display = shouldBeVisible ? 'block' : 'none';
-      overlay.style.backgroundColor = shouldBeVisible ? '#e0e0e0' : '#f0f0f0';
-
-      overlay.addEventListener('click', (event) => {
-        if (event.target.closest('.ntx-repeating-section-remove-button')) {
+        if (!contentToToggle) {
+          console.error(`No content found to toggle for section ${index}`);
           return;
         }
 
-        // Store the last opened index
-        this.lastOpenIndex = index;
+        const overlay = section.querySelector('.ntx-repeating-section-overlay');
 
-        sections.forEach((s, i) => {
-          let content = null;
-          for (const selector of contentSelectors) {
-            content = s.querySelector(selector);
-            if (content) break;
-          }
+        if (!overlay) {
+          console.error(`No overlay found for section ${index}`);
+          return;
+        }
 
-          const sectionOverlay = s.querySelector('.ntx-repeating-section-overlay');
-
-          if (content && sectionOverlay) {
-            content.style.display = i === index ? 'block' : 'none';
-            sectionOverlay.style.backgroundColor = i === index ? '#e0e0e0' : '#f0f0f0';
-          }
+        // Styling and labeling logic remains the same as previous version
+        Object.assign(overlay.style, {
+          cursor: 'pointer',
+          padding: '10px',
+          backgroundColor: '#f0f0f0',
+          border: '1px solid #ddd',
+          userSelect: 'none',
+          display: 'flex',
+          justifyContent: 'flex-start',
+          alignItems: 'center',
+          gap: '10px'
         });
-      });
-    });
 
-    // Ensure a section is open (last section or the last known open section)
-    this.lastOpenIndex = this.lastOpenIndex === -1 
-      ? sections.length - 1 
-      : Math.min(this.lastOpenIndex, sections.length - 1);
+        // Remove existing label
+        const existingLabel = overlay.querySelector('.section-label');
+        if (existingLabel) existingLabel.remove();
+
+        // Create section label
+        const sectionLabel = document.createElement('span');
+        sectionLabel.textContent = `${this.sectionName} ${index + 1}`;
+        sectionLabel.classList.add('section-label');
+        sectionLabel.style.fontWeight = 'bold';
+        sectionLabel.style.marginRight = 'auto';
+
+        overlay.insertBefore(sectionLabel, overlay.firstChild);
+
+        // Determine visibility
+        const isVisible = index === sectionToOpen;
+        contentToToggle.style.display = isVisible ? 'block' : 'none';
+        overlay.style.backgroundColor = isVisible ? '#e0e0e0' : '#f0f0f0';
+
+        // Toggle event listener
+        overlay.onclick = (event) => {
+          if (event.target.closest('.ntx-repeating-section-remove-button')) return;
+
+          this.lastOpenIndex = index;
+
+          sections.forEach((s, i) => {
+            let content = null;
+            for (const selector of contentSelectors) {
+              content = s.querySelector(selector);
+              if (content) break;
+            }
+
+            const sectionOverlay = s.querySelector('.ntx-repeating-section-overlay');
+
+            if (content && sectionOverlay) {
+              content.style.display = i === index ? 'block' : 'none';
+              sectionOverlay.style.backgroundColor = i === index ? '#e0e0e0' : '#f0f0f0';
+            }
+          });
+        };
+      });
+
+      // Update last open index
+      this.lastOpenIndex = sectionToOpen;
+    } catch (error) {
+      console.error('Error in initCollapsibleSections:', error);
+    } finally {
+      // Always reset initialization flag
+      this.isInitializing = false;
+    }
   }
 
   observeRepeatingSection() {
@@ -188,22 +208,19 @@ class CollapseElement extends LitElement {
     if (!repeatingSection) return;
 
     const observer = new MutationObserver(() => {
-      const updatedSections = repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
+      // Debounce the initialization
+      clearTimeout(this._observerTimer);
+      this._observerTimer = setTimeout(() => {
+        const updatedSections = repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
 
-      if (updatedSections.length === 0) {
-        // If all sections are removed, reset
-        this.lastOpenIndex = -1;
-      } else {
-        // Adjust lastOpenIndex if it's out of bounds
-        if (this.lastOpenIndex >= updatedSections.length) {
-          // If the previously open section is deleted, 
-          // default to the last section
+        if (updatedSections.length === 0) {
+          this.lastOpenIndex = -1;
+        } else if (this.lastOpenIndex >= updatedSections.length) {
           this.lastOpenIndex = updatedSections.length - 1;
         }
-      }
 
-      // Reinitialize collapsible sections
-      this.initCollapsibleSections();
+        this.initCollapsibleSections();
+      }, 100);
     });
 
     observer.observe(repeatingSection, { childList: true, subtree: true });
