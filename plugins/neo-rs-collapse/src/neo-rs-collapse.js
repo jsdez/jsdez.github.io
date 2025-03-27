@@ -107,7 +107,20 @@ class CollapseElement extends LitElement {
         console.error(`No overlay found for section ${index}`);
         return;
       }
-  
+
+      Object.assign(overlay.style, {
+        cursor: 'pointer',
+        padding: '10px',
+        backgroundColor: '#f0f0f0',
+        border: '1px solid #ddd',
+        marginBottom: '5px',
+        userSelect: 'none',
+        display: 'flex',
+        justifyContent: 'flex-start', // Aligns content to the left
+        alignItems: 'center',
+        gap: '10px' // Adds spacing between label and button
+      });
+      
       // **FIX: Prevent duplicate section labels**
       const existingLabel = overlay.querySelector('.section-label');
       if (existingLabel) {
