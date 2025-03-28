@@ -16,7 +16,7 @@ export class MyTable extends LitElement {
       description: 'Display object as a table',
       iconUrl: "group-control",
       groupName: 'Visual Data',
-      version: '1.3',
+      version: '1.6',
       properties: {
         dataobject: {
           type: 'string',
