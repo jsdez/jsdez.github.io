@@ -20,17 +20,17 @@ class RSViewer extends LitElement {
         RSobject: {
           type: 'object',
           title: 'Repeating Section Object',
-          description: 'Insert the repeating section object you wish to render'
+          description: 'Insert the repeating section object you wish to render',
         },
         removeKeys: {
-            type: 'string',
-            title: 'Remove Columns',
-            description: 'Use a comma separated list of key names to exclude them from the table'
-          },
+          type: 'string',
+          title: 'Remove Columns',
+          description: 'Use a comma separated list of key names to exclude them from the table',
+        },
         replaceKeys: {
           type: 'string',
           title: 'Rename Columns',
-          description: 'Store the output of the rename generator as a variable and insert here'
+          description: 'Store the output of the rename generator as a variable and insert here',
         },
         pageItemLimit: {
           type: 'string',
@@ -38,9 +38,9 @@ class RSViewer extends LitElement {
           title: 'Page Item Limit',
           description: 'Number of items to show per page',
           defaultValue: '5',
-        }
+        },
       },
-      events: ["ntx-value-change"],
+      events: ['ntx-value-change'],
       standardProperties: {
         fieldLabel: true,
         readOnly: true,
@@ -67,7 +67,8 @@ class RSViewer extends LitElement {
         width: 100%;
         border: 1px solid lightgray;
       }
-      th, td {
+      th,
+      td {
         border: 1px solid lightgray;
         padding: 4px;
       }
@@ -89,39 +90,76 @@ class RSViewer extends LitElement {
 
   set RSobject(value) {
     this._RSobject = value;
-    console.log('RSobject changed:', this._RSobject);  // Logs the object whenever it's updated
-    this.requestUpdate();  // Ensures that the component re-renders if needed
+    console.log('RSobject changed:', this._RSobject); // Logs the object whenever it's updated
+    this.requestUpdate(); // Ensures that the component re-renders if needed
   }
 
   get RSobject() {
     return this._RSobject;
   }
 
+  // Log data changes to detect differences
   getParsedData() {
+    // Log raw data only when RSobject changes
     console.log('Raw data received:', this.RSobject);
-    // Start processing the data recursively
     return this.recursiveParse(this.RSobject);
   }
-  
+
+  // Recursively parse data to handle nested objects and arrays
   recursiveParse(data) {
     if (Array.isArray(data)) {
-      // If it's an array, iterate over each item
+      // If it's an array, process each item
       return data.map(item => this.recursiveParse(item));
     }
-  
+
     if (typeof data === 'object' && data !== null) {
-      // If it's an object, process each key recursively
+      // If it's an object, process each key
       const result = {};
       for (const [key, value] of Object.entries(data)) {
         result[key] = this.recursiveParse(value);
       }
       return result;
     }
-  
+
     // Return primitive values as is (string, number, etc.)
     return data;
   }
-  
+
+  // Preprocess data to handle key removal and replacement
+  preprocessData(data) {
+    // Remove keys if removeKeys is defined
+    if (this.removeKeys) {
+      try {
+        const keysToRemove = JSON.parse(this.removeKeys);
+        for (const item of data) {
+          for (const key of keysToRemove) {
+            delete item[key];
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing removeKeys:', error);
+      }
+    }
+
+    // Replace keys if replaceKeys is defined
+    if (this.replaceKeys) {
+      try {
+        const keysToReplace = JSON.parse(this.replaceKeys);
+        for (const item of data) {
+          for (const key of Object.keys(item)) {
+            const newKey = keysToReplace[key] || key;
+            item[newKey] = item[key];
+            if (newKey !== key) delete item[key]; // Remove old key if it was renamed
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing replaceKeys:', error);
+      }
+    }
+
+    return data;
+  }
+
   render() {
     const data = this.getParsedData();
     if (!Array.isArray(data) || data.length === 0) {
@@ -192,46 +230,13 @@ class RSViewer extends LitElement {
     `;
   }
 
-  preprocessData(data) {
-    // Remove keys if removeKeys is defined
-    if (this.removeKeys) {
-      try {
-        const keysToRemove = JSON.parse(this.removeKeys);
-        for (const item of data) {
-          for (const key of keysToRemove) {
-            delete item[key];
-          }
-        }
-      } catch (error) {
-        console.error("Error parsing removeKeys:", error);
-      }
-    }
-
-    // Replace keys if replaceKeys is defined
-    if (this.replaceKeys) {
-      try {
-        const keysToReplace = JSON.parse(this.replaceKeys);
-        for (const item of data) {
-          for (const key of Object.keys(item)) {
-            const newKey = keysToReplace[key] || key;
-            item[newKey] = item[key];
-            if (newKey !== key) delete item[key]; // Remove old key if it was renamed
-          }
-        }
-      } catch (error) {
-        console.error("Error parsing replaceKeys:", error);
-      }
-    }
-
-    return data;
-  }
-
+  // Render nested objects for complex data structures
   renderNestedObject(obj, parentKey = '') {
     return html`
       ${Object.keys(obj).map(key => {
         const newKey = parentKey ? `${parentKey}.${key}` : key;
         const value = obj[key];
-  
+
         // Check if the value is an array
         if (Array.isArray(value)) {
           if (value.length === 0) {
@@ -257,7 +262,7 @@ class RSViewer extends LitElement {
             })}
           `;
         }
-  
+
         // Check if the value is an object (and not null or an array)
         if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
           return html`
@@ -267,7 +272,7 @@ class RSViewer extends LitElement {
             ${this.renderNestedObject(value, newKey)}
           `;
         }
-  
+
         // If it's a primitive value (string, number, etc.), render it
         return html`
           <tr>

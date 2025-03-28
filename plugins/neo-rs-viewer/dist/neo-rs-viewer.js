@@ -8,14 +8,15 @@
         width: 100%;
         border: 1px solid lightgray;
       }
-      th, td {
+      th,
+      td {
         border: 1px solid lightgray;
         padding: 4px;
       }
       th {
         background-color: #f5f5f5;
       }
-    `}constructor(){super(),this.RSobject=null,this.removeKeys="",this.replaceKeys="",this.pageItemLimit="5",this.tableController=new ft(this)}set RSobject(e){this._RSobject=e,console.log("RSobject changed:",this._RSobject),this.requestUpdate()}get RSobject(){return this._RSobject}getParsedData(){return console.log("Raw data received:",this.RSobject),this.recursiveParse(this.RSobject)}recursiveParse(e){if(Array.isArray(e))return e.map((e=>this.recursiveParse(e)));if("object"==typeof e&&null!==e){const t={};for(const[n,o]of Object.entries(e))t[n]=this.recursiveParse(o);return t}return e}render(){const e=this.getParsedData();if(!Array.isArray(e)||0===e.length)return B`<p>No data available</p>`;const t=(e,t)=>"function"==typeof e?{...t,accessorFn:e}:{...t,accessorKey:e},n=Object.keys(e[0]).map((e=>t(e,{header:()=>B`<span>${e}</span>`,cell:e=>e.getValue()}))),o=this.tableController.table({columns:n,data:e,getCoreRowModel:e=>Re((()=>[e.options.data]),(t=>{const n={rows:[],flatRows:[],rowsById:{}},o=function(t,l,i){void 0===l&&(l=0);const r=[];for(let a=0;a<t.length;a++){const u=Me(e,e._getRowId(t[a],a,i),t[a],a,l,void 0,null==i?void 0:i.id);var s;n.flatRows.push(u),n.rowsById[u.id]=u,r.push(u),e.options.getSubRows&&(u.originalSubRows=e.options.getSubRows(t[a],a),null!=(s=u.originalSubRows)&&s.length&&(u.subRows=o(u.originalSubRows,l+1,u)))}return r};return n.rows=o(t),n}),_e(e.options,"debugTable",0,(()=>e._autoResetPageIndex())))});return B`
+    `}constructor(){super(),this.RSobject=null,this.removeKeys="",this.replaceKeys="",this.pageItemLimit="5",this.tableController=new ft(this)}set RSobject(e){this._RSobject=e,console.log("RSobject changed:",this._RSobject),this.requestUpdate()}get RSobject(){return this._RSobject}getParsedData(){return console.log("Raw data received:",this.RSobject),this.recursiveParse(this.RSobject)}recursiveParse(e){if(Array.isArray(e))return e.map((e=>this.recursiveParse(e)));if("object"==typeof e&&null!==e){const t={};for(const[n,o]of Object.entries(e))t[n]=this.recursiveParse(o);return t}return e}preprocessData(e){if(this.removeKeys)try{const t=JSON.parse(this.removeKeys);for(const n of e)for(const e of t)delete n[e]}catch(e){console.error("Error parsing removeKeys:",e)}if(this.replaceKeys)try{const t=JSON.parse(this.replaceKeys);for(const n of e)for(const e of Object.keys(n)){const o=t[e]||e;n[o]=n[e],o!==e&&delete n[e]}}catch(e){console.error("Error parsing replaceKeys:",e)}return e}render(){const e=this.getParsedData();if(!Array.isArray(e)||0===e.length)return B`<p>No data available</p>`;const t=(e,t)=>"function"==typeof e?{...t,accessorFn:e}:{...t,accessorKey:e},n=Object.keys(e[0]).map((e=>t(e,{header:()=>B`<span>${e}</span>`,cell:e=>e.getValue()}))),o=this.tableController.table({columns:n,data:e,getCoreRowModel:e=>Re((()=>[e.options.data]),(t=>{const n={rows:[],flatRows:[],rowsById:{}},o=function(t,l,i){void 0===l&&(l=0);const r=[];for(let a=0;a<t.length;a++){const u=Me(e,e._getRowId(t[a],a,i),t[a],a,l,void 0,null==i?void 0:i.id);var s;n.flatRows.push(u),n.rowsById[u.id]=u,r.push(u),e.options.getSubRows&&(u.originalSubRows=e.options.getSubRows(t[a],a),null!=(s=u.originalSubRows)&&s.length&&(u.subRows=o(u.originalSubRows,l+1,u)))}return r};return n.rows=o(t),n}),_e(e.options,"debugTable",0,(()=>e._autoResetPageIndex())))});return B`
       <table>
         <thead>
           ${ve(o.getHeaderGroups(),(e=>e.id),(e=>B`
@@ -40,7 +41,7 @@
             `))}
         </tbody>
       </table>
-    `}preprocessData(e){if(this.removeKeys)try{const t=JSON.parse(this.removeKeys);for(const n of e)for(const e of t)delete n[e]}catch(e){console.error("Error parsing removeKeys:",e)}if(this.replaceKeys)try{const t=JSON.parse(this.replaceKeys);for(const n of e)for(const e of Object.keys(n)){const o=t[e]||e;n[o]=n[e],o!==e&&delete n[e]}}catch(e){console.error("Error parsing replaceKeys:",e)}return e}renderNestedObject(e,t=""){return B`
+    `}renderNestedObject(e,t=""){return B`
       ${Object.keys(e).map((n=>{const o=t?`${t}.${n}`:n,l=e[n];return Array.isArray(l)?0===l.length?B`
               <tr>
                 <td><strong>${o} (Empty Array)</strong></td>
