@@ -52,6 +52,7 @@ class RSViewer extends LitElement {
 
   static properties = {
     src: { type: String },
+    RSobject: { type: Object },
   };
 
   static get styles() {
@@ -78,6 +79,17 @@ class RSViewer extends LitElement {
     super();
     this.src = '[]';
     this.tableController = new TableController(this);
+    this._RSobject = null;
+  }
+
+  set RSobject(value) {
+    this._RSobject = value;
+    console.log('RSobject changed:', this._RSobject);  // Logs the object whenever it's updated
+    this.requestUpdate();  // Ensures that the component re-renders if needed
+  }
+
+  get RSobject() {
+    return this._RSobject;
   }
 
   getParsedData() {
