@@ -211,8 +211,17 @@ class RSViewer extends LitElement {
         const newKey = parentKey ? `${parentKey}.${key}` : key;
         const value = obj[key];
   
+        // Check if the value is an array
         if (Array.isArray(value)) {
-          // If the value is an array, render each item
+          if (value.length === 0) {
+            return html`
+              <tr>
+                <td><strong>${newKey} (Empty Array)</strong></td>
+                <td>No items in the array</td>
+              </tr>
+            `;
+          }
+          // If the value is an array and not empty, process it
           return html`
             <tr>
               <td colspan="2"><strong>${newKey} (Array)</strong></td>
@@ -228,8 +237,8 @@ class RSViewer extends LitElement {
           `;
         }
   
-        if (typeof value === 'object' && value !== null) {
-          // If it's an object, recursively call renderNestedObject
+        // Check if the value is an object (and not null or an array)
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
           return html`
             <tr>
               <td colspan="2"><strong>${newKey}</strong></td>
@@ -238,17 +247,17 @@ class RSViewer extends LitElement {
           `;
         }
   
-        // If it's a primitive value, display it directly
+        // If it's a primitive value (string, number, etc.), render it
         return html`
           <tr>
             <td><strong>${newKey}</strong></td>
-            <td>${value}</td>
+            <td>${value || 'N/A'}</td>
           </tr>
         `;
       })}
     `;
   }
-  
+    
 }
 
 customElements.define('neo-rs-viewer', RSViewer);
