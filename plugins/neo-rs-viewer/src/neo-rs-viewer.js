@@ -80,40 +80,55 @@ class RSViewer extends LitElement {
 
   constructor() {
     super();
-    // Initialize properties based on the meta config defaults or set to empty
-    this.RSobject = null;
+    this._processedData = null;
     this.removeKeys = '';
     this.replaceKeys = '';
-    this.pageItemLimit = '5'; // Default value from meta config
+    this.pageItemLimit = '5';
     this.tableController = new TableController(this);
   }
 
   set RSobject(value) {
-    this._RSobject = value;
-    console.log('RSobject changed:', this._RSobject); // Logs the object whenever it's updated
-    this.requestUpdate(); // Ensures that the component re-renders if needed
+    // Only update if the new value is different from the previous processed data
+    if (!this.isDeepEqual(value, this._processedData)) {
+      this._processedData = this.preprocessData(this.recursiveParse(value));
+      this.requestUpdate();
+    }
   }
 
   get RSobject() {
-    return this._RSobject;
+    return this._processedData;
   }
 
-  // Log data changes to detect differences
-  getParsedData() {
-    // Log raw data only when RSobject changes
-    console.log('Raw data received:', this.RSobject);
-    return this.recursiveParse(this.RSobject);
+  // Deep equality check to prevent unnecessary updates
+  isDeepEqual(obj1, obj2) {
+    if (obj1 === obj2) return true;
+    
+    if (typeof obj1 !== 'object' || obj1 === null ||
+        typeof obj2 !== 'object' || obj2 === null) {
+      return false;
+    }
+
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
+
+    if (keys1.length !== keys2.length) return false;
+
+    for (const key of keys1) {
+      if (!keys2.includes(key)) return false;
+      
+      if (!this.isDeepEqual(obj1[key], obj2[key])) return false;
+    }
+
+    return true;
   }
 
   // Recursively parse data to handle nested objects and arrays
   recursiveParse(data) {
     if (Array.isArray(data)) {
-      // If it's an array, process each item
       return data.map(item => this.recursiveParse(item));
     }
 
     if (typeof data === 'object' && data !== null) {
-      // If it's an object, process each key
       const result = {};
       for (const [key, value] of Object.entries(data)) {
         result[key] = this.recursiveParse(value);
@@ -121,7 +136,6 @@ class RSViewer extends LitElement {
       return result;
     }
 
-    // Return primitive values as is (string, number, etc.)
     return data;
   }
 
@@ -149,7 +163,7 @@ class RSViewer extends LitElement {
           for (const key of Object.keys(item)) {
             const newKey = keysToReplace[key] || key;
             item[newKey] = item[key];
-            if (newKey !== key) delete item[key]; // Remove old key if it was renamed
+            if (newKey !== key) delete item[key];
           }
         }
       } catch (error) {
@@ -161,7 +175,7 @@ class RSViewer extends LitElement {
   }
 
   render() {
-    const data = this.getParsedData();
+    const data = this._processedData;
     if (!Array.isArray(data) || data.length === 0) {
       return html`<p>No data available</p>`;
     }
@@ -170,7 +184,12 @@ class RSViewer extends LitElement {
     const columns = Object.keys(data[0]).map(key =>
       columnHelper.accessor(key, {
         header: () => html`<span>${key}</span>`,
-        cell: info => info.getValue(),
+        cell: info => {
+          const value = info.getValue();
+          return typeof value === 'object' 
+            ? JSON.stringify(value) 
+            : value;
+        },
       })
     );
 
@@ -227,60 +246,6 @@ class RSViewer extends LitElement {
           )}
         </tbody>
       </table>
-    `;
-  }
-
-  // Render nested objects for complex data structures
-  renderNestedObject(obj, parentKey = '') {
-    return html`
-      ${Object.keys(obj).map(key => {
-        const newKey = parentKey ? `${parentKey}.${key}` : key;
-        const value = obj[key];
-
-        // Check if the value is an array
-        if (Array.isArray(value)) {
-          if (value.length === 0) {
-            return html`
-              <tr>
-                <td><strong>${newKey} (Empty Array)</strong></td>
-                <td>No items in the array</td>
-              </tr>
-            `;
-          }
-          // If the value is an array and not empty, process it
-          return html`
-            <tr>
-              <td colspan="2"><strong>${newKey} (Array)</strong></td>
-            </tr>
-            ${value.map((item, index) => {
-              return html`
-                <tr>
-                  <td colspan="2"><strong>Item ${index + 1}</strong></td>
-                </tr>
-                ${this.renderNestedObject(item, `${newKey}[${index}]`)}
-              `;
-            })}
-          `;
-        }
-
-        // Check if the value is an object (and not null or an array)
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-          return html`
-            <tr>
-              <td colspan="2"><strong>${newKey}</strong></td>
-            </tr>
-            ${this.renderNestedObject(value, newKey)}
-          `;
-        }
-
-        // If it's a primitive value (string, number, etc.), render it
-        return html`
-          <tr>
-            <td><strong>${newKey}</strong></td>
-            <td>${value || 'N/A'}</td>
-          </tr>
-        `;
-      })}
     `;
   }
 }
