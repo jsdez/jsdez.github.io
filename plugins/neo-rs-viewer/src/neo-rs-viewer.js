@@ -1,21 +1,15 @@
 import { LitElement, html, css } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  TableController,
-} from '@tanstack/lit-table';
 
 class RSViewer extends LitElement {
   static getMetaConfig() {
     return {
       controlName: 'neo-rs-viewer',
       fallbackDisableSubmit: false,
-      description: 'Repeating Section Table Viewer',
+      description: 'Repeating Section Detailed Viewer',
       iconUrl: 'repeating-section',
       groupName: 'NEO',
-      version: '1.0',
+      version: '1.1',
       properties: {
         RSobject: {
           type: 'object',
@@ -32,13 +26,13 @@ class RSViewer extends LitElement {
           title: 'Rename Columns',
           description: 'Store the output of the rename generator as a variable and insert here',
         },
-        pageItemLimit: {
+        displayMode: {
           type: 'string',
-          enum: ['5', '10', '15', '30', '50', '100'],
-          title: 'Page Item Limit',
-          description: 'Number of items to show per page',
-          defaultValue: '5',
-        },
+          title: 'Display Mode',
+          description: 'Choose how to display complex data',
+          enum: ['detailed', 'compact'],
+          defaultValue: 'detailed'
+        }
       },
       events: ['ntx-value-change'],
       standardProperties: {
@@ -54,26 +48,42 @@ class RSViewer extends LitElement {
     RSobject: { type: Object },
     removeKeys: { type: String },
     replaceKeys: { type: String },
-    pageItemLimit: { type: String },
+    displayMode: { type: String }
   };
 
   static get styles() {
     return css`
       :host {
         display: block;
+        font-family: Arial, sans-serif;
       }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        border: 1px solid lightgray;
+      .data-container {
+        border: 1px solid #e0e0e0;
+        margin-bottom: 10px;
+        padding: 10px;
       }
-      th,
-      td {
-        border: 1px solid lightgray;
-        padding: 4px;
+      .nested-section {
+        margin-left: 20px;
+        border-left: 2px solid #f0f0f0;
+        padding-left: 10px;
       }
-      th {
+      .key {
+        font-weight: bold;
+        color: #333;
+        margin-right: 10px;
+      }
+      .primitive-value {
+        color: #666;
+      }
+      .array-marker {
+        color: #999;
+        font-style: italic;
+      }
+      .section-header {
         background-color: #f5f5f5;
+        padding: 5px;
+        font-weight: bold;
+        border-bottom: 1px solid #e0e0e0;
       }
     `;
   }
@@ -83,12 +93,10 @@ class RSViewer extends LitElement {
     this._processedData = null;
     this.removeKeys = '';
     this.replaceKeys = '';
-    this.pageItemLimit = '5';
-    this.tableController = new TableController(this);
+    this.displayMode = 'detailed';
   }
 
   set RSobject(value) {
-    // Only update if the new value is different from the previous processed data
     if (!this.isDeepEqual(value, this._processedData)) {
       this._processedData = this.preprocessData(this.recursiveParse(value));
       this.requestUpdate();
@@ -174,78 +182,63 @@ class RSViewer extends LitElement {
     return data;
   }
 
+  // Render individual data value
+  renderValue(value, key = '') {
+    if (value === null || value === undefined) {
+      return html`<span class="primitive-value">N/A</span>`;
+    }
+
+    if (typeof value === 'object') {
+      if (Array.isArray(value)) {
+        return html`
+          <div class="array-marker">[Array with ${value.length} item(s)]</div>
+          <div class="nested-section">
+            ${value.map((item, index) => html`
+              <div class="data-container">
+                <div class="section-header">Item ${index + 1}</div>
+                ${this.renderComplexObject(item)}
+              </div>
+            `)}
+          </div>
+        `;
+      }
+      return this.renderComplexObject(value);
+    }
+
+    return html`<span class="primitive-value">${value}</span>`;
+  }
+
+  // Render complex object recursively
+  renderComplexObject(obj) {
+    if (typeof obj !== 'object' || obj === null) {
+      return this.renderValue(obj);
+    }
+
+    return html`
+      ${Object.entries(obj).map(([key, value]) => html`
+        <div>
+          <span class="key">${key}:</span>
+          ${this.renderValue(value, key)}
+        </div>
+      `)}
+    `;
+  }
+
   render() {
     const data = this._processedData;
     if (!Array.isArray(data) || data.length === 0) {
       return html`<p>No data available</p>`;
     }
 
-    const columnHelper = createColumnHelper();
-    const columns = Object.keys(data[0]).map(key =>
-      columnHelper.accessor(key, {
-        header: () => html`<span>${key}</span>`,
-        cell: info => {
-          const value = info.getValue();
-          return typeof value === 'object' 
-            ? JSON.stringify(value) 
-            : value;
-        },
-      })
-    );
-
-    const table = this.tableController.table({
-      columns,
-      data,
-      getCoreRowModel: getCoreRowModel(),
-    });
-
     return html`
-      <table>
-        <thead>
-          ${repeat(
-            table.getHeaderGroups(),
-            headerGroup => headerGroup.id,
-            headerGroup => html`
-              <tr>
-                ${repeat(
-                  headerGroup.headers,
-                  header => header.id,
-                  header => html`
-                    <th>
-                      ${flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                    </th>
-                  `
-                )}
-              </tr>
-            `
-          )}
-        </thead>
-        <tbody>
-          ${repeat(
-            table.getRowModel().rows,
-            row => row.id,
-            row => html`
-              <tr>
-                ${repeat(
-                  row.getVisibleCells(),
-                  cell => cell.id,
-                  cell => html`
-                    <td>
-                      ${flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </td>
-                  `
-                )}
-              </tr>
-            `
-          )}
-        </tbody>
-      </table>
+      <div>
+        ${data.map((item, index) => html`
+          <div class="data-container">
+            <div class="section-header">Record ${index + 1}</div>
+            ${this.renderComplexObject(item)}
+          </div>
+        `)}
+      </div>
     `;
   }
 }
