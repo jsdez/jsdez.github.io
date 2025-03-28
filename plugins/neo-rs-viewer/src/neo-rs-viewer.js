@@ -51,8 +51,10 @@ class RSViewer extends LitElement {
   }
 
   static properties = {
-    src: { type: String },
     RSobject: { type: Object },
+    removeKeys: { type: String },
+    replaceKeys: { type: String },
+    pageItemLimit: { type: String },
   };
 
   static get styles() {
@@ -77,9 +79,12 @@ class RSViewer extends LitElement {
 
   constructor() {
     super();
-    this.src = '[]';
+    // Initialize properties based on the meta config defaults or set to empty
+    this.RSobject = null;
+    this.removeKeys = '';
+    this.replaceKeys = '';
+    this.pageItemLimit = '5'; // Default value from meta config
     this.tableController = new TableController(this);
-    this._RSobject = null;
   }
 
   set RSobject(value) {
@@ -93,14 +98,18 @@ class RSViewer extends LitElement {
   }
 
   getParsedData() {
+    console.log('Raw data received:', this.src);
     try {
-      return JSON.parse(this.src);
+      const parsedData = JSON.parse(this.src);
+      console.log('Parsed data:', parsedData);  // Log the parsed data
+      return parsedData;
     } catch (error) {
       console.error('Invalid JSON format:', error);
       return [];
     }
   }
-
+  
+  
   render() {
     const data = this.getParsedData();
     if (!Array.isArray(data) || data.length === 0) {
@@ -257,7 +266,6 @@ class RSViewer extends LitElement {
       })}
     `;
   }
-    
 }
 
 customElements.define('neo-rs-viewer', RSViewer);
