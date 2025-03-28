@@ -210,16 +210,35 @@ class RSViewer extends LitElement {
       ${Object.keys(obj).map(key => {
         const newKey = parentKey ? `${parentKey}.${key}` : key;
         const value = obj[key];
-
-        if (typeof value === 'object' && !Array.isArray(value)) {
+  
+        if (Array.isArray(value)) {
+          // If the value is an array, render each item
+          return html`
+            <tr>
+              <td colspan="2"><strong>${newKey} (Array)</strong></td>
+            </tr>
+            ${value.map((item, index) => {
+              return html`
+                <tr>
+                  <td colspan="2"><strong>Item ${index + 1}</strong></td>
+                </tr>
+                ${this.renderNestedObject(item, `${newKey}[${index}]`)}
+              `;
+            })}
+          `;
+        }
+  
+        if (typeof value === 'object' && value !== null) {
+          // If it's an object, recursively call renderNestedObject
           return html`
             <tr>
               <td colspan="2"><strong>${newKey}</strong></td>
             </tr>
             ${this.renderNestedObject(value, newKey)}
           `;
-        } 
-        // No need for an else block here since we handle both cases in the above if condition
+        }
+  
+        // If it's a primitive value, display it directly
         return html`
           <tr>
             <td><strong>${newKey}</strong></td>
@@ -229,6 +248,7 @@ class RSViewer extends LitElement {
       })}
     `;
   }
+  
 }
 
 customElements.define('neo-rs-viewer', RSViewer);
