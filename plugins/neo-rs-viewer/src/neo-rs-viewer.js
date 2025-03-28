@@ -98,9 +98,9 @@ class RSViewer extends LitElement {
   }
 
   getParsedData() {
-    console.log('Raw data received:', this.src);
+    console.log('Raw data received:', this.RSobject);
     try {
-      const parsedData = JSON.parse(this.src);
+      const parsedData = JSON.parse(this.RSobject); // Using this.RSobject
       console.log('Parsed data:', parsedData);  // Log the parsed data
       return parsedData;
     } catch (error) {
@@ -108,7 +108,6 @@ class RSViewer extends LitElement {
       return [];
     }
   }
-  
   
   render() {
     const data = this.getParsedData();
