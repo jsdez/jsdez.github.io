@@ -99,14 +99,27 @@ class RSViewer extends LitElement {
 
   getParsedData() {
     console.log('Raw data received:', this.RSobject);
-    try {
-      const parsedData = JSON.parse(this.RSobject); // Using this.RSobject
-      console.log('Parsed data:', parsedData);  // Log the parsed data
-      return parsedData;
-    } catch (error) {
-      console.error('Invalid JSON format:', error);
-      return [];
+    // Start processing the data recursively
+    return this.recursiveParse(this.RSobject);
+  }
+  
+  recursiveParse(data) {
+    if (Array.isArray(data)) {
+      // If it's an array, iterate over each item
+      return data.map(item => this.recursiveParse(item));
     }
+  
+    if (typeof data === 'object' && data !== null) {
+      // If it's an object, process each key recursively
+      const result = {};
+      for (const [key, value] of Object.entries(data)) {
+        result[key] = this.recursiveParse(value);
+      }
+      return result;
+    }
+  
+    // Return primitive values as is (string, number, etc.)
+    return data;
   }
   
   render() {
