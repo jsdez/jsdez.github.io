@@ -6,7 +6,7 @@ class NeoAccordionElement extends LitElement {
       controlName: 'neo-accordion',
       fallbackDisableSubmit: false,
       description: '',
-      iconUrl: "",
+      iconUrl: "group-control",
       groupName: 'NEO',
       version: '1.0',
       properties: {
