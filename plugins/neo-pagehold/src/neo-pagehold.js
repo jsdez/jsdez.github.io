@@ -16,7 +16,7 @@ class NeoPageHoldElement extends LitElement {
       fallbackDisableSubmit: false,
       description: 'Prevents page navigation until true',
       iconUrl: 'button',
-      groupName: 'Admin Tools',
+      groupName: 'NEO',
       version: '1.0',
       properties: {
         allownavProp: {
@@ -41,8 +41,8 @@ class NeoPageHoldElement extends LitElement {
 
   constructor() {
     super();
-    this.allownav = false; // Initialize default value
-    this.allownavProp = false; // Initialize default value
+    this.allownav = true;
+    this.allownavProp = true;
     this.stepHeaders = [];
     this.actionPanels = [];
   }
@@ -115,7 +115,6 @@ class NeoPageHoldElement extends LitElement {
 
   render() {
     return html`
-      <p>${this.allownav}</p>
     `;
   }
 }
