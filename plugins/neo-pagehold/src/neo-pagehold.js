@@ -28,6 +28,7 @@ class NeoPageHoldElement extends LitElement {
       standardProperties: {
         fieldLabel: true,
         description: true,
+        visibility: true,
       },
     };
   }
