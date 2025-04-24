@@ -58,6 +58,10 @@ class NeoPageHoldElement extends LitElement {
   }
 
   updated(changedProperties) {
+    if (changedProperties.has('allownavProp')) {
+      this.allownav = this.allownavProp;
+    }
+  
     if (changedProperties.has('allownav')) {
       this.updateVisibility();
     }
