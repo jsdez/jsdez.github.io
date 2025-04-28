@@ -211,21 +211,21 @@ class CollapseElement extends LitElement {
         overlay.style.backgroundColor = isVisible ? '#e0e0e0' : '#f0f0f0';
 
         // Toggle event listener
-        overlay.onclick = (event) => {
+        overlay.addEventListener('click', (event) => {
           if (event.target.closest('.ntx-repeating-section-remove-button')) return;
-
+        
           this.lastOpenIndex = index;
-
+        
           sections.forEach((s, i) => {
             let content = null;
             for (const selector of contentSelectors) {
               content = s.querySelector(selector);
               if (content) break;
             }
-
+        
             const sectionOverlay = s.querySelector('.ntx-repeating-section-overlay');
             const chevron = sectionOverlay?.querySelector('svg');
-
+        
             if (content && sectionOverlay) {
               const isExpanded = i === index;
               content.style.display = isExpanded ? 'block' : 'none';
@@ -236,7 +236,7 @@ class CollapseElement extends LitElement {
               }
             }
           });
-        };
+        });
       });
 
       // Update last open index
