@@ -500,14 +500,11 @@ class CollapseElement extends LitElement {
 
       sections.forEach((section, index) => {
         const content = this.findContentElement(section);
-
         if (!content) {
           console.error(`No content found to toggle for section ${index}`);
           return;
         }
-
         let overlay = section.querySelector('.ntx-repeating-section-overlay');
-
         if (!overlay) {
           console.error(`No overlay found for section ${index}`);
           return;
@@ -523,64 +520,78 @@ class CollapseElement extends LitElement {
           justifyContent: 'flex-start',
           alignItems: 'center',
           gap: '10px',
-          position: 'relative', // Ensure we can position elements inside
-          zIndex: '1' // Ensure overlay is above content
+          position: 'relative',
+          zIndex: '1'
         });
 
-        // Clear existing overlay content
-        overlay.innerHTML = '';
+        // Try to find existing overlay children by data attributes
+        const nameElement = overlay.querySelector('[data-overlay-name]');
+        const statusElement = overlay.querySelector('[data-overlay-status]');
+        const totalElement = overlay.querySelector('[data-overlay-total]');
+        const { name, total, status } = this.getSectionData(section, index);
+        let rebuilt = false;
 
-        // Create container for icon and label
-        const contentContainer = document.createElement('div');
-        contentContainer.style.display = 'flex';
-        contentContainer.style.alignItems = 'center';
-        contentContainer.style.gap = '10px';
-        contentContainer.style.width = '100%';
-        contentContainer.style.pointerEvents = 'none'; // Make children not capture clicks
+        if (this.showName && nameElement && (status !== null ? !!statusElement : true) && (total !== null ? !!totalElement : true)) {
+          // All required elements exist, update their textContent
+          nameElement.textContent = name;
+          if (statusElement) statusElement.textContent = status;
+          if (totalElement) totalElement.textContent = total;
+          // Skip rebuilding overlay contents
+        } else {
+          // Clear existing overlay content and rebuild
+          overlay.innerHTML = '';
+          rebuilt = true;
+          // Create container for icon and label
+          const contentContainer = document.createElement('div');
+          contentContainer.style.display = 'flex';
+          contentContainer.style.alignItems = 'center';
+          contentContainer.style.gap = '10px';
+          contentContainer.style.width = '100%';
+          contentContainer.style.pointerEvents = 'none';
 
-        // Add chevron icon if enabled
-        if (this.showIcon) {
-          const isExpanded = index === sectionToOpen;
-          const chevron = this.createChevronIcon(isExpanded);
-          chevron.style.pointerEvents = 'none'; // Ensure icon doesn't capture clicks
-          contentContainer.appendChild(chevron);
-        }
-
-        // Add section label, status, and total using getSectionData
-        if (this.showName) {
-          const { name, total, status } = this.getSectionData(section, index);
-
-          const sectionLabel = document.createElement('span');
-          sectionLabel.textContent = name;
-          sectionLabel.style.fontWeight = 'bold';
-          sectionLabel.style.pointerEvents = 'none';
-          contentContainer.appendChild(sectionLabel);
-
-          if (status !== null) {
-            const statusBadge = document.createElement('span');
-            statusBadge.textContent = status;
-            statusBadge.style.background = '#ddd';
-            statusBadge.style.borderRadius = '8px';
-            statusBadge.style.padding = '2px 6px';
-            statusBadge.style.fontSize = '12px';
-            statusBadge.style.marginLeft = '8px';
-            statusBadge.style.pointerEvents = 'none';
-            contentContainer.appendChild(statusBadge);
+          // Add chevron icon if enabled
+          if (this.showIcon) {
+            const isExpanded = index === sectionToOpen;
+            const chevron = this.createChevronIcon(isExpanded);
+            chevron.style.pointerEvents = 'none';
+            contentContainer.appendChild(chevron);
           }
 
-          if (total !== null) {
-            const totalSpan = document.createElement('span');
-            totalSpan.textContent = total;
-            totalSpan.style.marginLeft = 'auto';
-            totalSpan.style.fontWeight = 'bold';
-            totalSpan.style.pointerEvents = 'none';
-            contentContainer.appendChild(totalSpan);
+          // Add section label, status, and total using getSectionData
+          if (this.showName) {
+            const sectionLabel = document.createElement('span');
+            sectionLabel.textContent = name;
+            sectionLabel.style.fontWeight = 'bold';
+            sectionLabel.style.pointerEvents = 'none';
+            sectionLabel.setAttribute('data-overlay-name', ''); // <-- Add attribute
+            contentContainer.appendChild(sectionLabel);
+
+            if (status !== null) {
+              const statusBadge = document.createElement('span');
+              statusBadge.textContent = status;
+              statusBadge.style.background = '#ddd';
+              statusBadge.style.borderRadius = '8px';
+              statusBadge.style.padding = '2px 6px';
+              statusBadge.style.fontSize = '12px';
+              statusBadge.style.marginLeft = '8px';
+              statusBadge.style.pointerEvents = 'none';
+              statusBadge.setAttribute('data-overlay-status', ''); // <-- Add attribute
+              contentContainer.appendChild(statusBadge);
+            }
+
+            if (total !== null) {
+              const totalSpan = document.createElement('span');
+              totalSpan.textContent = total;
+              totalSpan.style.marginLeft = 'auto';
+              totalSpan.style.fontWeight = 'bold';
+              totalSpan.style.pointerEvents = 'none';
+              totalSpan.setAttribute('data-overlay-total', ''); // <-- Add attribute
+              contentContainer.appendChild(totalSpan);
+            }
           }
+
+          overlay.appendChild(contentContainer);
         }
-
-        overlay.appendChild(contentContainer);
-
-        // No live update listener for sectionLabel, as all three are rendered together now
 
         // Set active/inactive state
         const isVisible = index === sectionToOpen;
@@ -602,7 +613,6 @@ class CollapseElement extends LitElement {
         if (isVisible) {
           content.style.display = 'block';
           content.classList.remove('collapsed');
-          // Set the max-height for proper animation later
           content.style.maxHeight = `${this.sectionHeights.get(section) || 'none'}px`;
         } else {
           content.style.display = 'none';
@@ -610,7 +620,10 @@ class CollapseElement extends LitElement {
         }
 
         // Attach click handler directly to this overlay
-        this.attachClickHandler(overlay, index, sections);
+        // If overlay was rebuilt, the event handler must be reattached
+        if (rebuilt || !this.clickHandlers.has(overlay)) {
+          this.attachClickHandler(overlay, index, sections);
+        }
       });
 
       // Update previous section count
