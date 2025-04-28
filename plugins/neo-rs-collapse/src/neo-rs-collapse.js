@@ -27,12 +27,12 @@ class CollapseElement extends LitElement {
         },
         totalInputClass: {
           title: 'Total Amount CSS Class',
-          type: 'number',
+          type: 'string',
           description: 'If you wish to display a total value from each section, Please enter the class used to target input inside the section containing the total value',
         },
         statusInputClass: {
           title: 'Total Amount CSS Class',
-          type: 'number',
+          type: 'string',
           description: 'If you wish to display a status value from each section, Please enter the class used to target input inside the section containing the status value',
         },
         showIcon: {
