@@ -25,10 +25,15 @@ class CollapseElement extends LitElement {
           title: 'Manual Section Name',
           description: 'If you wish to name each section the same, enter it here, the name will be used followed by a number, e.g. entering Item will result in Item 1, Item 2,...'
         },
-        sectionCount: {
-          title: 'Section Count',
+        totalInputClass: {
+          title: 'Total Amount CSS Class',
           type: 'number',
-          description: 'Please enter a formula which counts the repeating section using the count() function e.g. count([Form].[Repeating section 1])',
+          description: 'If you wish to display a total value from each section, Please enter the class used to target input inside the section containing the total value',
+        },
+        statusInputClass: {
+          title: 'Total Amount CSS Class',
+          type: 'number',
+          description: 'If you wish to display a status value from each section, Please enter the class used to target input inside the section containing the status value',
         },
         showIcon: {
           title: 'Show Icon',
@@ -88,6 +93,35 @@ class CollapseElement extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.cleanup();
+  }
+
+  // Helper to get section data: name, total, status
+  getSectionData(section, index) {
+    let name = `${this.sectionName} ${index + 1}`;
+    let total = null;
+    let status = null;
+
+    if (this.nameInputClass) {
+      const inputWrapper = section.querySelector(`.${this.nameInputClass}`);
+      const input = inputWrapper?.querySelector('input');
+      if (input && input.value.trim() !== '') {
+        name = input.value.trim();
+      }
+    }
+
+    if (this.totalInputClass) {
+      const inputWrapper = section.querySelector(`.${this.totalInputClass}`);
+      const input = inputWrapper?.querySelector('input');
+      total = input && input.value.trim() !== '' ? input.value.trim() : '0';
+    }
+
+    if (this.statusInputClass) {
+      const inputWrapper = section.querySelector(`.${this.statusInputClass}`);
+      const input = inputWrapper?.querySelector('input');
+      status = input && input.value.trim() !== '' ? input.value.trim() : 'n/a';
+    }
+
+    return { name, total, status };
   }
 
   cleanup() {
@@ -512,29 +546,41 @@ class CollapseElement extends LitElement {
           contentContainer.appendChild(chevron);
         }
 
-        // Add section label if enabled
-        let sectionLabel;
+        // Add section label, status, and total using getSectionData
         if (this.showName) {
-          sectionLabel = document.createElement('span');
-          sectionLabel.textContent = this.getSectionTitle(section, index);
+          const { name, total, status } = this.getSectionData(section, index);
+
+          const sectionLabel = document.createElement('span');
+          sectionLabel.textContent = name;
           sectionLabel.style.fontWeight = 'bold';
-          sectionLabel.style.marginRight = 'auto';
-          sectionLabel.style.pointerEvents = 'none'; // Ensure label doesn't capture clicks
+          sectionLabel.style.pointerEvents = 'none';
           contentContainer.appendChild(sectionLabel);
+
+          if (status !== null) {
+            const statusBadge = document.createElement('span');
+            statusBadge.textContent = status;
+            statusBadge.style.background = '#ddd';
+            statusBadge.style.borderRadius = '8px';
+            statusBadge.style.padding = '2px 6px';
+            statusBadge.style.fontSize = '12px';
+            statusBadge.style.marginLeft = '8px';
+            statusBadge.style.pointerEvents = 'none';
+            contentContainer.appendChild(statusBadge);
+          }
+
+          if (total !== null) {
+            const totalSpan = document.createElement('span');
+            totalSpan.textContent = total;
+            totalSpan.style.marginLeft = 'auto';
+            totalSpan.style.fontWeight = 'bold';
+            totalSpan.style.pointerEvents = 'none';
+            contentContainer.appendChild(totalSpan);
+          }
         }
 
         overlay.appendChild(contentContainer);
 
-        // If nameInputClass is set, add input event for live updating label
-        if (this.nameInputClass && sectionLabel) {
-          const inputWrapper = section.querySelector(`.${this.nameInputClass}`);
-          const input = inputWrapper?.querySelector('input');
-          if (input) {
-            input.addEventListener('input', () => {
-              sectionLabel.textContent = this.getSectionTitle(section, index);
-            });
-          }
-        }
+        // No live update listener for sectionLabel, as all three are rendered together now
 
         // Set active/inactive state
         const isVisible = index === sectionToOpen;
