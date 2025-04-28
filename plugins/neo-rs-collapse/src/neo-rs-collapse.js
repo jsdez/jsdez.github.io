@@ -8,7 +8,7 @@ class CollapseElement extends LitElement {
       description: 'Collapsible Repeating Sections',
       iconUrl: "",
       groupName: 'NEO',
-      version: '1.1.1',
+      version: '1.2.0',
       properties: {
         targetClass: {
           type: 'string',
@@ -30,7 +30,6 @@ class CollapseElement extends LitElement {
           type: 'number',
           description: 'Please enter a formula which counts the repeating section using the count() function e.g. count([Form].[Repeating section 1])',
         },
-
         showIcon: {
           title: 'Show Icon',
           type: 'boolean',
@@ -41,6 +40,11 @@ class CollapseElement extends LitElement {
           type: 'boolean',
           defaultValue: true,
         },
+        animationSpeed: {
+          title: 'Animation Speed (ms)',
+          type: 'number',
+          defaultValue: 200,
+        }
       },
       standardProperties: {
         fieldLabel: true,
@@ -54,7 +58,8 @@ class CollapseElement extends LitElement {
     sectionCount: { type: Number },
     targetClass: { type: String },
     showIcon: { type: Boolean },
-    showName: { type: Boolean }
+    showName: { type: Boolean },
+    animationSpeed: { type: Number }
   };
 
   constructor() {
@@ -64,61 +69,61 @@ class CollapseElement extends LitElement {
     this.targetClass = '';
     this.showIcon = true;
     this.showName = true;
+    this.animationSpeed = 200;
     this.lastOpenIndex = -1;
     this.isInitializing = false;
     this.previousSectionCount = 0;
+    this.clickHandlers = new WeakMap();
+    this.contentSelectors = [
+      '.nx-form-runtime-light',
+      '.nx-form-runtime',
+      '[data-form-content]',
+      '.ng-star-inserted > div',
+      '.nx-form-runtime-section'
+    ];
+    this.observer = null;
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.cleanup();
+  }
+
+  cleanup() {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+    
+    clearTimeout(this._initTimer);
+    clearTimeout(this._observerTimer);
+    
+    // Remove event listeners
+    const repeatingSection = document.querySelector(`.${this.targetClass}`);
+    if (repeatingSection) {
+      const sections = repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
+      sections.forEach(section => {
+        const overlay = section.querySelector('.ntx-repeating-section-overlay');
+        if (overlay && this.clickHandlers.has(overlay)) {
+          overlay.removeEventListener('click', this.clickHandlers.get(overlay));
+          this.clickHandlers.delete(overlay);
+        }
+      });
+    }
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this._initTimer = setTimeout(() => {
+    this._initTimer = setTimeout(() => this.initialize(), 200);
+  }
+
+  initialize() {
+    try {
       this.initCollapsibleSections();
       this.observeRepeatingSection();
-
-      const repeatingSection = document.querySelector(`.${this.targetClass}`);
-      if (repeatingSection) {
-        repeatingSection.addEventListener('click', (event) => {
-          const overlay = event.target.closest('.ntx-repeating-section-overlay');
-          if (!overlay || event.target.closest('.ntx-repeating-section-remove-button')) return;
-
-          const allOverlays = [...repeatingSection.querySelectorAll('.ntx-repeating-section-overlay')];
-          const sections = [...repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section')];
-          const contentSelectors = [
-            '.nx-form-runtime-light',
-            '.nx-form-runtime',
-            '[data-form-content]',
-            '.ng-star-inserted > div',
-            '.nx-form-runtime-section'
-          ];
-
-          const clickedIndex = allOverlays.indexOf(overlay);
-          if (clickedIndex === -1) return;
-
-          this.lastOpenIndex = clickedIndex;
-
-          sections.forEach((section, index) => {
-            let content = null;
-            for (const selector of contentSelectors) {
-              content = section.querySelector(selector);
-              if (content) break;
-            }
-
-            const sectionOverlay = section.querySelector('.ntx-repeating-section-overlay');
-            const chevron = sectionOverlay?.querySelector('svg');
-
-            if (content && sectionOverlay) {
-              const isExpanded = index === clickedIndex;
-              content.style.display = isExpanded ? 'block' : 'none';
-              sectionOverlay.style.backgroundColor = isExpanded ? '#e0e0e0' : '#f0f0f0';
-
-              if (chevron) {
-                this.updateChevronState(chevron, isExpanded);
-              }
-            }
-          });
-        });
-      }
-    }, 200);
+    } catch (error) {
+      console.error('Error during initialization:', error);
+    }
   }
 
   createChevronIcon(isExpanded) {
@@ -128,7 +133,7 @@ class CollapseElement extends LitElement {
     svg.setAttribute('height', '34');
     svg.setAttribute('viewBox', '0 0 36 36');
     svg.classList.add('nx-icon--allow-events');
-    svg.style.transition = 'transform 0.2s ease-in-out';
+    svg.style.transition = `transform ${this.animationSpeed}ms ease-in-out`;
 
     const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
     use.setAttribute('href', isExpanded ? '#chevron-down' : '#chevron-right');
@@ -145,6 +150,82 @@ class CollapseElement extends LitElement {
     }
   }
 
+  findContentElement(section) {
+    for (const selector of this.contentSelectors) {
+      const content = section.querySelector(selector);
+      if (content) return content;
+    }
+    return null;
+  }
+
+  handleSectionClick(overlay, index, sections) {
+    // Prevent handling if this is a remove button click or if animation is in progress
+    if (overlay.hasAttribute('data-processing')) return;
+    
+    // Mark as processing to prevent multiple rapid clicks
+    overlay.setAttribute('data-processing', 'true');
+    
+    const allOverlays = sections.map(section => section.querySelector('.ntx-repeating-section-overlay'));
+    
+    // Update last open index
+    this.lastOpenIndex = index;
+    
+    // Handle each section's visibility
+    sections.forEach((section, sectionIndex) => {
+      const content = this.findContentElement(section);
+      const sectionOverlay = section.querySelector('.ntx-repeating-section-overlay');
+      const chevron = sectionOverlay?.querySelector('svg');
+      
+      if (content && sectionOverlay) {
+        const isExpanded = sectionIndex === index;
+        
+        // Apply styles immediately for responsive feel
+        sectionOverlay.style.backgroundColor = isExpanded ? '#e0e0e0' : '#f0f0f0';
+        
+        // Update chevron immediately
+        if (chevron) {
+          this.updateChevronState(chevron, isExpanded);
+        }
+        
+        // Use requestAnimationFrame for smoother transitions
+        requestAnimationFrame(() => {
+          // Set display with a small delay to ensure other changes are applied first
+          setTimeout(() => {
+            content.style.display = isExpanded ? 'block' : 'none';
+            
+            // Remove processing flag after animation completes
+            setTimeout(() => {
+              overlay.removeAttribute('data-processing');
+            }, this.animationSpeed);
+          }, 10);
+        });
+      }
+    });
+  }
+
+  attachClickHandler(overlay, index, sections) {
+    // Remove any existing handler
+    if (this.clickHandlers.has(overlay)) {
+      overlay.removeEventListener('click', this.clickHandlers.get(overlay));
+    }
+    
+    // Create and store new handler
+    const handler = (event) => {
+      // Ignore clicks on remove button
+      if (event.target.closest('.ntx-repeating-section-remove-button')) return;
+      
+      // Stop propagation to prevent multiple handlers
+      event.stopPropagation();
+      
+      this.handleSectionClick(overlay, index, sections);
+    };
+    
+    this.clickHandlers.set(overlay, handler);
+    
+    // Attach the handler - use capture phase to ensure we get first chance at the event
+    overlay.addEventListener('click', handler, true);
+  }
+
   initCollapsibleSections() {
     if (this.isInitializing) return;
     this.isInitializing = true;
@@ -158,7 +239,7 @@ class CollapseElement extends LitElement {
         return;
       }
 
-      const sections = repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
+      const sections = Array.from(repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section'));
 
       if (sections.length === 0) {
         console.error('No sections found to make collapsible');
@@ -182,33 +263,21 @@ class CollapseElement extends LitElement {
         : Math.min(this.lastOpenIndex, sections.length - 1);
 
       sections.forEach((section, index) => {
-        const contentSelectors = [
-          '.nx-form-runtime-light',
-          '.nx-form-runtime',
-          '[data-form-content]',
-          '.ng-star-inserted > div',
-          '.nx-form-runtime-section'
-        ];
-
-        let contentToToggle = null;
-        for (const selector of contentSelectors) {
-          contentToToggle = section.querySelector(selector);
-          if (contentToToggle) break;
-        }
+        const contentToToggle = this.findContentElement(section);
 
         if (!contentToToggle) {
           console.error(`No content found to toggle for section ${index}`);
           return;
         }
 
-        const overlay = section.querySelector('.ntx-repeating-section-overlay');
+        let overlay = section.querySelector('.ntx-repeating-section-overlay');
 
         if (!overlay) {
           console.error(`No overlay found for section ${index}`);
           return;
         }
 
-        // Styling and labeling logic
+        // Apply overlay styling
         Object.assign(overlay.style, {
           cursor: 'pointer',
           padding: '0px 0px 0px 10px',
@@ -218,7 +287,9 @@ class CollapseElement extends LitElement {
           display: 'flex',
           justifyContent: 'flex-start',
           alignItems: 'center',
-          gap: '10px'
+          gap: '10px',
+          position: 'relative', // Ensure we can position elements inside
+          zIndex: '1' // Ensure overlay is above content
         });
 
         // Clear existing overlay content
@@ -230,11 +301,13 @@ class CollapseElement extends LitElement {
         contentContainer.style.alignItems = 'center';
         contentContainer.style.gap = '10px';
         contentContainer.style.width = '100%';
+        contentContainer.style.pointerEvents = 'none'; // Make children not capture clicks
 
         // Add chevron icon if enabled
         if (this.showIcon) {
           const isExpanded = index === sectionToOpen;
           const chevron = this.createChevronIcon(isExpanded);
+          chevron.style.pointerEvents = 'none'; // Ensure icon doesn't capture clicks
           contentContainer.appendChild(chevron);
         }
 
@@ -244,6 +317,7 @@ class CollapseElement extends LitElement {
           sectionLabel.textContent = `${this.sectionName} ${index + 1}`;
           sectionLabel.style.fontWeight = 'bold';
           sectionLabel.style.marginRight = 'auto';
+          sectionLabel.style.pointerEvents = 'none'; // Ensure label doesn't capture clicks
           contentContainer.appendChild(sectionLabel);
         }
 
@@ -253,10 +327,10 @@ class CollapseElement extends LitElement {
         const isVisible = index === sectionToOpen;
         contentToToggle.style.display = isVisible ? 'block' : 'none';
         overlay.style.backgroundColor = isVisible ? '#e0e0e0' : '#f0f0f0';
+        
+        // Attach click handler directly to this overlay
+        this.attachClickHandler(overlay, index, sections);
       });
-
-      // Update last open index
-      this.lastOpenIndex = sectionToOpen;
 
       // Update previous section count
       this.previousSectionCount = sections.length;
@@ -273,7 +347,32 @@ class CollapseElement extends LitElement {
 
     if (!repeatingSection) return;
 
-    const observer = new MutationObserver(() => {
+    // Clean up any existing observer
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+
+    this.observer = new MutationObserver((mutations) => {
+      // Filter mutations to reduce unnecessary processing
+      const relevantChanges = mutations.some(mutation => {
+        // Check for added/removed nodes
+        if (mutation.type === 'childList' && 
+            (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)) {
+          return true;
+        }
+        
+        // Check for attribute changes on important elements
+        if (mutation.type === 'attributes' && 
+            (mutation.target.classList.contains('ntx-repeating-section-repeated-section') || 
+             mutation.target.classList.contains('ntx-repeating-section-overlay'))) {
+          return true;
+        }
+        
+        return false;
+      });
+      
+      if (!relevantChanges) return;
+      
       // Debounce the initialization
       clearTimeout(this._observerTimer);
       this._observerTimer = setTimeout(() => {
@@ -290,7 +389,12 @@ class CollapseElement extends LitElement {
       }, 100);
     });
 
-    observer.observe(repeatingSection, { childList: true, subtree: true });
+    this.observer.observe(repeatingSection, { 
+      childList: true, 
+      subtree: true, 
+      attributes: true,
+      attributeFilter: ['class', 'style']
+    });
   }
 
   render() {
