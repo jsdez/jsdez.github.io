@@ -8,7 +8,7 @@ class CollapseElement extends LitElement {
       description: 'Collapsible Repeating Sections',
       iconUrl: "",
       groupName: 'NEO',
-      version: '1.1.0',
+      version: '1.1.1',
       properties: {
         targetClass: {
           type: 'string',
@@ -74,6 +74,50 @@ class CollapseElement extends LitElement {
     this._initTimer = setTimeout(() => {
       this.initCollapsibleSections();
       this.observeRepeatingSection();
+
+      const repeatingSection = document.querySelector(`.${this.targetClass}`);
+      if (repeatingSection) {
+        repeatingSection.addEventListener('click', (event) => {
+          const overlay = event.target.closest('.ntx-repeating-section-overlay');
+          if (!overlay || event.target.closest('.ntx-repeating-section-remove-button')) return;
+
+          const allOverlays = [...repeatingSection.querySelectorAll('.ntx-repeating-section-overlay')];
+          const sections = [...repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section')];
+          const contentSelectors = [
+            '.nx-form-runtime-light',
+            '.nx-form-runtime',
+            '[data-form-content]',
+            '.ng-star-inserted > div',
+            '.nx-form-runtime-section'
+          ];
+
+          const clickedIndex = allOverlays.indexOf(overlay);
+          if (clickedIndex === -1) return;
+
+          this.lastOpenIndex = clickedIndex;
+
+          sections.forEach((section, index) => {
+            let content = null;
+            for (const selector of contentSelectors) {
+              content = section.querySelector(selector);
+              if (content) break;
+            }
+
+            const sectionOverlay = section.querySelector('.ntx-repeating-section-overlay');
+            const chevron = sectionOverlay?.querySelector('svg');
+
+            if (content && sectionOverlay) {
+              const isExpanded = index === clickedIndex;
+              content.style.display = isExpanded ? 'block' : 'none';
+              sectionOverlay.style.backgroundColor = isExpanded ? '#e0e0e0' : '#f0f0f0';
+
+              if (chevron) {
+                this.updateChevronState(chevron, isExpanded);
+              }
+            }
+          });
+        });
+      }
     }, 200);
   }
 
@@ -209,34 +253,6 @@ class CollapseElement extends LitElement {
         const isVisible = index === sectionToOpen;
         contentToToggle.style.display = isVisible ? 'block' : 'none';
         overlay.style.backgroundColor = isVisible ? '#e0e0e0' : '#f0f0f0';
-
-        // Toggle event listener
-        overlay.addEventListener('click', (event) => {
-          if (event.target.closest('.ntx-repeating-section-remove-button')) return;
-        
-          this.lastOpenIndex = index;
-        
-          sections.forEach((s, i) => {
-            let content = null;
-            for (const selector of contentSelectors) {
-              content = s.querySelector(selector);
-              if (content) break;
-            }
-        
-            const sectionOverlay = s.querySelector('.ntx-repeating-section-overlay');
-            const chevron = sectionOverlay?.querySelector('svg');
-        
-            if (content && sectionOverlay) {
-              const isExpanded = i === index;
-              content.style.display = isExpanded ? 'block' : 'none';
-              sectionOverlay.style.backgroundColor = isExpanded ? '#e0e0e0' : '#f0f0f0';
-              
-              if (chevron) {
-                this.updateChevronState(chevron, isExpanded);
-              }
-            }
-          });
-        });
       });
 
       // Update last open index
