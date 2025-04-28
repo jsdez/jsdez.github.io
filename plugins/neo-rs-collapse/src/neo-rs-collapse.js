@@ -8,7 +8,7 @@ class CollapseElement extends LitElement {
       description: 'Collapsible Repeating Sections',
       iconUrl: "",
       groupName: 'NEO',
-      version: '1.0',
+      version: '1.1.0',
       properties: {
         targetClass: {
           type: 'string',
