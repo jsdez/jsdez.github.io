@@ -78,6 +78,8 @@ class CollapseElement extends LitElement {
       user-select: none;
       background-color: #f0f0f0;
       transition: background-color 0.2s ease;
+      z-index: 10;
+      position: relative;
     }
     
     .collapse-header.active {
@@ -134,7 +136,8 @@ class CollapseElement extends LitElement {
     sectionId: { type: String },
     isActive: { type: Boolean, state: true },
     contentHeight: { type: Number, state: true },
-    value: { type: Object }
+    value: { type: Object },
+    parentSection: { type: Object, state: true }
   };
 
   constructor() {
@@ -149,6 +152,7 @@ class CollapseElement extends LitElement {
     this.isActive = false;
     this.contentHeight = 0;
     this.value = { activeSectionId: null, isExpanded: false };
+    this.parentSection = null;
     
     // Listen for global activation events
     this.handleActivationEvent = this.handleActivationEvent.bind(this);
@@ -163,6 +167,9 @@ class CollapseElement extends LitElement {
     // Listen for activation events from other sections
     document.addEventListener('neo-section-activated', this.handleActivationEvent);
     
+    // Find and store reference to parent repeating section
+    this.findParentSection();
+    
     // Auto-expand the first section created on the page if none is active
     if (!document.querySelector('.neo-rs-section-active')) {
       // Small delay to ensure DOM is ready
@@ -173,6 +180,9 @@ class CollapseElement extends LitElement {
         }
       }, 50);
     }
+    
+    // Set up mutation observer to detect any DOM changes that might affect our parent section
+    this.setupMutationObserver();
   }
   
   disconnectedCallback() {
@@ -180,6 +190,109 @@ class CollapseElement extends LitElement {
     
     // Remove global event listener
     document.removeEventListener('neo-section-activated', this.handleActivationEvent);
+    
+    // Disconnect mutation observer
+    if (this.mutationObserver) {
+      this.mutationObserver.disconnect();
+    }
+  }
+  
+  setupMutationObserver() {
+    // Create a mutation observer to detect changes to the DOM
+    this.mutationObserver = new MutationObserver(() => {
+      // If we don't have a parent section, try to find it again
+      if (!this.parentSection) {
+        this.findParentSection();
+      }
+    });
+    
+    // Start observing the document with the configured parameters
+    this.mutationObserver.observe(document.body, { 
+      childList: true, 
+      subtree: true 
+    });
+  }
+  
+  findParentSection() {
+    // Try to find the parent repeating section element
+    let element = this;
+    while (element.parentElement) {
+      element = element.parentElement;
+      
+      // Check if this is a repeating section container
+      if (element.classList.contains('ntx-repeating-section-repeated-section')) {
+        this.parentSection = element;
+        
+        // Store section name, status, and total values from form fields if empty
+        if (!this.sectionName || this.sectionName === 'Section') {
+          this.retrieveSectionData();
+        }
+        
+        break;
+      }
+    }
+  }
+  
+  retrieveSectionData() {
+    if (!this.parentSection) return;
+    
+    // Try to find section name field
+    const nameField = this.parentSection.querySelector('.section-name input');
+    if (nameField && nameField.value) {
+      this.sectionName = nameField.value;
+    }
+    
+    // Try to find section status field
+    const statusField = this.parentSection.querySelector('.section-status .ng-value span');
+    if (statusField && statusField.textContent) {
+      this.sectionStatus = statusField.textContent.trim();
+    }
+    
+    // Try to find section total field
+    const totalField = this.parentSection.querySelector('.section-total input');
+    if (totalField && totalField.value) {
+      this.sectionTotal = totalField.value;
+    }
+    
+    // Set up listeners for changes to these fields
+    this.setupFieldListeners();
+  }
+  
+  setupFieldListeners() {
+    if (!this.parentSection) return;
+    
+    // Listen for changes to name field
+    const nameField = this.parentSection.querySelector('.section-name input');
+    if (nameField) {
+      nameField.addEventListener('input', (e) => {
+        this.sectionName = e.target.value || 'Section';
+      });
+    }
+    
+    // Listen for changes to status field (more complex due to dropdown)
+    const statusField = this.parentSection.querySelector('.section-status');
+    if (statusField) {
+      const observer = new MutationObserver(() => {
+        const statusValue = statusField.querySelector('.ng-value span');
+        if (statusValue) {
+          this.sectionStatus = statusValue.textContent.trim();
+        }
+      });
+      
+      observer.observe(statusField, { 
+        subtree: true, 
+        childList: true,
+        characterData: true
+      });
+    }
+    
+    // Listen for changes to total field
+    const totalField = this.parentSection.querySelector('.section-total input');
+    if (totalField) {
+      totalField.addEventListener('input', (e) => {
+        this.sectionTotal = e.target.value || '';
+      });
+    }
   }
   
   handleActivationEvent(event) {
@@ -230,6 +343,40 @@ class CollapseElement extends LitElement {
       } else {
         this.classList.remove('neo-rs-section-active');
       }
+      
+      // Update parent section if we have one
+      this.updateParentSection();
+    }
+  }
+  
+  updateParentSection() {
+    if (!this.parentSection) {
+      this.findParentSection();
+      if (!this.parentSection) return;
+    }
+    
+    // Add or remove active class to parent section
+    if (this.isActive) {
+      this.parentSection.classList.add('neo-rs-section-expanded');
+      
+      // Scroll parent section into view if needed
+      this.parentSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+      this.parentSection.classList.remove('neo-rs-section-expanded');
+    }
+    
+    // Find all controls/content in parent section
+    const contentRows = this.parentSection.querySelectorAll('.nx-row');
+    if (contentRows.length > 0) {
+      // Skip the first row which contains our header fields
+      for (let i = 1; i < contentRows.length; i++) {
+        const row = contentRows[i];
+        if (this.isActive) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      }
     }
   }
   
@@ -247,6 +394,11 @@ class CollapseElement extends LitElement {
         this.resizeObserver.observe(el);
       });
     }
+    
+    // Try to retrieve section data again after rendering
+    setTimeout(() => {
+      this.retrieveSectionData();
+    }, 200);
   }
   
   measureContentHeight() {
@@ -292,6 +444,9 @@ class CollapseElement extends LitElement {
     } else {
       wrapper.classList.add('collapsed');
     }
+    
+    // Also update parent section visibility
+    this.updateParentSection();
   }
   
   toggleSection() {
