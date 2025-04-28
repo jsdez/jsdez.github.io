@@ -1,4 +1,4 @@
-import { LitElement } from 'lit';
+import { LitElement, html, css } from 'lit';
 
 class CollapseElement extends LitElement {
   static getMetaConfig() {
@@ -8,32 +8,23 @@ class CollapseElement extends LitElement {
       description: 'Collapsible Repeating Sections',
       iconUrl: "",
       groupName: 'NEO',
-      version: '1.45.0',
+      version: '2.0.0',
       properties: {
-        targetClass: {
-          type: 'string',
-          title: 'Repeating Section CSS Class',
-          description: 'Please enter the class used to target the repeating section'
-        },
-        nameInputClass: {
-          type: 'string',
-          title: 'Input Name CSS Class',
-          description: 'If you wish to have a dynamic section name, Please enter the class used to target input inside the section containing the section name'
-        },
         sectionName: {
           type: 'string',
-          title: 'Manual Section Name',
-          description: 'If you wish to name each section the same, enter it here, the name will be used followed by a number, e.g. entering Item will result in Item 1, Item 2,...'
+          title: 'Section Name',
+          description: 'Name of this section in the repeating section',
+          defaultValue: 'Section'
         },
-        totalInputClass: {
-          title: 'Total Amount CSS Class',
+        sectionStatus: {
+          title: 'Section Status',
           type: 'string',
-          description: 'If you wish to display a total value from each section, Please enter the class used to target input inside the section containing the total value',
+          description: 'Status value for this specific section',
         },
-        statusInputClass: {
-          title: 'Status Input CSS Class',
+        sectionTotal: {
+          title: 'Section Total',
           type: 'string',
-          description: 'If you wish to display a status value from each section, Please enter the class used to target input inside the section containing the status value',
+          description: 'Total value for this specific section',
         },
         showIcon: {
           title: 'Show Icon',
@@ -49,6 +40,18 @@ class CollapseElement extends LitElement {
           title: 'Animation Speed (ms)',
           type: 'number',
           defaultValue: 200,
+        },
+        sectionId: {
+          title: 'Section ID',
+          type: 'string',
+          description: 'Unique ID for this section (auto-generated, do not modify)',
+          visible: false,
+        },
+        value: {
+          title: 'Value',
+          type: 'object',
+          isValueField: true,
+          description: 'The component state including active section ID',
         }
       },
       standardProperties: {
@@ -58,641 +61,312 @@ class CollapseElement extends LitElement {
     };
   }
 
+  static styles = css`
+    :host {
+      display: block;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .collapse-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      cursor: pointer;
+      user-select: none;
+      background-color: #f0f0f0;
+      transition: background-color 0.2s ease;
+    }
+    
+    .collapse-header.active {
+      background-color: #e0e0e0;
+    }
+    
+    .chevron {
+      transition: transform var(--animation-speed, 200ms) ease-in-out;
+    }
+    
+    .chevron.expanded {
+      transform: rotate(90deg);
+    }
+    
+    .section-name {
+      font-weight: bold;
+      flex-grow: 1;
+    }
+    
+    .section-status {
+      background: #ddd;
+      border-radius: 8px;
+      padding: 2px 6px;
+      font-size: 12px;
+      margin-left: 8px;
+    }
+    
+    .section-total {
+      font-weight: bold;
+      margin-left: auto;
+    }
+    
+    .content-wrapper {
+      overflow: hidden;
+      transition: max-height var(--animation-speed, 200ms) ease, 
+                  opacity var(--animation-speed, 200ms) ease;
+      opacity: 1;
+      max-height: 1000px; /* Default large value */
+    }
+    
+    .content-wrapper.collapsed {
+      max-height: 0 !important;
+      opacity: 0;
+    }
+  `;
+
   static properties = {
     sectionName: { type: String },
-    sectionCount: { type: Number },
-    targetClass: { type: String },
+    sectionStatus: { type: String },
+    sectionTotal: { type: String },
     showIcon: { type: Boolean },
     showName: { type: Boolean },
-    animationSpeed: { type: Number }
+    animationSpeed: { type: Number },
+    sectionId: { type: String },
+    isActive: { type: Boolean, state: true },
+    contentHeight: { type: Number, state: true },
+    value: { type: Object }
   };
 
   constructor() {
     super();
     this.sectionName = 'Section';
-    this.sectionCount = 0;
-    this.targetClass = '';
+    this.sectionStatus = '';
+    this.sectionTotal = '';
     this.showIcon = true;
     this.showName = true;
     this.animationSpeed = 200;
-    this.lastOpenIndex = -1;
-    this.isInitializing = false;
-    this.previousSectionCount = 0;
-    this.clickHandlers = new WeakMap();
-    this.contentSelectors = [
-      '.nx-form-runtime-light',
-      '.nx-form-runtime',
-      '[data-form-content]',
-      '.ng-star-inserted > div',
-      '.nx-form-runtime-section'
-    ];
-    this.observer = null;
-    this.sectionHeights = new Map(); // Store section heights for smooth transitions
-  }
-
-  disconnectedCallback() {
-    super.disconnectedCallback();
-    this.cleanup();
-  }
-
-  // Helper to get section data: name, total, status
-  getSectionData(section, index) {
-    let name = `${this.sectionName} ${index + 1}`;
-    let total = null;
-    let status = null;
-
-    if (this.nameInputClass) {
-      const inputWrapper = section.querySelector(`.${this.nameInputClass}`);
-      const input = inputWrapper?.querySelector('input');
-      if (input && input.value.trim() !== '') {
-        name = input.value.trim();
-      }
-    }
-
-    if (this.totalInputClass) {
-      const inputWrapper = section.querySelector(`.${this.totalInputClass}`);
-      const input = inputWrapper?.querySelector('input');
-      total = input && input.value.trim() !== '' ? input.value.trim() : '0';
-    }
-
-    if (this.statusInputClass) {
-      const inputWrapper = section.querySelector(`.${this.statusInputClass}`);
-      const input = inputWrapper?.querySelector('input');
-      status = input && input.value.trim() !== '' ? input.value.trim() : 'n/a';
-    }
-
-    return { name, total, status };
-  }
-
-  cleanup() {
-    if (this.observer) {
-      this.observer.disconnect();
-      this.observer = null;
-    }
+    this.sectionId = `section-${Math.random().toString(36).substr(2, 9)}`;
+    this.isActive = false;
+    this.contentHeight = 0;
+    this.value = { activeSectionId: null, isExpanded: false };
     
-    clearTimeout(this._initTimer);
-    clearTimeout(this._observerTimer);
-    
-    // Remove event listeners
-    const repeatingSection = document.querySelector(`.${this.targetClass}`);
-    if (repeatingSection) {
-      const sections = repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
-      sections.forEach(section => {
-        const overlay = section.querySelector('.ntx-repeating-section-overlay');
-        if (overlay && this.clickHandlers.has(overlay)) {
-          overlay.removeEventListener('click', this.clickHandlers.get(overlay));
-          this.clickHandlers.delete(overlay);
-        }
-      });
-    }
-    
-    // Clean up style elements
-    document.querySelectorAll('.neo-rs-collapse-styles').forEach(el => el.remove());
+    // Listen for global activation events
+    this.handleActivationEvent = this.handleActivationEvent.bind(this);
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this.injectStyles();
-    this._initTimer = setTimeout(() => this.initialize(), 200);
-  }
-
-  // Helper to get section title (dynamic or fallback)
-  getSectionTitle(section, index) {
-    if (this.nameInputClass) {
-      const inputWrapper = section.querySelector(`.${this.nameInputClass}`);
-      if (inputWrapper) {
-        const input = inputWrapper.querySelector('input');
-        if (input && input.value.trim() !== '') {
-          return input.value.trim();
+    
+    // Set CSS variable for animation speed
+    this.style.setProperty('--animation-speed', `${this.animationSpeed}ms`);
+    
+    // Listen for activation events from other sections
+    document.addEventListener('neo-section-activated', this.handleActivationEvent);
+    
+    // Auto-expand the first section created on the page if none is active
+    if (!document.querySelector('.neo-rs-section-active')) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        const allSections = document.querySelectorAll('neo-rs-collapse');
+        if (allSections[0] === this) {
+          this.toggleSection();
         }
-      }
+      }, 50);
     }
-    return `${this.sectionName} ${index + 1}`;
   }
-
-  injectStyles() {
-    // Remove any existing style element
-    document.querySelectorAll('.neo-rs-collapse-styles').forEach(el => el.remove());
+  
+  disconnectedCallback() {
+    super.disconnectedCallback();
     
-    // Create and inject style element
-    const style = document.createElement('style');
-    style.className = 'neo-rs-collapse-styles';
-    style.textContent = `
-      .neo-rs-section-content {
-        overflow: hidden;
-        transition: max-height ${this.animationSpeed}ms ease, opacity ${this.animationSpeed}ms ease;
-        opacity: 1;
-      }
-      
-      .neo-rs-section-content.collapsed {
-        max-height: 0px !important;
-        opacity: 0;
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-      }
-      
-      .neo-rs-section-wrapper {
-        position: relative;
-      }
-      
-      .neo-rs-chevron {
-        transition: transform ${this.animationSpeed}ms ease-in-out;
-      }
-      
-      .neo-rs-chevron.expanded {
-        transform: rotate(90deg);
-      }
-      
-      .neo-rs-overlay-active {
-        background-color: #e0e0e0 !important;
-      }
-      
-      .neo-rs-overlay-inactive {
-        background-color: #f0f0f0 !important;
-      }
-      
-      .neo-rs-section-height-container {
-        transition: height ${this.animationSpeed}ms ease;
-      }
-    `;
-    document.head.appendChild(style);
+    // Remove global event listener
+    document.removeEventListener('neo-section-activated', this.handleActivationEvent);
   }
-
-  initialize() {
-    try {
-      this.initCollapsibleSections();
-      this.observeRepeatingSection();
-    } catch (error) {
-      console.error('Error during initialization:', error);
+  
+  handleActivationEvent(event) {
+    // Check if this is our own event
+    if (event.detail.sectionId === this.sectionId) {
+      return;
     }
-  }
-
-  createChevronIcon(isExpanded) {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('version', '1.1');
-    svg.setAttribute('width', '34');
-    svg.setAttribute('height', '34');
-    svg.setAttribute('viewBox', '0 0 36 36');
-    svg.classList.add('nx-icon--allow-events', 'neo-rs-chevron');
     
-    if (isExpanded) {
-      svg.classList.add('expanded');
+    // Another section was activated, collapse this one
+    if (this.isActive) {
+      this.isActive = false;
+      this.value = { 
+        ...this.value, 
+        isExpanded: false 
+      };
+      this.updateContentState();
+      this.notifyValueChange();
     }
-
-    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-    use.setAttribute('href', '#chevron-right');
-    svg.appendChild(use);
-
-    return svg;
   }
-
-  updateChevronState(chevron, isExpanded) {
-    if (!chevron) return;
+  
+  notifyValueChange() {
+    // Create and dispatch the ntx-value-change event
+    const event = new CustomEvent('ntx-value-change', {
+      bubbles: true,
+      cancelable: false,
+      composed: true,
+      detail: this.value
+    });
     
-    if (isExpanded) {
-      chevron.classList.add('expanded');
-    } else {
-      chevron.classList.remove('expanded');
+    this.dispatchEvent(event);
+  }
+  
+  updated(changedProps) {
+    super.updated(changedProps);
+    
+    if (changedProps.has('isActive')) {
+      this.updateContentState();
+      
+      // Update value when isActive changes
+      this.value = { 
+        activeSectionId: this.isActive ? this.sectionId : null,
+        isExpanded: this.isActive
+      };
+      
+      // Update class for external queryability
+      if (this.isActive) {
+        this.classList.add('neo-rs-section-active');
+      } else {
+        this.classList.remove('neo-rs-section-active');
+      }
     }
   }
-
-  findContentElement(section) {
-    for (const selector of this.contentSelectors) {
-      const content = section.querySelector(selector);
-      if (content) return content;
+  
+  firstUpdated() {
+    this.measureContentHeight();
+    
+    // Set up a resize observer to handle content changes
+    this.resizeObserver = new ResizeObserver(() => {
+      this.measureContentHeight();
+    });
+    
+    const contentSlot = this.shadowRoot.querySelector('slot');
+    if (contentSlot) {
+      contentSlot.assignedElements().forEach(el => {
+        this.resizeObserver.observe(el);
+      });
     }
-    return null;
   }
-
-  prepareContentForAnimations(section, content) {
+  
+  measureContentHeight() {
+    const content = this.shadowRoot.querySelector('#content');
     if (!content) return;
     
-    // If content isn't already wrapped for animation
-    if (!content.parentElement.classList.contains('neo-rs-section-wrapper')) {
-      // Create wrapper for height transitions
-      const wrapper = document.createElement('div');
-      wrapper.classList.add('neo-rs-section-wrapper');
+    // Get all content children
+    const slot = content.querySelector('slot');
+    if (!slot) return;
+    
+    // Get slotted content
+    const elements = slot.assignedElements();
+    if (elements.length === 0) return;
+    
+    // Measure combined height of all slotted elements
+    let totalHeight = 0;
+    elements.forEach(el => {
+      // Get computed style
+      const style = window.getComputedStyle(el);
       
-      // Move the content into our wrapper
-      content.parentNode.insertBefore(wrapper, content);
-      wrapper.appendChild(content);
+      // Calculate full height including margins
+      const height = el.offsetHeight;
+      const marginTop = parseInt(style.marginTop, 10) || 0;
+      const marginBottom = parseInt(style.marginBottom, 10) || 0;
       
-      // Add animation class to content
-      content.classList.add('neo-rs-section-content');
-    }
-    
-    return content.parentElement; // Return the wrapper
-  }
-
-  measureSectionHeight(section, content) {
-    if (!content) return 0;
-    
-    // Temporarily make visible to measure
-    const originalDisplay = content.style.display;
-    const originalHeight = content.style.height;
-    const originalMaxHeight = content.style.maxHeight;
-    const originalOverflow = content.style.overflow;
-    
-    // Show but hide visually
-    content.style.display = 'block';
-    content.style.height = 'auto';
-    content.style.maxHeight = 'none';
-    content.style.overflow = 'hidden';
-    content.style.position = 'absolute';
-    content.style.visibility = 'hidden';
-    
-    // Measure
-    const height = content.scrollHeight;
-    
-    // Restore
-    content.style.display = originalDisplay;
-    content.style.height = originalHeight;
-    content.style.maxHeight = originalMaxHeight;
-    content.style.overflow = originalOverflow;
-    content.style.position = '';
-    content.style.visibility = '';
-    
-    // Store height
-    this.sectionHeights.set(section, height);
-    
-    return height;
-  }
-
-  async handleSectionClick(overlay, clickedIndex, sections) {
-    // Prevent handling if this is a remove button click or if animation is in progress
-    if (overlay.hasAttribute('data-processing')) return;
-    
-    // Mark as processing to prevent multiple rapid clicks
-    overlay.setAttribute('data-processing', 'true');
-    
-    const previousOpenIndex = this.lastOpenIndex;
-    this.lastOpenIndex = clickedIndex;
-    
-    // First handle all section updates
-    const transitions = [];
-    
-    sections.forEach((section, index) => {
-      const content = this.findContentElement(section);
-      const sectionOverlay = section.querySelector('.ntx-repeating-section-overlay');
-      const chevron = sectionOverlay?.querySelector('.neo-rs-chevron');
-      
-      if (!content || !sectionOverlay) return;
-      
-      const isExpanding = index === clickedIndex;
-      const isCurrentlyExpanded = index === previousOpenIndex;
-      
-      // Prepare content for animation if needed
-      const wrapper = this.prepareContentForAnimations(section, content);
-      
-      // Update overlay appearance immediately
-      if (isExpanding) {
-        sectionOverlay.classList.add('neo-rs-overlay-active');
-        sectionOverlay.classList.remove('neo-rs-overlay-inactive');
-      } else {
-        sectionOverlay.classList.remove('neo-rs-overlay-active');
-        sectionOverlay.classList.add('neo-rs-overlay-inactive');
-      }
-      
-      // Update chevron state
-      if (chevron) {
-        this.updateChevronState(chevron, isExpanding);
-      }
-      
-      // Handle content transitions
-      if (isExpanding && !isCurrentlyExpanded) {
-        // Expanding a collapsed section
-        
-        // Measure the height first if we don't have it
-        if (!this.sectionHeights.has(section)) {
-          this.measureSectionHeight(section, content);
-        }
-        
-        const contentHeight = this.sectionHeights.get(section) || 'auto';
-        
-        // Make sure the content is in a collapsed state first
-        content.classList.add('collapsed');
-        content.style.display = 'block';
-        
-        // Schedule the transition to expanded state
-        const expandPromise = new Promise(resolve => {
-          requestAnimationFrame(() => {
-            // Force a reflow to ensure the collapsed state was applied
-            content.offsetHeight;
-            
-            // Set max-height to enable transition
-            content.style.maxHeight = `${contentHeight}px`;
-            content.classList.remove('collapsed');
-            
-            // Resolve after animation completes
-            setTimeout(resolve, this.animationSpeed);
-          });
-        });
-        
-        transitions.push(expandPromise);
-      } 
-      else if (!isExpanding && isCurrentlyExpanded) {
-        // Collapsing the currently expanded section
-        
-        // Measure the height first if we don't have it
-        if (!this.sectionHeights.has(section)) {
-          this.measureSectionHeight(section, content);
-        }
-        
-        const contentHeight = this.sectionHeights.get(section) || 'auto';
-        
-        // Set explicit height to start transition
-        content.style.maxHeight = `${contentHeight}px`;
-        
-        // Schedule the transition to collapsed state
-        const collapsePromise = new Promise(resolve => {
-          requestAnimationFrame(() => {
-            // Force a reflow
-            content.offsetHeight;
-            
-            // Trigger collapse animation
-            content.classList.add('collapsed');
-            
-            // Set display none after animation completes
-            setTimeout(() => {
-              if (!content.classList.contains('collapsed')) return;
-              content.style.display = 'none';
-              resolve();
-            }, this.animationSpeed);
-          });
-        });
-        
-        transitions.push(collapsePromise);
-      }
-      else if (!isExpanding && !isCurrentlyExpanded) {
-        // Section that was already collapsed
-        content.style.display = 'none';
-        content.classList.add('collapsed');
-      }
+      totalHeight += height + marginTop + marginBottom;
     });
     
-    // Wait for all transitions to complete
-    await Promise.all(transitions);
+    // Add padding for the wrapper itself
+    totalHeight += 20; // Some extra buffer
     
-    // Remove processing attribute
-    overlay.removeAttribute('data-processing');
+    this.contentHeight = totalHeight;
+    this.updateContentState();
   }
-
-  attachClickHandler(overlay, index, sections) {
-    // Remove any existing handler
-    if (this.clickHandlers.has(overlay)) {
-      overlay.removeEventListener('click', this.clickHandlers.get(overlay));
-    }
+  
+  updateContentState() {
+    const wrapper = this.shadowRoot.querySelector('.content-wrapper');
+    if (!wrapper) return;
     
-    // Create and store new handler
-    const handler = (event) => {
-      // Ignore clicks on remove button
-      if (event.target.closest('.ntx-repeating-section-remove-button')) return;
-      
-      // Stop propagation to prevent multiple handlers
-      event.stopPropagation();
-      
-      this.handleSectionClick(overlay, index, sections);
+    if (this.isActive) {
+      wrapper.classList.remove('collapsed');
+      wrapper.style.maxHeight = `${this.contentHeight}px`;
+    } else {
+      wrapper.classList.add('collapsed');
+    }
+  }
+  
+  toggleSection() {
+    // Toggle active state
+    const newState = !this.isActive;
+    this.isActive = newState;
+    
+    // Update the value object
+    this.value = {
+      activeSectionId: newState ? this.sectionId : null,
+      isExpanded: newState
     };
     
-    this.clickHandlers.set(overlay, handler);
+    // Notify value change for form system
+    this.notifyValueChange();
     
-    // Attach the handler - use capture phase to ensure we get first chance at the event
-    overlay.addEventListener('click', handler, true);
-  }
-
-  initCollapsibleSections() {
-    if (this.isInitializing) return;
-    this.isInitializing = true;
-
-    try {
-      const repeatingSection = document.querySelector(`.${this.targetClass}`);
-
-      if (!repeatingSection) {
-        console.error(`No repeating section found with class: ${this.targetClass}`);
-        this.isInitializing = false;
-        return;
-      }
-
-      const sections = Array.from(repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section'));
-
-      if (sections.length === 0) {
-        console.error('No sections found to make collapsible');
-        this.isInitializing = false;
-        return;
-      }
-
-      // Determine if a new section was added
-      const wasNewSectionAdded = sections.length > this.previousSectionCount;
-
-      // If a new section was added, set last open index to the new section
-      if (wasNewSectionAdded) {
-        this.lastOpenIndex = sections.length - 1;
-      } else if (this.lastOpenIndex >= sections.length || this.lastOpenIndex < -1) {
-        this.lastOpenIndex = sections.length - 1;
-      }
-
-      // Determine the section to keep open
-      const sectionToOpen = this.lastOpenIndex === -1 
-        ? sections.length - 1 
-        : Math.min(this.lastOpenIndex, sections.length - 1);
-
-      sections.forEach((section, index) => {
-        const content = this.findContentElement(section);
-        if (!content) {
-          console.error(`No content found to toggle for section ${index}`);
-          return;
-        }
-        let overlay = section.querySelector('.ntx-repeating-section-overlay');
-        if (!overlay) {
-          console.error(`No overlay found for section ${index}`);
-          return;
-        }
-
-        // Apply overlay styling
-        Object.assign(overlay.style, {
-          cursor: 'pointer',
-          padding: '0px 0px 0px 10px',
-          border: '1px solid #ddd',
-          userSelect: 'none',
-          display: 'flex',
-          justifyContent: 'flex-start',
-          alignItems: 'center',
-          gap: '10px',
-          position: 'relative',
-          zIndex: '1'
-        });
-
-        // Try to find existing overlay children by data attributes
-        const nameElement = overlay.querySelector('[data-overlay-name]');
-        const statusElement = overlay.querySelector('[data-overlay-status]');
-        const totalElement = overlay.querySelector('[data-overlay-total]');
-        const { name, total, status } = this.getSectionData(section, index);
-        let rebuilt = false;
-
-        if (this.showName && nameElement && (status !== null ? !!statusElement : true) && (total !== null ? !!totalElement : true)) {
-          // All required elements exist, update their textContent
-          nameElement.textContent = name;
-          if (statusElement) statusElement.textContent = status;
-          if (totalElement) totalElement.textContent = total;
-          // Skip rebuilding overlay contents
-        } else {
-          // Clear existing overlay content and rebuild
-          overlay.innerHTML = '';
-          rebuilt = true;
-          // Create container for icon and label
-          const contentContainer = document.createElement('div');
-          contentContainer.style.display = 'flex';
-          contentContainer.style.alignItems = 'center';
-          contentContainer.style.gap = '10px';
-          contentContainer.style.width = '100%';
-          contentContainer.style.pointerEvents = 'none';
-
-          // Add chevron icon if enabled
-          if (this.showIcon) {
-            const isExpanded = index === sectionToOpen;
-            const chevron = this.createChevronIcon(isExpanded);
-            chevron.style.pointerEvents = 'none';
-            contentContainer.appendChild(chevron);
-          }
-
-          // Add section label, status, and total using getSectionData
-          if (this.showName) {
-            const sectionLabel = document.createElement('span');
-            sectionLabel.textContent = name;
-            sectionLabel.style.fontWeight = 'bold';
-            sectionLabel.style.pointerEvents = 'none';
-            sectionLabel.setAttribute('data-overlay-name', ''); // <-- Add attribute
-            contentContainer.appendChild(sectionLabel);
-
-            if (status !== null) {
-              const statusBadge = document.createElement('span');
-              statusBadge.textContent = status;
-              statusBadge.style.background = '#ddd';
-              statusBadge.style.borderRadius = '8px';
-              statusBadge.style.padding = '2px 6px';
-              statusBadge.style.fontSize = '12px';
-              statusBadge.style.marginLeft = '8px';
-              statusBadge.style.pointerEvents = 'none';
-              statusBadge.setAttribute('data-overlay-status', ''); // <-- Add attribute
-              contentContainer.appendChild(statusBadge);
-            }
-
-            if (total !== null) {
-              const totalSpan = document.createElement('span');
-              totalSpan.textContent = total;
-              totalSpan.style.marginLeft = 'auto';
-              totalSpan.style.fontWeight = 'bold';
-              totalSpan.style.pointerEvents = 'none';
-              totalSpan.setAttribute('data-overlay-total', ''); // <-- Add attribute
-              contentContainer.appendChild(totalSpan);
-            }
-          }
-
-          overlay.appendChild(contentContainer);
-        }
-
-        // Set active/inactive state
-        const isVisible = index === sectionToOpen;
-        if (isVisible) {
-          overlay.classList.add('neo-rs-overlay-active');
-          overlay.classList.remove('neo-rs-overlay-inactive');
-        } else {
-          overlay.classList.remove('neo-rs-overlay-active');
-          overlay.classList.add('neo-rs-overlay-inactive');
-        }
-
-        // Prepare content for animations
-        this.prepareContentForAnimations(section, content);
-
-        // Measure section height for animations
-        this.measureSectionHeight(section, content);
-
-        // Set initial state
-        if (isVisible) {
-          content.style.display = 'block';
-          content.classList.remove('collapsed');
-          content.style.maxHeight = `${this.sectionHeights.get(section) || 'none'}px`;
-        } else {
-          content.style.display = 'none';
-          content.classList.add('collapsed');
-        }
-
-        // Attach click handler directly to this overlay
-        // If overlay was rebuilt, the event handler must be reattached
-        if (rebuilt || !this.clickHandlers.has(overlay)) {
-          this.attachClickHandler(overlay, index, sections);
+    // If newly activated, notify others
+    if (newState) {
+      // Create and dispatch a custom event for other sections
+      const activationEvent = new CustomEvent('neo-section-activated', {
+        bubbles: true,
+        composed: true,
+        detail: {
+          sectionId: this.sectionId,
+          timestamp: Date.now()
         }
       });
-
-      // Update previous section count
-      this.previousSectionCount = sections.length;
-    } catch (error) {
-      console.error('Error in initCollapsibleSections:', error);
-    } finally {
-      // Always reset initialization flag
-      this.isInitializing = false;
-    }
-  }
-
-  observeRepeatingSection() {
-    const repeatingSection = document.querySelector(`.${this.targetClass}`);
-
-    if (!repeatingSection) return;
-
-    // Clean up any existing observer
-    if (this.observer) {
-      this.observer.disconnect();
-    }
-
-    this.observer = new MutationObserver((mutations) => {
-      // Filter mutations to reduce unnecessary processing
-      const relevantChanges = mutations.some(mutation => {
-        // Check for added/removed nodes
-        if (mutation.type === 'childList' && 
-            (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)) {
-          return true;
-        }
-        
-        // Check for attribute changes on important elements
-        if (mutation.type === 'attributes' && 
-            (mutation.target.classList.contains('ntx-repeating-section-repeated-section') || 
-             mutation.target.classList.contains('ntx-repeating-section-overlay'))) {
-          return true;
-        }
-        
-        return false;
-      });
       
-      if (!relevantChanges) return;
-      
-      // Debounce the initialization
-      clearTimeout(this._observerTimer);
-      this._observerTimer = setTimeout(() => {
-        const updatedSections = repeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
-
-        if (updatedSections.length === 0) {
-          this.lastOpenIndex = -1;
-          this.previousSectionCount = 0;
-        } else if (this.lastOpenIndex >= updatedSections.length) {
-          this.lastOpenIndex = updatedSections.length - 1;
-        }
-
-        this.initCollapsibleSections();
-      }, 100);
-    });
-
-    this.observer.observe(repeatingSection, { 
-      childList: true, 
-      subtree: true, 
-      attributes: true,
-      attributeFilter: ['class', 'style']
-    });
+      document.dispatchEvent(activationEvent);
+    }
   }
 
   render() {
-    return null;
+    return html`
+      <div class="collapse-container">
+        <div 
+          class="collapse-header ${this.isActive ? 'active' : ''}" 
+          @click=${this.toggleSection}
+        >
+          ${this.showIcon ? html`
+            <svg 
+              class="chevron ${this.isActive ? 'expanded' : ''}" 
+              width="24" 
+              height="24" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                fill="currentColor" 
+                d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"
+              />
+            </svg>
+          ` : ''}
+          
+          ${this.showName ? html`
+            <span class="section-name">${this.sectionName}</span>
+            
+            ${this.sectionStatus ? html`
+              <span class="section-status">${this.sectionStatus}</span>
+            ` : ''}
+            
+            ${this.sectionTotal ? html`
+              <span class="section-total">${this.sectionTotal}</span>
+            ` : ''}
+          ` : ''}
+        </div>
+        
+        <div 
+          class="content-wrapper ${this.isActive ? '' : 'collapsed'}" 
+          id="content"
+          style="max-height: ${this.isActive ? `${this.contentHeight}px` : '0'}"
+        >
+          <slot></slot>
+        </div>
+      </div>
+    `;
   }
 }
 
