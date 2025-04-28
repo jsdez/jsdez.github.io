@@ -8,7 +8,7 @@ class CollapseElement extends LitElement {
       description: 'Collapsible Repeating Sections',
       iconUrl: "",
       groupName: 'NEO',
-      version: '1.3.0',
+      version: '1.45.0',
       properties: {
         targetClass: {
           type: 'string',
@@ -120,6 +120,20 @@ class CollapseElement extends LitElement {
     super.connectedCallback();
     this.injectStyles();
     this._initTimer = setTimeout(() => this.initialize(), 200);
+  }
+
+  // Helper to get section title (dynamic or fallback)
+  getSectionTitle(section, index) {
+    if (this.nameInputClass) {
+      const inputWrapper = section.querySelector(`.${this.nameInputClass}`);
+      if (inputWrapper) {
+        const input = inputWrapper.querySelector('input');
+        if (input && input.value.trim() !== '') {
+          return input.value.trim();
+        }
+      }
+    }
+    return `${this.sectionName} ${index + 1}`;
   }
 
   injectStyles() {
@@ -499,9 +513,10 @@ class CollapseElement extends LitElement {
         }
 
         // Add section label if enabled
+        let sectionLabel;
         if (this.showName) {
-          const sectionLabel = document.createElement('span');
-          sectionLabel.textContent = `${this.sectionName} ${index + 1}`;
+          sectionLabel = document.createElement('span');
+          sectionLabel.textContent = this.getSectionTitle(section, index);
           sectionLabel.style.fontWeight = 'bold';
           sectionLabel.style.marginRight = 'auto';
           sectionLabel.style.pointerEvents = 'none'; // Ensure label doesn't capture clicks
@@ -509,7 +524,18 @@ class CollapseElement extends LitElement {
         }
 
         overlay.appendChild(contentContainer);
-        
+
+        // If nameInputClass is set, add input event for live updating label
+        if (this.nameInputClass && sectionLabel) {
+          const inputWrapper = section.querySelector(`.${this.nameInputClass}`);
+          const input = inputWrapper?.querySelector('input');
+          if (input) {
+            input.addEventListener('input', () => {
+              sectionLabel.textContent = this.getSectionTitle(section, index);
+            });
+          }
+        }
+
         // Set active/inactive state
         const isVisible = index === sectionToOpen;
         if (isVisible) {
@@ -522,21 +548,21 @@ class CollapseElement extends LitElement {
 
         // Prepare content for animations
         this.prepareContentForAnimations(section, content);
-        
+
         // Measure section height for animations
         this.measureSectionHeight(section, content);
-        
+
         // Set initial state
         if (isVisible) {
           content.style.display = 'block';
-          content.classList.remove('collapsed'); 
+          content.classList.remove('collapsed');
           // Set the max-height for proper animation later
           content.style.maxHeight = `${this.sectionHeights.get(section) || 'none'}px`;
         } else {
           content.style.display = 'none';
           content.classList.add('collapsed');
         }
-        
+
         // Attach click handler directly to this overlay
         this.attachClickHandler(overlay, index, sections);
       });
