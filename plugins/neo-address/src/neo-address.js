@@ -218,17 +218,6 @@ class AddressControl extends LitElement {
 
   render() {
     return html`
-      ${this.fieldLabel ? html`
-        <label class="field-label" part="field-label">
-          ${this.fieldLabel}
-          ${this.required ? html`<span class="required-marker" part="required-marker">*</span>` : ''}
-        </label>
-      ` : ''}
-      
-      ${this.description ? html`
-        <span class="field-description" part="field-description">${this.description}</span>
-      ` : ''}
-      
       <div class="address-container" part="address-container">
         <input
           id="addressInput"
