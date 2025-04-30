@@ -1,0 +1,153 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600;700;800;900&display=swap');
+
+:root {
+    --ntx-form-theme-font-family: "Montserrat", "Open Sans", "Helvetica", "Arial", sans-serif;
+}
+
+ntx-tooltip {
+    display:none
+}
+
+/* Apply font family to all text inside ntx-form-runtime */
+ntx-form-runtime {
+    font-family: var(--ntx-form-theme-font-family);
+}
+
+/* Responsive Heading Styles */
+ntx-form-runtime h1 {
+    font-size: clamp(2rem, 2.5vw, 3rem)!important;
+    color: #26bf4a !important;
+}
+
+ntx-form-runtime h2 {
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    color: #1c75c2 !important;
+}
+
+ntx-form-runtime h3 {
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    color: #26bf4a !important;
+}
+
+ntx-form-runtime h4 {
+    font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+    color: #1c75c2 !important;
+}
+
+ntx-form-runtime h5 {
+    font-size: clamp(1.2rem, 2vw, 1.6rem);
+    color: #26bf4a !important;
+}
+
+ntx-form-runtime h6 {
+    font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+    color: #1c75c2 !important;
+}
+
+ntx-form-runtime .day-table {
+    font-family: var(--ntx-form-theme-font-family);
+    font-size: clamp(0.92rem, 1.8vw, var(--ntx-form-theme-text-label-size))!important;
+}
+
+/* Labels */
+[dir] .nx-theme-styles .nx-theme-label-1 {
+    font-weight: bold;
+    font-size: 0.92em;
+    color: #2f2e2e;
+}
+
+[dir] .nx-theme-styles .nx-theme-label-1 .nx-required-star {
+    color: #1c75c2;
+}
+
+.remove-label ntx-label {
+    display:none
+}
+
+.remove-label textarea {
+    border-top: none;
+}
+
+.nx-form-label .nx-help-link, 
+.nx-form-label .nx-required-star {
+    color: #1c75c2;
+    margin-left: 5px;
+}
+
+/* Radio Buttons */
+[dir] .nx-theme-styles .nx-theme-radio-1 .nx-radio input[type=radio]:not(:disabled) + .nx-radio-container .nx-radio-faux {
+    background-color: #FFFFFF;
+    border-color: #3b3b3b !important;
+}
+
+.day-group {
+    border-bottom: none!important;
+}
+
+.week-ending .flatpickr-day {
+    color: grey; /* Default greyed-out style */
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.week-ending .flatpickr-day:hover:not(.isEmpty):not(.disabled):not(.selected) {
+    background-color:#697f90!important;
+}
+
+.week-ending .flatpickr-day:nth-child(7n + 1) {
+    color: black !important;
+    font-weight: bold;
+    background-color: #AFD5F0;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.week-ending .flatpickr-day.selected:not([class*=MonthDay]) {
+    background-color: #26bf4a !important;
+    border-color: #26bf4a !important;
+}
+
+.ntx-repeating-section-repeated-section {
+    display: flex; /* Activates flexbox layout */
+    align-items: center; /* Centers items vertically */
+    justify-content: space-between; /* Spaces out the children */
+    flex-direction: row-reverse; /* makes it so the delete button appears after the content */
+}
+
+/* Sibling Element - Form Container */
+ntx-repeating-section ntx-form-runtime-light {
+    flex-shrink: 1!important; /* FORCES it to shrink so they can fit together */
+    flex-grow: 1; /* Allow it to expand */
+}
+
+ntx-repeating-section .row>* {
+    padding-right: 5px;
+}
+
+.nx-repeating-section-container .nx-repeating-section-body .ntx-repeating-section-overlay {
+    flex-shrink: 0; /* Prevent shrinking */
+    margin-left: auto; /* Pushes the delete button to the end of the container */
+    align-self: flex-start; /* Aligns delete button to the top */
+    padding: 5px; 
+}
+
+@media screen and (min-width: 0) {
+    [data-e2e^="fc_container_"]:has(.day-group),
+    [data-e2e^="fc_container_"]:has(.day-group-last) {
+        padding: 0;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    .nx-form-runtime .nx-form-runtime-content {
+        padding: 0px !important;
+    }
+}
+
+@media screen and (min-width: 1280px) {
+    [data-e2e^="fc_container_"]:has(.day-group),
+    [data-e2e^="fc_container_"]:has(.day-group-last) {
+        padding-right: calc(var(--bs-gutter-x) * .5);
+        padding-left: calc(var(--bs-gutter-x) * .5);
+    }
+}
