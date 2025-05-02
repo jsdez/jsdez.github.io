@@ -64,7 +64,7 @@ class CommentsElement extends LitElement {
           isValueField: true,
           properties: {
             comments: {
-              type: 'array',
+              type: 'object', //change to object to deploy
               description: 'Array of comments',
               items: {
                 type: 'object',
