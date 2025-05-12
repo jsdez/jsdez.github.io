@@ -51,7 +51,7 @@ class ARElement extends LitElement {
 
   constructor() {
     super();
-    this.src = '';
+    this.src = 'https://jsdez.github.io/plugins/neo-ar/dist/assets/valve.gltf';
     this.container = document.createElement('div');
   }
 
