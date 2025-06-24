@@ -290,6 +290,17 @@ export class neoTable extends LitElement {
           -ms-user-select: text;
           user-select: text;
         }
+        .json-debug-area {
+          background: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 0.95em;
+          margin-top: 1em;
+          padding: 1em;
+          max-height: 300px;
+          overflow: auto;
+        }
       </style>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
       <div class="table-responsive-md overflow-auto">
@@ -336,6 +347,16 @@ export class neoTable extends LitElement {
             </ul>
           </nav>
         ` : ''}
+      </div>
+      <div class="mt-3">
+        <button class="btn btn-sm btn-outline-info mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#jsonDebugArea" aria-expanded="false" aria-controls="jsonDebugArea">
+          Show/Hide JSON Debug
+        </button>
+        <div class="collapse" id="jsonDebugArea">
+          <div class="json-debug-area">
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          </div>
+        </div>
       </div>
     `;
   }
