@@ -272,8 +272,8 @@ export class neoTable extends LitElement {
     const firstRow = data[0] || {};
     const addressKeys = Object.keys(firstRow).filter(k => k.startsWith('se_address'));
     const repeatingKeys = Object.keys(firstRow).filter(k => k.startsWith('se_repeating_section'));
-    const notesKey = Object.keys(firstRow).find(k => k.toLowerCase().includes('notes'));
-    const totalJobCostKey = Object.keys(firstRow).find(k => k.toLowerCase().includes('total_job_cost') || k.toLowerCase().includes('totaljobcost'));
+    // All other top-level keys (not repeating section)
+    const mainKeys = Object.keys(firstRow).filter(k => !k.startsWith('se_repeating_section'));
 
     return html`
       <style>
@@ -294,28 +294,33 @@ export class neoTable extends LitElement {
         <table class="neo-table table table-striped">
           <thead>
             <tr>
-              ${addressKeys.map(key => html`<th>Address</th>`)}
-              ${repeatingKeys.map(key => html`<th>Work Items</th>`)}
-              ${notesKey ? html`<th>Notes</th>` : ''}
-              ${totalJobCostKey ? html`<th>Total Job Cost</th>` : ''}
+              ${mainKeys.map(key => html`<th>${key}</th>`)}
             </tr>
           </thead>
           <tbody>
             ${paginatedData.map((row, rowIdx) => html`
               <tr>
-                ${addressKeys.map(key => html`<td>${row[key]?.formatted_address ?? '-'}</td>`)}
-                ${repeatingKeys.map(key => html`
-                  <td>
-                    ${Array.isArray(row[key]) ?
-                      (row[key].length > 0 ? html`
+                ${mainKeys.map(key => {
+                  if (addressKeys.includes(key)) {
+                    return html`<td>${row[key]?.formatted_address ?? '-'}</td>`;
+                  } else {
+                    return html`<td>${row[key] ?? '-'}</td>`;
+                  }
+                })}
+              </tr>
+              ${repeatingKeys.map(repeatKey => html`
+                <tr>
+                  <td colspan="${mainKeys.length}">
+                    ${Array.isArray(row[repeatKey]) ?
+                      (row[repeatKey].length > 0 ? html`
                         <table class="table table-bordered table-sm mb-0">
                           <thead>
                             <tr>
-                              ${Object.keys(row[key][0] || {}).map(subKey => html`<th>${subKey}</th>`)}
+                              ${Object.keys(row[repeatKey][0] || {}).map(subKey => html`<th>${subKey}</th>`)}
                             </tr>
                           </thead>
                           <tbody>
-                            ${row[key].map((item, idx) => html`
+                            ${row[repeatKey].map((item, idx) => html`
                               <tr>
                                 ${Object.values(item).map(val => html`<td>${val}</td>`)}
                               </tr>
@@ -325,10 +330,8 @@ export class neoTable extends LitElement {
                       ` : html`<span class="text-muted">No work items</span>`)
                     : html`<span class="text-muted">-</span>`}
                   </td>
-                `)}
-                ${notesKey ? html`<td>${row[notesKey] ?? '-'}</td>` : ''}
-                ${totalJobCostKey ? html`<td>${row[totalJobCostKey] ?? '-'}</td>` : ''}
-              </tr>
+                </tr>
+              `)}
             `)}
           </tbody>
         </table>
