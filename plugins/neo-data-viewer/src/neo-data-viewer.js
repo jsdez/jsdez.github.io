@@ -68,6 +68,12 @@ export class neoTable extends LitElement {
     this.currentPage = 1;
     this.errorMessage = '';
     this._expandedMap = new WeakMap(); // Track expanded/collapsed state for objects/arrays
+    this._showDebug = false; // Track debug area toggle
+  }
+
+  toggleDebugArea() {
+    this._showDebug = !this._showDebug;
+    this.requestUpdate();
   }
 
   preprocessDoubleEscapedJson(jsonString) {
@@ -194,7 +200,7 @@ export class neoTable extends LitElement {
       const expanded = this._expandedMap.get(field) || false;
       return html`
         <div>
-          <button class="btn btn-sm btn-outline-secondary mb-1" @click="${() => this.toggleRow(field)}">
+          <button class="btn btn-sm btn-outline-secondary mb-1" @click="${() => this.toggleRow(field)}" type="button">
             ${expanded ? '−' : '+'} Array [${field.length}]
           </button>
           ${expanded ? html`
@@ -216,7 +222,7 @@ export class neoTable extends LitElement {
       const expanded = this._expandedMap.get(field) || false;
       return html`
         <div>
-          <button class="btn btn-sm btn-outline-secondary mb-1" @click="${() => this.toggleRow(field)}">
+          <button class="btn btn-sm btn-outline-secondary mb-1" @click="${() => this.toggleRow(field)}" type="button">
             ${expanded ? '−' : '+'} Object
           </button>
           ${expanded ? html`
@@ -349,14 +355,14 @@ export class neoTable extends LitElement {
         ` : ''}
       </div>
       <div class="mt-3">
-        <button class="btn btn-sm btn-outline-info mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#jsonDebugArea" aria-expanded="false" aria-controls="jsonDebugArea">
-          Show/Hide JSON Debug
+        <button class="btn btn-sm btn-outline-info mb-2" type="button" @click="${() => this.toggleDebugArea()}">
+          ${this._showDebug ? 'Hide' : 'Show'} JSON Debug
         </button>
-        <div class="collapse" id="jsonDebugArea">
+        ${this._showDebug ? html`
           <div class="json-debug-area">
             <pre>${JSON.stringify(data, null, 2)}</pre>
           </div>
-        </div>
+        ` : ''}
       </div>
     `;
   }
