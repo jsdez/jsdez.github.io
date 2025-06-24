@@ -5,6 +5,13 @@ export class neoTable extends LitElement {
   static get properties() {
     return {
       errorMessage: { type: String },
+      dataobject: '',
+      removeKeys: '',
+      replaceKeys: '',
+      prefDateFormat: '',
+      pageItemLimit: { type: Number },
+      currentPage: { type: Number },
+      itemsPerPage: { type: Number },
     };
   }
 
@@ -21,15 +28,7 @@ export class neoTable extends LitElement {
         dataobject: {
           type: 'string',
           title: 'Object',
-          description: 'JSON or XML data variable'
-        },
-        datatype: {
-          title: 'Object Data Type',
-          type: 'string',
-          enum: ['JSON', 'XML'],
-          showAsRadio: true,
-          verticalLayout: true,
-          defaultValue: 'JSON',
+          description: 'JSON data variable'
         },
         removeKeys: {
             type: 'string',
@@ -59,23 +58,6 @@ export class neoTable extends LitElement {
     };
   }
 
-  static properties = {
-    dataobject: '',
-    datatype: '',
-    removeKeys: '',
-    replaceKeys: '',
-    prefDateFormat: '',
-    pageItemLimit: { type: Number },
-    currentPage: { type: Number },
-  };
-
-  static get properties() {
-    return {
-      itemsPerPage: { type: Number },
-      currentPage: { type: Number },
-    };
-  }
-
   constructor() {
     super();
     this.dataobject = '';
@@ -85,6 +67,7 @@ export class neoTable extends LitElement {
     this.pageItemLimit = "5";
     this.currentPage = 1;
     this.errorMessage = '';
+    this._expandedMap = new WeakMap(); // Track expanded/collapsed state for objects/arrays
   }
 
   preprocessDoubleEscapedJson(jsonString) {
@@ -102,46 +85,26 @@ export class neoTable extends LitElement {
     let data;
     this.errorMessage = '';
 
-    if (!this.datatype) {
-      this.errorMessage = "Object data type not configured, please update the plugin properties and specify the data type.";
-      console.error(this.errorMessage);
-      return null;
-    }
-
     // Check if dataobject is empty or undefined
     if (!this.dataobject) {
       console.error("No JSON data provided.");
       return null;
     }
 
-    if (this.datatype === 'JSON') {
-      try {
-        // Preprocess the JSON string to handle double escaping and normalize key names
-        const processedData = this.preprocessDoubleEscapedJson(this.dataobject);
-        data = JSON.parse(processedData);
+    try {
+      // Preprocess the JSON string to handle double escaping and normalize key names
+      const processedData = this.preprocessDoubleEscapedJson(this.dataobject);
+      data = JSON.parse(processedData);
 
-        // Additional check if data is still a string indicating further encoding
-        if (typeof data === 'string') {
-          data = JSON.parse(data);
-        }
+      // Additional check if data is still a string indicating further encoding
+      if (typeof data === 'string') {
+        data = JSON.parse(data);
+      }
 
-        data = this.replaceUnicodeRegex(data); // Apply Unicode replacements
-      } catch (e) {
-        this.errorMessage = "Error parsing JSON data.";
-        console.error(this.errorMessage, e);
-        data = null;
-      }
-    } else if (this.datatype === 'XML') {
-      try {
-        data = this.parseXmlDataObject();
-      } catch (e) {
-        this.errorMessage = "Error parsing XML data.";
-        console.error(this.errorMessage, e);
-        data = null;
-      }
-    } else {
-      this.errorMessage = `Unsupported data type: ${this.datatype}.`;
-      console.error(this.errorMessage);
+      data = this.replaceUnicodeRegex(data); // Apply Unicode replacements
+    } catch (e) {
+      this.errorMessage = "Error parsing JSON data.";
+      console.error(this.errorMessage, e);
       data = null;
     }
 
@@ -210,40 +173,6 @@ export class neoTable extends LitElement {
     return JSON.parse(JSON.stringify(input).replace(unicodeRegex, (match, p1) => String.fromCharCode(parseInt(p1, 16))));
   }
 
-  parseXmlDataObject() {
-    let xmlString = this.dataobject.replace(/&quot;/g, '"').replace(/_x([\dA-F]{4})_/gi, (match, p1) => String.fromCharCode(parseInt(p1, 16)));
-
-    // Remove XML declaration if present
-    xmlString = xmlString.replace(/<\?xml.*?\?>/, '');
-
-    const parser = new DOMParser();
-    const xmlDocument = parser.parseFromString(xmlString, 'text/xml');
-    const items = xmlDocument.querySelector('RepeaterData > Items').children;
-    const data = [];
-
-    for (let i = 0; i < items.length; i++) {
-      const row = {};
-      const fields = items[i].children;
-
-      for (let j = 0; j < fields.length; j++) {
-        const field = fields[j];
-        const fieldName = field.nodeName;
-        let fieldValue = field.textContent;
-        fieldValue = fieldValue.replace(/_x([\dA-F]{4})_/gi, (match, p1) => String.fromCharCode(parseInt(p1, 16)));
-
-        row[fieldName] = fieldValue;
-      }
-
-      data.push(row);
-    }
-
-    if (this.replaceKeys && data) {
-      return this.renameKeys(data);
-    }
-
-    return data;
-  }
-
   changePage(newPage) {
     if (newPage > 0 && newPage <= this.totalPages) {
       this.currentPage = newPage;
@@ -251,53 +180,61 @@ export class neoTable extends LitElement {
     }
   }
 
+  toggleRow(field) {
+    if (!this._expandedMap.has(field)) {
+      this._expandedMap.set(field, true);
+    } else {
+      this._expandedMap.set(field, !this._expandedMap.get(field));
+    }
+    this.requestUpdate();
+  }
+
   renderField(field) {
     if (Array.isArray(field)) {
+      const expanded = this._expandedMap.get(field) || false;
       return html`
-        <table class="table mb-2 p-1">
-          <tbody>
-            ${field.map(item => html`
-              <tr>
-                <td>${this.renderField(item)}</td>
-              </tr>
-            `)}
-          </tbody>
-        </table>
+        <div>
+          <button class="btn btn-sm btn-outline-secondary mb-1" @click="${() => this.toggleRow(field)}">
+            ${expanded ? '−' : '+'} Array [${field.length}]
+          </button>
+          ${expanded ? html`
+            <div class="ms-3">
+              <table class="table table-bordered table-sm">
+                <tbody>
+                  ${field.map((item, idx) => html`
+                    <tr>
+                      <td>${this.renderField(item)}</td>
+                    </tr>
+                  `)}
+                </tbody>
+              </table>
+            </div>
+          ` : ''}
+        </div>
       `;
     } else if (typeof field === 'object' && field !== null) {
-      // Check if any value in the object is itself an object
-      if (Object.values(field).some(value => typeof value === 'object' && value !== null)) {
-        return html`
-          <button @click="${() => this.toggleRow(field)}">Expand</button>
-          <div class="nested-table" style="display: none;">
-            ${Object.entries(field).map(([key, value]) => {
-              if (typeof value === 'object' && value !== null) {
-                return html`
-                  <table class="table mb-2 p-1">
-                    <caption>${key}</caption>
-                    ${this.renderNestedTable(value)}
-                  </table>
-                `;
-              } else {
-                return html`
-                  <ul class="nested-list">
-                    <li>${key}: ${value !== null ? value : '-'}</li>
-                  </ul>
-                `;
-              }
-            })}
-          </div>
-        `;
-      } else {
-        // Render simple object
-        return html`
-          <ul class="nested-list">
-            ${Object.entries(field).map(([key, value]) => html`
-              <li>${key}: ${value !== null ? value : '-'}</li>
-            `)}
-          </ul>
-        `;
-      }
+      const expanded = this._expandedMap.get(field) || false;
+      return html`
+        <div>
+          <button class="btn btn-sm btn-outline-secondary mb-1" @click="${() => this.toggleRow(field)}">
+            ${expanded ? '−' : '+'} Object
+          </button>
+          ${expanded ? html`
+            <div class="ms-3">
+              <table class="table table-bordered table-sm">
+                <tbody>
+                  ${Object.entries(field).map(([key, value]) => html`
+                    <tr>
+                      <th class="text-nowrap">${key}</th>
+                      <td>${this.renderField(value)}</td>
+                    </tr>
+                  `)}
+                </tbody>
+              </table>
+            </div>
+          ` : ''}
+        </div>
+      `;
     } else {
       return field !== null ? field : '-';
     }
