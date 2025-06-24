@@ -6,8 +6,7 @@ export class neoTable extends LitElement {
     return {
       errorMessage: { type: String },
       dataobject: '',
-      removeKeys: '',
-      replaceKeys: '',
+      columnsConfig: '',
       prefDateFormat: '',
       pageItemLimit: { type: Number },
       currentPage: { type: Number },
@@ -23,22 +22,17 @@ export class neoTable extends LitElement {
       description: 'Display object as a table',
       iconUrl: "group-control",
       groupName: 'Visual Data',
-      version: '1.6',
+      version: '1.7',
       properties: {
         dataobject: {
           type: 'string',
           title: 'Object',
           description: 'JSON data variable'
         },
-        removeKeys: {
-            type: 'string',
-            title: 'Remove keys JSON',
-            description: 'Use key-values to remove columns e.g. {"keyName1": true,"keyName2": true}'
-          },
-        replaceKeys: {
+        columnsConfig: {
           type: 'string',
-          title: 'Rename keys JSON',
-          description: 'Use key-value pairs to rename columns e.g. {"oldKey1":"newKey1","oldKey2":"newKey2"}'
+          title: 'Columns Config',
+          description: 'JSON object to control which columns are shown and their display names. {"key1": "Display Name", "key2": false}'
         },
         pageItemLimit: {
           type: 'string',
@@ -61,8 +55,7 @@ export class neoTable extends LitElement {
   constructor() {
     super();
     this.dataobject = '';
-    this.removeKeys = '';
-    this.replaceKeys = '';
+    this.columnsConfig = '';
     this.prefDateFormat = '';
     this.pageItemLimit = "5";
     this.currentPage = 1;
@@ -114,64 +107,17 @@ export class neoTable extends LitElement {
       data = null;
     }
 
-    // Apply removeKeys first, if provided
-    if (this.removeKeys && data) {
-        data = this.removeKeysFromData(data);
-    }
-  
-    // Apply replaceKeys after removeKeys
-    if (this.replaceKeys && data) {
-        data = this.renameKeys(data);
-    }
-
     return data;
   }
 
-  removeKeysFromData(data) {
-    // Ensure removeKeys is an object
-    if (typeof this.removeKeys === 'string') {
-      try {
-        this.removeKeys = JSON.parse(this.removeKeys);
-      } catch (e) {
-        console.error("Error parsing removeKeys:", e);
-        return data;
-      }
+  parseColumnsConfig() {
+    if (!this.columnsConfig) return {};
+    try {
+      return typeof this.columnsConfig === 'string' ? JSON.parse(this.columnsConfig) : this.columnsConfig;
+    } catch (e) {
+      console.error('Invalid columnsConfig JSON:', e);
+      return {};
     }
-
-    const keysToRemove = Object.keys(this.removeKeys);
-
-    const newData = data.map(obj => {
-      const newObj = { ...obj };
-      keysToRemove.forEach(key => {
-        delete newObj[key];
-      });
-      return newObj;
-    });
-
-    return newData;
-  }
-
-  renameKeys(data) {
-    // Ensure replaceKeys is an object
-    if (typeof this.replaceKeys === 'string') {
-      try {
-        this.replaceKeys = JSON.parse(this.replaceKeys);
-      } catch (e) {
-        console.error("Error parsing replaceKeys:", e);
-        return data;
-      }
-    }
-
-    const newData = data.map(obj => {
-      const newObj = {};
-      for (const key in obj) {
-        const newKey = this.replaceKeys[key] || key;  // Use new key if mapped, otherwise original key
-        newObj[newKey] = obj[key];
-      }
-      return newObj;
-    });
-
-    return newData;
   }
 
   replaceUnicodeRegex(input) {
@@ -245,6 +191,7 @@ export class neoTable extends LitElement {
   
   render() {
     const data = this.parseDataObject();
+    const columnsConfig = this.parseColumnsConfig();
     if (this.errorMessage) {
       return html`<p class="error-message">${this.errorMessage}</p>`;
     }
@@ -273,7 +220,9 @@ export class neoTable extends LitElement {
     const addressKeys = Object.keys(firstRow).filter(k => k.startsWith('se_address'));
     const repeatingKeys = Object.keys(firstRow).filter(k => k.startsWith('se_repeating_section'));
     // All other top-level keys (not repeating section)
-    const mainKeys = Object.keys(firstRow).filter(k => !k.startsWith('se_repeating_section'));
+    let mainKeys = Object.keys(firstRow).filter(k => !k.startsWith('se_repeating_section'));
+    // Apply columnsConfig: remove keys with false, rename with string
+    mainKeys = mainKeys.filter(k => columnsConfig[k] !== false);
 
     return html`
       <style>
@@ -294,7 +243,7 @@ export class neoTable extends LitElement {
         <table class="neo-table table table-striped">
           <thead>
             <tr>
-              ${mainKeys.map(key => html`<th>${key}</th>`)}
+              ${mainKeys.map(key => html`<th>${columnsConfig[key] && typeof columnsConfig[key] === 'string' ? columnsConfig[key] : key}</th>`)}
             </tr>
           </thead>
           <tbody>
@@ -308,7 +257,7 @@ export class neoTable extends LitElement {
                   }
                 })}
               </tr>
-              ${repeatingKeys.map(repeatKey => html`
+              ${repeatingKeys.filter(k => columnsConfig[k] !== false).map(repeatKey => html`
                 <tr>
                   <td colspan="${mainKeys.length}">
                     ${Array.isArray(row[repeatKey]) ?
@@ -316,13 +265,13 @@ export class neoTable extends LitElement {
                         <table class="table table-bordered table-sm mb-0">
                           <thead>
                             <tr>
-                              ${Object.keys(row[repeatKey][0] || {}).map(subKey => html`<th>${subKey}</th>`)}
+                              ${Object.keys(row[repeatKey][0] || {}).filter(subKey => columnsConfig[subKey] !== false).map(subKey => html`<th>${columnsConfig[subKey] && typeof columnsConfig[subKey] === 'string' ? columnsConfig[subKey] : subKey}</th>`)}
                             </tr>
                           </thead>
                           <tbody>
                             ${row[repeatKey].map((item, idx) => html`
                               <tr>
-                                ${Object.values(item).map(val => html`<td>${val}</td>`)}
+                                ${Object.entries(item).filter(([subKey]) => columnsConfig[subKey] !== false).map(([subKey, val]) => html`<td>${val}</td>`)}
                               </tr>
                             `)}
                           </tbody>
