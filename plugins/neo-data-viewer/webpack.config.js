@@ -1,10 +1,10 @@
 const path = require('path');
 
 module.exports = {
-  entry: './src/neo-table-viewer.js',
+  entry: './src/neo-data-viewer.js',
   mode: 'production',
   output: {
-    filename: 'neo-table-viewer.js',
+    filename: 'neo-data-viewer.js',
     path: path.resolve(__dirname, 'dist'),
   },
   module: {

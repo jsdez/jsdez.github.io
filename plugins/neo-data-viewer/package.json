@@ -1,8 +1,8 @@
 {
-  "name": "neo-table-viewer",
+  "name": "neo-data-viewer",
   "version": "1.0.0",
   "description": "",
-  "main": "./src/neo-table-viewer.js",
+  "main": "./src/neo-data-viewer.js",
   "browser": "./src/index.html",
   "scripts": {
     "build": "webpack"
