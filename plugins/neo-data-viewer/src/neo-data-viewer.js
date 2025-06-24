@@ -6,7 +6,7 @@ export class neoTable extends LitElement {
     return {
       errorMessage: { type: String },
       dataobject: '',
-      columnsConfig: '',
+      columnsSchema: '',
       prefDateFormat: '',
       pageItemLimit: { type: Number },
       currentPage: { type: Number },
@@ -15,24 +15,23 @@ export class neoTable extends LitElement {
   }
 
   static getMetaConfig() {
-    // plugin contract information
     return {
       controlName: 'neo-data-viewer',
       fallbackDisableSubmit: false,
       description: 'Display object as a table',
       iconUrl: "group-control",
       groupName: 'Visual Data',
-      version: '1.7',
+      version: '1.8',
       properties: {
         dataobject: {
           type: 'string',
           title: 'Object',
           description: 'JSON data variable'
         },
-        columnsConfig: {
+        columnsSchema: {
           type: 'string',
-          title: 'Columns Config',
-          description: 'JSON object to control which columns are shown and their display names. {"key1": "Display Name", "key2": false}'
+          title: 'Columns Schema',
+          description: 'Array of objects to control order, visibility, renaming, and formatting. [{"key":"field","title":"Display Name","type":"string","format":"currency","description":"desc","visible":true}]'
         },
         pageItemLimit: {
           type: 'string',
@@ -55,7 +54,7 @@ export class neoTable extends LitElement {
   constructor() {
     super();
     this.dataobject = '';
-    this.columnsConfig = '';
+    this.columnsSchema = '';
     this.prefDateFormat = '';
     this.pageItemLimit = "5";
     this.currentPage = 1;
@@ -110,13 +109,14 @@ export class neoTable extends LitElement {
     return data;
   }
 
-  parseColumnsConfig() {
-    if (!this.columnsConfig) return {};
+  parseColumnsSchema() {
+    if (!this.columnsSchema) return [];
     try {
-      return typeof this.columnsConfig === 'string' ? JSON.parse(this.columnsConfig) : this.columnsConfig;
+      const arr = typeof this.columnsSchema === 'string' ? JSON.parse(this.columnsSchema) : this.columnsSchema;
+      return Array.isArray(arr) ? arr : [];
     } catch (e) {
-      console.error('Invalid columnsConfig JSON:', e);
-      return {};
+      console.error('Invalid columnsSchema JSON:', e);
+      return [];
     }
   }
 
@@ -191,7 +191,7 @@ export class neoTable extends LitElement {
   
   render() {
     const data = this.parseDataObject();
-    const columnsConfig = this.parseColumnsConfig();
+    const columnsSchema = this.parseColumnsSchema();
     if (this.errorMessage) {
       return html`<p class="error-message">${this.errorMessage}</p>`;
     }
@@ -221,8 +221,8 @@ export class neoTable extends LitElement {
     const repeatingKeys = Object.keys(firstRow).filter(k => k.startsWith('se_repeating_section'));
     // All other top-level keys (not repeating section)
     let mainKeys = Object.keys(firstRow).filter(k => !k.startsWith('se_repeating_section'));
-    // Apply columnsConfig: remove keys with false, rename with string
-    mainKeys = mainKeys.filter(k => columnsConfig[k] !== false);
+    // Use columnsSchema for order, visibility, and renaming
+    const mainSchema = columnsSchema.filter(col => mainKeys.includes(col.key) && col.visible !== false && !col.parent);
 
     return html`
       <style>
@@ -243,44 +243,76 @@ export class neoTable extends LitElement {
         <table class="neo-table table table-striped">
           <thead>
             <tr>
-              ${mainKeys.map(key => html`<th>${columnsConfig[key] && typeof columnsConfig[key] === 'string' ? columnsConfig[key] : key}</th>`)}
+              ${mainSchema.map(col => html`<th title="${col.description || ''}">${col.title || col.key}</th>`)}
             </tr>
           </thead>
           <tbody>
             ${paginatedData.map((row, rowIdx) => html`
               <tr>
-                ${mainKeys.map(key => {
-                  if (addressKeys.includes(key)) {
-                    return html`<td>${row[key]?.formatted_address ?? '-'}</td>`;
+                ${mainSchema.map(col => {
+                  if (addressKeys.includes(col.key)) {
+                    return html`<td>${row[col.key]?.formatted_address ?? '-'}</td>`;
+                  } else if (col.type === 'array' && Array.isArray(row[col.key])) {
+                    // Render nested array as a table using col.items
+                    const nestedSchema = (col.items && Array.isArray(col.items)) ? col.items.filter(nc => nc.visible !== false) : [];
+                    return html`<td>
+                      <table class="table table-bordered table-sm mb-0">
+                        <thead>
+                          <tr>
+                            ${nestedSchema.length > 0
+                              ? nestedSchema.map(nc => html`<th title="${nc.description || ''}">${nc.title || nc.key}</th>`)
+                              : Object.keys(row[col.key][0] || {}).map(subKey => html`<th>${subKey}</th>`)}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${row[col.key].map((item, idx) => html`
+                            <tr>
+                              ${nestedSchema.length > 0
+                                ? nestedSchema.map(nc => html`<td>${item[nc.key] ?? '-'}</td>`)
+                                : Object.values(item).map(val => html`<td>${val}</td>`)}
+                            </tr>
+                          `)}
+                        </tbody>
+                      </table>
+                    </td>`;
                   } else {
-                    return html`<td>${row[key] ?? '-'}</td>`;
+                    // Optionally format by col.type/col.format here
+                    return html`<td>${row[col.key] ?? '-'}</td>`;
                   }
                 })}
               </tr>
-              ${repeatingKeys.filter(k => columnsConfig[k] !== false).map(repeatKey => html`
-                <tr>
-                  <td colspan="${mainKeys.length}">
-                    ${Array.isArray(row[repeatKey]) ?
-                      (row[repeatKey].length > 0 ? html`
-                        <table class="table table-bordered table-sm mb-0">
-                          <thead>
-                            <tr>
-                              ${Object.keys(row[repeatKey][0] || {}).filter(subKey => columnsConfig[subKey] !== false).map(subKey => html`<th>${columnsConfig[subKey] && typeof columnsConfig[subKey] === 'string' ? columnsConfig[subKey] : subKey}</th>`)}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            ${row[repeatKey].map((item, idx) => html`
+              ${repeatingKeys.map(repeatKey => {
+                // Find schema for this repeating section
+                const nestedSchema = columnsSchema.filter(col => col.parent === repeatKey && col.visible !== false);
+                return html`
+                  <tr>
+                    <td colspan="${mainSchema.length}">
+                      ${Array.isArray(row[repeatKey]) ?
+                        (row[repeatKey].length > 0 ? html`
+                          <table class="table table-bordered table-sm mb-0">
+                            <thead>
                               <tr>
-                                ${Object.entries(item).filter(([subKey]) => columnsConfig[subKey] !== false).map(([subKey, val]) => html`<td>${val}</td>`)}
+                                ${nestedSchema.length > 0
+                                  ? nestedSchema.map(col => html`<th title="${col.description || ''}">${col.title || col.key}</th>`)
+                                  : Object.keys(row[repeatKey][0] || {}).map(subKey => html`<th>${subKey}</th>`)}
                               </tr>
-                            `)}
-                          </tbody>
-                        </table>
-                      ` : html`<span class="text-muted">No work items</span>`)
-                    : html`<span class="text-muted">-</span>`}
-                  </td>
-                </tr>
-              `)}
+                            </thead>
+                            <tbody>
+                              ${row[repeatKey].map((item, idx) => html`
+                                <tr>
+                                  ${nestedSchema.length > 0
+                                    ? nestedSchema.map(col => html`<td>${item[col.key] ?? '-'}</td>`)
+                                    : Object.values(item).map(val => html`<td>${val}</td>`)}
+                                </tr>
+                              `)}
+                            </tbody>
+                          </table>
+                        ` : html`<span class="text-muted">No work items</span>`)
+                      : html`<span class="text-muted">-</span>`}
+                    </td>
+                  </tr>
+                `;
+              })}
             `)}
           </tbody>
         </table>
