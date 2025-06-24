@@ -245,12 +245,9 @@ export class neoTable extends LitElement {
   
   render() {
     const data = this.parseDataObject();
-
-    // Display error message if present
     if (this.errorMessage) {
       return html`<p class="error-message">${this.errorMessage}</p>`;
     }
-
     if (!data || data.length === 0) {
       return html`
         <div class="alert alert-secondary" role="alert">
@@ -258,41 +255,28 @@ export class neoTable extends LitElement {
         </div>
       `;
     }
-
     const startIndex = (this.currentPage - 1) * parseInt(this.pageItemLimit, 10);
     const endIndex = startIndex + parseInt(this.pageItemLimit, 10);
     const paginatedData = data.slice(startIndex, endIndex);
     const totalPages = Math.ceil(data.length / parseInt(this.pageItemLimit, 10));
-    this.totalPages = totalPages; // Assign to component property
-
-    // Calculate the range of pages to display
+    this.totalPages = totalPages;
     const maxPagesToShow = 5;
     const pageRange = Math.min(totalPages, maxPagesToShow);
     let startPage = Math.max(1, this.currentPage - Math.floor(pageRange / 2));
     const endPage = Math.min(totalPages, startPage + pageRange - 1);
-
-    // Adjust startPage if it exceeds the valid range
     if (endPage - startPage + 1 < pageRange) {
       startPage = Math.max(1, endPage - pageRange + 1);
     }
 
+    // Dynamically find all address and repeating section keys
+    const firstRow = data[0] || {};
+    const addressKeys = Object.keys(firstRow).filter(k => k.startsWith('se_address'));
+    const repeatingKeys = Object.keys(firstRow).filter(k => k.startsWith('se_repeating_section'));
+    const notesKey = Object.keys(firstRow).find(k => k.toLowerCase().includes('notes'));
+    const totalJobCostKey = Object.keys(firstRow).find(k => k.toLowerCase().includes('total_job_cost') || k.toLowerCase().includes('totaljobcost'));
+
     return html`
       <style>
-        .page-txt-link {
-          width: 100px;
-          text-align:center;
-        }
-        .page-num-link {
-          width: 45px;
-          text-align:center;
-        }
-        .neo-table {
-          -moz-user-select: text;
-          -khtml-user-select: text;
-          -webkit-user-select: text;
-          -ms-user-select: text;
-          user-select: text;
-        }
         .json-debug-area {
           background: #f8f9fa;
           border: 1px solid #dee2e6;
@@ -310,17 +294,40 @@ export class neoTable extends LitElement {
         <table class="neo-table table table-striped">
           <thead>
             <tr>
-              ${Object.keys(data[0]).map(header => html`<th class="text-nowrap">${header}</th>`)}
+              ${addressKeys.map(key => html`<th>Address</th>`)}
+              ${repeatingKeys.map(key => html`<th>Work Items</th>`)}
+              ${notesKey ? html`<th>Notes</th>` : ''}
+              ${totalJobCostKey ? html`<th>Total Job Cost</th>` : ''}
             </tr>
           </thead>
           <tbody>
             ${paginatedData.map((row, rowIdx) => html`
               <tr>
-                ${Object.entries(row).map(([key, value]) => html`
+                ${addressKeys.map(key => html`<td>${row[key]?.formatted_address ?? '-'}</td>`)}
+                ${repeatingKeys.map(key => html`
                   <td>
-                    ${this.renderField(value, rowIdx + '.' + key)}
+                    ${Array.isArray(row[key]) ?
+                      (row[key].length > 0 ? html`
+                        <table class="table table-bordered table-sm mb-0">
+                          <thead>
+                            <tr>
+                              ${Object.keys(row[key][0] || {}).map(subKey => html`<th>${subKey}</th>`)}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${row[key].map((item, idx) => html`
+                              <tr>
+                                ${Object.values(item).map(val => html`<td>${val}</td>`)}
+                              </tr>
+                            `)}
+                          </tbody>
+                        </table>
+                      ` : html`<span class="text-muted">No work items</span>`)
+                    : html`<span class="text-muted">-</span>`}
                   </td>
                 `)}
+                ${notesKey ? html`<td>${row[notesKey] ?? '-'}</td>` : ''}
+                ${totalJobCostKey ? html`<td>${row[totalJobCostKey] ?? '-'}</td>` : ''}
               </tr>
             `)}
           </tbody>
