@@ -67,7 +67,7 @@ export class neoTable extends LitElement {
     this.pageItemLimit = "5";
     this.currentPage = 1;
     this.errorMessage = '';
-    this._expandedMap = new WeakMap(); // Track expanded/collapsed state for objects/arrays
+    this._expandedMap = new Map(); // Use Map with path keys
     this._showDebug = false; // Track debug area toggle
   }
 
@@ -186,21 +186,18 @@ export class neoTable extends LitElement {
     }
   }
 
-  toggleRow(field) {
-    if (!this._expandedMap.has(field)) {
-      this._expandedMap.set(field, true);
-    } else {
-      this._expandedMap.set(field, !this._expandedMap.get(field));
-    }
+  toggleRow(path) {
+    const current = this._expandedMap.get(path) || false;
+    this._expandedMap.set(path, !current);
     this.requestUpdate();
   }
 
-  renderField(field) {
+  renderField(field, path = '') {
     if (Array.isArray(field)) {
-      const expanded = this._expandedMap.get(field) || false;
+      const expanded = this._expandedMap.get(path) || false;
       return html`
         <div>
-          <button class="btn btn-sm btn-outline-secondary mb-1" @click="${() => this.toggleRow(field)}" type="button">
+          <button class="btn btn-sm btn-outline-secondary mb-1" @click="${() => this.toggleRow(path)}" type="button">
             ${expanded ? '−' : '+'} Array [${field.length}]
           </button>
           ${expanded ? html`
@@ -209,7 +206,7 @@ export class neoTable extends LitElement {
                 <tbody>
                   ${field.map((item, idx) => html`
                     <tr>
-                      <td>${this.renderField(item)}</td>
+                      <td>${this.renderField(item, path + '.' + idx)}</td>
                     </tr>
                   `)}
                 </tbody>
@@ -219,10 +216,10 @@ export class neoTable extends LitElement {
         </div>
       `;
     } else if (typeof field === 'object' && field !== null) {
-      const expanded = this._expandedMap.get(field) || false;
+      const expanded = this._expandedMap.get(path) || false;
       return html`
         <div>
-          <button class="btn btn-sm btn-outline-secondary mb-1" @click="${() => this.toggleRow(field)}" type="button">
+          <button class="btn btn-sm btn-outline-secondary mb-1" @click="${() => this.toggleRow(path)}" type="button">
             ${expanded ? '−' : '+'} Object
           </button>
           ${expanded ? html`
@@ -232,7 +229,7 @@ export class neoTable extends LitElement {
                   ${Object.entries(field).map(([key, value]) => html`
                     <tr>
                       <th class="text-nowrap">${key}</th>
-                      <td>${this.renderField(value)}</td>
+                      <td>${this.renderField(value, path + '.' + key)}</td>
                     </tr>
                   `)}
                 </tbody>
@@ -317,11 +314,11 @@ export class neoTable extends LitElement {
             </tr>
           </thead>
           <tbody>
-            ${paginatedData.map(row => html`
+            ${paginatedData.map((row, rowIdx) => html`
               <tr>
-                ${Object.values(row).map(value => html`
+                ${Object.entries(row).map(([key, value]) => html`
                   <td>
-                    ${this.renderField(value)}
+                    ${this.renderField(value, rowIdx + '.' + key)}
                   </td>
                 `)}
               </tr>
