@@ -11,6 +11,7 @@ export class neoTable extends LitElement {
       pageItemLimit: { type: Number },
       currentPage: { type: Number },
       itemsPerPage: { type: Number },
+      debugMode: { type: Boolean },
     };
   }
 
@@ -21,7 +22,7 @@ export class neoTable extends LitElement {
       description: 'Display object as a table',
       iconUrl: "group-control",
       groupName: 'Visual Data',
-      version: '1.8',
+      version: '1.9',
       properties: {
         dataobject: {
           type: 'string',
@@ -31,7 +32,7 @@ export class neoTable extends LitElement {
         columnsSchema: {
           type: 'string',
           title: 'Columns Schema',
-          description: 'Array of objects to control order, visibility, renaming, and formatting. [{"key":"field","title":"Display Name","type":"string","format":"currency","description":"desc","visible":true}]'
+          description: 'Array of objects to control order, visibility, renaming, and formatting.'
         },
         pageItemLimit: {
           type: 'string',
@@ -39,6 +40,12 @@ export class neoTable extends LitElement {
           title: 'Page Item Limit',
           description: 'Number of items to show per page',
           defaultValue: '5',
+        },
+        debugMode: {
+          type: 'boolean',
+          title: 'Debug Mode',
+          description: 'Show or hide the JSON debug viewer',
+          defaultValue: false
         }
       },
       events: ["ntx-value-change"],
@@ -208,6 +215,30 @@ export class neoTable extends LitElement {
     }
     if (currentRow.length) rows.push(currentRow);
     return rows;
+  }
+
+  copyToClipboard(text) {
+    navigator.clipboard.writeText(text);
+  }
+
+  buildSchemaFromJson(json) {
+    // Simple schema builder: only top-level keys, visible true, type string/array/number
+    if (!json) return [];
+    const row = Array.isArray(json) ? json[0] : json;
+    if (!row || typeof row !== 'object') return [];
+    return Object.entries(row).map(([key, value]) => {
+      let type = 'string';
+      if (Array.isArray(value)) type = 'array';
+      else if (typeof value === 'number') type = 'number';
+      else if (typeof value === 'boolean') type = 'boolean';
+      return {
+        key,
+        title: key,
+        type,
+        visible: true,
+        ...(type === 'array' ? { items: this.buildSchemaFromJson(value) } : {})
+      };
+    });
   }
 
   render() {
@@ -389,12 +420,17 @@ export class neoTable extends LitElement {
         ` : ''}
       </div>
       <div class="mt-3">
-        <button class="btn btn-sm btn-outline-info mb-2" type="button" @click="${() => this.toggleDebugArea()}">
-          ${this._showDebug ? 'Hide' : 'Show'} JSON Debug
-        </button>
-        ${this._showDebug ? html`
-          <div class="json-debug-area">
-            <pre>${JSON.stringify(data, null, 2)}</pre>
+        ${this.debugMode ? html`
+          <div class="json-debug-area" style="user-select:text;">
+            <div class="d-flex mb-2 gap-2">
+              <button class="btn btn-sm btn-outline-secondary" @click="${() => this.copyToClipboard(JSON.stringify(data, null, 2))}">Copy JSON</button>
+              <button class="btn btn-sm btn-outline-secondary" @click="${() => this.copyToClipboard(JSON.stringify(this.buildSchemaFromJson(data)).replace(/"/g, '\\"'))}">Copy Schema</button>
+            </div>
+            <pre style="user-select:text;">${JSON.stringify(data, null, 2)}</pre>
+            <div class="mt-2">
+              <b>Edit Schema (auto-generated from input JSON):</b>
+              <textarea style="width:100%;min-height:120px;font-family:monospace;" readonly>${JSON.stringify(this.buildSchemaFromJson(data), null, 2)}</textarea>
+            </div>
           </div>
         ` : ''}
       </div>
