@@ -252,6 +252,20 @@ export class neoTable extends LitElement {
     });
   }
 
+  copySchemaToClipboard() {
+    let schemaStr = this._editedSchema || JSON.stringify(this.buildSchemaFromJson(this.parseDataObject()), null, 2);
+    try {
+      // Minify, escape, and wrap in quotes
+      const minified = JSON.stringify(JSON.parse(schemaStr));
+      const escaped = minified.replace(/"/g, '\\"');
+      const wrapped = `"${escaped}"`;
+      this.copyToClipboard(wrapped);
+    } catch (e) {
+      // fallback: just copy as is
+      this.copyToClipboard(schemaStr);
+    }
+  }
+
   render() {
     const data = this.parseDataObject();
     const columnsSchema = this.parseColumnsSchema();
@@ -440,7 +454,7 @@ export class neoTable extends LitElement {
           </div>
           <div class="json-debug-area mt-2" style="user-select:text;">
             <div class="d-flex mb-2 gap-2">
-              <button class="btn btn-sm btn-outline-secondary" @click="${() => this.copyToClipboard((this._editedSchema || JSON.stringify(this.buildSchemaFromJson(data), null, 2)).replace(/"/g, '\\"'))}">Copy Schema</button>
+              <button class="btn btn-sm btn-outline-secondary" @click="${() => this.copySchemaToClipboard()}">Copy Schema</button>
             </div>
             <b>Edit Schema (auto-generated from input JSON):</b>
             <textarea style="width:100%;min-height:120px;font-family:monospace;" @input="${e => this.handleSchemaEdit(e)}">${this._editedSchema || JSON.stringify(this.buildSchemaFromJson(data), null, 2)}</textarea>
