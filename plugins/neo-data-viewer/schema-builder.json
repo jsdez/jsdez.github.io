@@ -1,1 +1,71 @@
-"[{\"key\":\"se_address_1_5VCXHXBCUA\",\"title\":\"Address\",\"type\":\"string\",\"visible\":true,\"description\":\"Job address\",\"format\":\"formatted_address\"},{\"key\":\"se_repeating_section_1_16tUpmIQNj\",\"title\":\"Work Items\",\"type\":\"array\",\"visible\":true,\"items\":[{\"key\":\"se_choice_single_1_2JrxU6RNXj\",\"title\":\"Contract\",\"type\":\"string\",\"visible\":true},{\"key\":\"se_choice_single_1_9zKRkuTGcA\",\"title\":\"Work Carried Out (ID)\",\"type\":\"string\",\"visible\":false},{\"key\":\"se_choice_single_1_9zKRkuTGcA_text\",\"title\":\"Work Carried Out\",\"type\":\"string\",\"visible\":true},{\"key\":\"se_number_1_CVOPwvSG2E\",\"title\":\"Quantity\",\"type\":\"integer\",\"visible\":true},{\"key\":\"se_number_1_gJxRVL0s9k\",\"title\":\"Price Per (£)\",\"type\":\"number\",\"format\":\"currency\",\"visible\":true},{\"key\":\"se_number_1_uMQVRnFiwV\",\"title\":\"Total\",\"type\":\"number\",\"visible\":true},{\"key\":\"se_text_short_1_FQSGH6GyYk\",\"title\":\"Code\",\"type\":\"string\",\"visible\":true},{\"key\":\"se_currency_1_NV46gHNkm4g\",\"title\":\"Cost\",\"type\":\"number\",\"format\":\"currency\",\"visible\":true}]},{\"key\":\"se_text_long_1_Zfp36PvFvc\",\"title\":\"Notes\",\"type\":\"string\",\"visible\":true},{\"key\":\"se_currency_1_copy_nkLZCxSOFJ\",\"title\":\"Total Job Cost\",\"type\":\"number\",\"format\":\"currency\",\"visible\":true}]"
+[
+  {
+    "key": "se_address_1_5VCXHXBCUA",
+    "title": "Address",
+    "type": "string",
+    "visible": true,
+    "description": "Job address",
+    "format": "formatted_address"
+  },
+  {
+    "key": "se_repeating_section_1_16tUpmIQNj",
+    "title": "Work Items",
+    "type": "array",
+    "visible": true,
+    "items": [
+      {
+        "key": "se_choice_single_1_2JrxU6RNXj",
+        "title": "Contract",
+        "type": "string",
+        "visible": true
+      },
+      {
+        "key": "se_choice_single_1_9zKRkuTGcA",
+        "title": "Work Carried Out (ID)",
+        "visible": false
+      },
+      {
+        "key": "se_text_short_1_FQSGH6GyYk",
+        "title": "Work Carried Out",
+        "type": "string",
+        "visible": true
+      },
+      {
+        "key": "se_number_1_CVOPwvSG2E",
+        "title": "Quantity",
+        "type": "integer",
+        "visible": true
+      },
+      {
+        "key": "se_number_1_gJxRVL0s9k",
+        "title": "Price Per (£)",
+        "type": "number",
+        "format": "currency",
+        "visible": true
+      },
+      {
+        "key": "se_number_1_uMQVRnFiwV",
+        "visible": false
+      },
+      {
+        "key": "se_currency_1_NV46gHNkm4g",
+        "visible": false
+      }
+    ]
+  },
+  {
+    "key": "se_text_long_1_Zfp36PvFvc",
+    "title": "Notes",
+    "type": "string",
+    "format": "longtext",
+    "visible": true
+  },
+  {
+    "key": "se_currency_1_copy_nkLZCxSOFJ",
+    "title": "Total Job Cost",
+    "type": "number",
+    "format": "currency",
+    "prefix": "£",
+    "visible": true
+  }
+]

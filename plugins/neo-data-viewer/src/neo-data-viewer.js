@@ -253,6 +253,11 @@ export class neoTable extends LitElement {
                   if (col.format === 'currency' && col.prefix) {
                     return html`<td>${col.prefix}${row[col.key] ?? '-'}</td>`;
                   }
+                  // Long text formatting (preserve newlines)
+                  if (col.type === 'string' && col.format === 'longtext') {
+                    const val = row[col.key] ?? '-';
+                    return html`<td style="white-space:pre-line;">${val}</td>`;
+                  }
                   return html`<td>${row[col.key] ?? '-'}</td>`;
                 })}
               </tr>
