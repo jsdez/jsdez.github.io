@@ -258,7 +258,7 @@ export class neoTable extends LitElement {
         }
         .neo-table th {
           background: var(--ntx-form-theme-color-page-background, #f4f4f4);
-          color: var(--ntx-form-theme-color-primary, #0056b3);
+          color: var(--ntx-form-theme-color-secondary, #222);
           font-size: var(--ntx-form-theme-text-label-size, 1rem);
         }
         .neo-table tr {
