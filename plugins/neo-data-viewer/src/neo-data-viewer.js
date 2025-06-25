@@ -215,14 +215,9 @@ export class neoTable extends LitElement {
       startPage = Math.max(1, endPage - pageRange + 1);
     }
 
-    // Dynamically find all address and repeating section keys
-    const firstRow = data[0] || {};
-    const addressKeys = Object.keys(firstRow).filter(k => k.startsWith('se_address'));
-    const repeatingKeys = Object.keys(firstRow).filter(k => k.startsWith('se_repeating_section'));
-    // All other top-level keys (not repeating section)
-    let mainKeys = Object.keys(firstRow).filter(k => !k.startsWith('se_repeating_section'));
-    // Use columnsSchema for order, visibility, and renaming
-    const mainSchema = columnsSchema.filter(col => mainKeys.includes(col.key) && col.visible !== false && !col.parent);
+    // Only render top-level keys in schema, in order, and visible
+    const mainSchema = columnsSchema.filter(col => col.visible !== false && col.type !== 'array');
+    const arraySchema = columnsSchema.find(col => col.visible !== false && col.type === 'array');
 
     return html`
       <style>
@@ -250,69 +245,38 @@ export class neoTable extends LitElement {
             ${paginatedData.map((row, rowIdx) => html`
               <tr>
                 ${mainSchema.map(col => {
-                  if (addressKeys.includes(col.key)) {
+                  // Address special format
+                  if (col.format === 'formatted_address') {
                     return html`<td>${row[col.key]?.formatted_address ?? '-'}</td>`;
-                  } else if (col.type === 'array' && Array.isArray(row[col.key])) {
-                    // Render nested array as a table using col.items
-                    const nestedSchema = (col.items && Array.isArray(col.items)) ? col.items.filter(nc => nc.visible !== false) : [];
-                    return html`<td>
-                      <table class="table table-bordered table-sm mb-0">
-                        <thead>
-                          <tr>
-                            ${nestedSchema.length > 0
-                              ? nestedSchema.map(nc => html`<th title="${nc.description || ''}">${nc.title || nc.key}</th>`)
-                              : Object.keys(row[col.key][0] || {}).map(subKey => html`<th>${subKey}</th>`)}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${row[col.key].map((item, idx) => html`
-                            <tr>
-                              ${nestedSchema.length > 0
-                                ? nestedSchema.map(nc => html`<td>${item[nc.key] ?? '-'}</td>`)
-                                : Object.values(item).map(val => html`<td>${val}</td>`)}
-                            </tr>
-                          `)}
-                        </tbody>
-                      </table>
-                    </td>`;
-                  } else {
-                    // Optionally format by col.type/col.format here
-                    return html`<td>${row[col.key] ?? '-'}</td>`;
                   }
+                  // Currency prefix
+                  if (col.format === 'currency' && col.prefix) {
+                    return html`<td>${col.prefix}${row[col.key] ?? '-'}</td>`;
+                  }
+                  return html`<td>${row[col.key] ?? '-'}</td>`;
                 })}
               </tr>
-              ${repeatingKeys.map(repeatKey => {
-                // Find schema for this repeating section
-                const nestedSchema = columnsSchema.filter(col => col.parent === repeatKey && col.visible !== false);
-                return html`
-                  <tr>
-                    <td colspan="${mainSchema.length}">
-                      ${Array.isArray(row[repeatKey]) ?
-                        (row[repeatKey].length > 0 ? html`
-                          <table class="table table-bordered table-sm mb-0">
-                            <thead>
-                              <tr>
-                                ${nestedSchema.length > 0
-                                  ? nestedSchema.map(col => html`<th title="${col.description || ''}">${col.title || col.key}</th>`)
-                                  : Object.keys(row[repeatKey][0] || {}).map(subKey => html`<th>${subKey}</th>`)}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              ${row[repeatKey].map((item, idx) => html`
-                                <tr>
-                                  ${nestedSchema.length > 0
-                                    ? nestedSchema.map(col => html`<td>${item[col.key] ?? '-'}</td>`)
-                                    : Object.values(item).map(val => html`<td>${val}</td>`)}
-                                </tr>
-                              `)}
-                            </tbody>
-                          </table>
-                        ` : html`<span class="text-muted">No work items</span>`)
-                      : html`<span class="text-muted">-</span>`}
-                    </td>
-                  </tr>
-                `;
-              })}
+              ${arraySchema && Array.isArray(row[arraySchema.key]) && arraySchema.visible !== false ? html`
+                <tr>
+                  <td colspan="${mainSchema.length}">
+                    <div><b>${arraySchema.title || arraySchema.key}</b></div>
+                    <table class="table table-bordered table-sm mb-0">
+                      <thead>
+                        <tr>
+                          ${(arraySchema.items || []).filter(item => item.visible !== false).map(item => html`<th title="${item.description || ''}">${item.title || item.key}</th>`)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${row[arraySchema.key].map((item, idx) => html`
+                          <tr>
+                            ${(arraySchema.items || []).filter(col => col.visible !== false).map(col => html`<td>${item[col.key] ?? '-'}</td>`)}
+                          </tr>
+                        `)}
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              ` : ''}
             `)}
           </tbody>
         </table>
