@@ -189,6 +189,27 @@ export class neoTable extends LitElement {
     }
   }
   
+  // Helper to group columns into rows based on col sum (Bootstrap 12-grid)
+  groupColumnsByRow(schema) {
+    const rows = [];
+    let currentRow = [];
+    let currentSum = 0;
+    for (const col of schema) {
+      if (col.visible === false) continue;
+      let colVal = col.col === undefined || col.col === 'auto' ? 0 : Number(col.col);
+      if (colVal < 1 || colVal > 12) colVal = 0;
+      if (currentSum + colVal > 12) {
+        rows.push(currentRow);
+        currentRow = [];
+        currentSum = 0;
+      }
+      currentRow.push(col);
+      currentSum += colVal;
+    }
+    if (currentRow.length) rows.push(currentRow);
+    return rows;
+  }
+
   render() {
     const data = this.parseDataObject();
     const columnsSchema = this.parseColumnsSchema();
@@ -218,6 +239,7 @@ export class neoTable extends LitElement {
     // Only render top-level keys in schema, in order, and visible
     const mainSchema = columnsSchema.filter(col => col.visible !== false && col.type !== 'array');
     const arraySchema = columnsSchema.find(col => col.visible !== false && col.type === 'array');
+    const mainRows = this.groupColumnsByRow(mainSchema);
 
     return html`
       <style>
@@ -237,46 +259,65 @@ export class neoTable extends LitElement {
       <div class="table-responsive-md overflow-auto">
         <table class="neo-table table table-striped">
           <thead>
-            <tr>
-              ${mainSchema.map(col => html`<th title="${col.description || ''}">${col.title || col.key}</th>`)}
-            </tr>
+            ${mainRows.map(rowCols => html`<tr>${rowCols.map(col => html`<th title="${col.description || ''}">${col.title || col.key}</th>`)}</tr>`)}
           </thead>
           <tbody>
             ${paginatedData.map((row, rowIdx) => html`
-              <tr>
-                ${mainSchema.map(col => {
-                  // Address special format
+              ${mainRows.map(rowCols => html`<tr>
+                ${rowCols.map(col => {
+                  let colStyle = '';
+                  if (col.col && col.col !== 'auto') {
+                    colStyle = `width: ${(col.col / 12) * 100}%`;
+                  } else if (col.col === 'auto') {
+                    colStyle = 'width: auto';
+                  }
                   if (col.format === 'formatted_address') {
-                    return html`<td>${row[col.key]?.formatted_address ?? '-'}</td>`;
+                    return html`<td style="${colStyle}">${row[col.key]?.formatted_address ?? '-'}</td>`;
                   }
-                  // Currency prefix
                   if (col.format === 'currency' && col.prefix) {
-                    return html`<td>${col.prefix}${row[col.key] ?? '-'}</td>`;
+                    return html`<td style="${colStyle}">${col.prefix}${row[col.key] ?? '-'}</td>`;
                   }
-                  // Long text formatting (preserve newlines)
                   if (col.type === 'string' && col.format === 'longtext') {
                     const val = row[col.key] ?? '-';
-                    return html`<td style="white-space:pre-line;">${val}</td>`;
+                    return html`<td style="white-space:pre-line;${colStyle}">${val}</td>`;
                   }
-                  return html`<td>${row[col.key] ?? '-'}</td>`;
+                  return html`<td style="${colStyle}">${row[col.key] ?? '-'}</td>`;
                 })}
-              </tr>
+              </tr>`)}
               ${arraySchema && Array.isArray(row[arraySchema.key]) && arraySchema.visible !== false ? html`
                 <tr>
-                  <td colspan="${mainSchema.length}">
+                  <td colspan="12">
                     <div><b>${arraySchema.title || arraySchema.key}</b></div>
                     <table class="table table-bordered table-sm mb-0">
                       <thead>
-                        <tr>
-                          ${(arraySchema.items || []).filter(item => item.visible !== false).map(item => html`<th title="${item.description || ''}">${item.title || item.key}</th>`)}
-                        </tr>
+                        ${(() => {
+                          const nestedRows = this.groupColumnsByRow((arraySchema.items || []).filter(item => item.visible !== false));
+                          return nestedRows.map(rowCols => html`<tr>${rowCols.map(item => {
+                            let colStyle = '';
+                            if (item.col && item.col !== 'auto') {
+                              colStyle = `width: ${(item.col / 12) * 100}%`;
+                            } else if (item.col === 'auto') {
+                              colStyle = 'width: auto';
+                            }
+                            return html`<th style="${colStyle}" title="${item.description || ''}">${item.title || item.key}</th>`;
+                          })}</tr>`);
+                        })()}
                       </thead>
                       <tbody>
-                        ${row[arraySchema.key].map((item, idx) => html`
-                          <tr>
-                            ${(arraySchema.items || []).filter(col => col.visible !== false).map(col => html`<td>${item[col.key] ?? '-'}</td>`)}
-                          </tr>
-                        `)}
+                        ${row[arraySchema.key].map((item, idx) => {
+                          const nestedRows = this.groupColumnsByRow((arraySchema.items || []).filter(col => col.visible !== false));
+                          return nestedRows.map(rowCols => html`<tr>
+                            ${rowCols.map(col => {
+                              let colStyle = '';
+                              if (col.col && col.col !== 'auto') {
+                                colStyle = `width: ${(col.col / 12) * 100}%`;
+                              } else if (col.col === 'auto') {
+                                colStyle = 'width: auto';
+                              }
+                              return html`<td style="${colStyle}">${item[col.key] ?? '-'}</td>`;
+                            })}
+                          </tr>`);
+                        })}
                       </tbody>
                     </table>
                   </td>

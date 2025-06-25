@@ -5,19 +5,22 @@
     "type": "string",
     "visible": true,
     "description": "Job address",
-    "format": "formatted_address"
+    "format": "formatted_address",
+    "col": 4
   },
   {
     "key": "se_repeating_section_1_16tUpmIQNj",
     "title": "Work Items",
     "type": "array",
     "visible": true,
+    "col": 12,
     "items": [
       {
         "key": "se_choice_single_1_2JrxU6RNXj",
         "title": "Contract",
         "type": "string",
-        "visible": true
+        "visible": true,
+        "col": 4
       },
       {
         "key": "se_choice_single_1_9zKRkuTGcA",
@@ -28,20 +31,23 @@
         "key": "se_text_short_1_FQSGH6GyYk",
         "title": "Work Carried Out",
         "type": "string",
-        "visible": true
+        "visible": true,
+        "col": 4
       },
       {
         "key": "se_number_1_CVOPwvSG2E",
         "title": "Quantity",
         "type": "integer",
-        "visible": true
+        "visible": true,
+        "col": 2
       },
       {
         "key": "se_number_1_gJxRVL0s9k",
         "title": "Price Per (£)",
         "type": "number",
         "format": "currency",
-        "visible": true
+        "visible": true,
+        "col": 2
       },
       {
         "key": "se_number_1_uMQVRnFiwV",
@@ -58,7 +64,8 @@
     "title": "Notes",
     "type": "string",
     "format": "longtext",
-    "visible": true
+    "visible": true,
+    "col": 6
   },
   {
     "key": "se_currency_1_copy_nkLZCxSOFJ",
@@ -66,6 +73,7 @@
     "type": "number",
     "format": "currency",
     "prefix": "£",
-    "visible": true
+    "visible": true,
+    "col": 2
   }
 ]
