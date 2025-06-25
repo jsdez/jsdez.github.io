@@ -206,6 +206,14 @@ export class neoTable extends LitElement {
       if (col.visible === false) continue;
       let colVal = col.col === undefined || col.col === 'auto' ? 0 : Number(col.col);
       if (colVal < 1 || colVal > 12) colVal = 0;
+      // If col is 12, always start a new row for it
+      if (colVal === 12) {
+        if (currentRow.length) rows.push(currentRow);
+        rows.push([col]);
+        currentRow = [];
+        currentSum = 0;
+        continue;
+      }
       if (currentSum + colVal > 12) {
         rows.push(currentRow);
         currentRow = [];
