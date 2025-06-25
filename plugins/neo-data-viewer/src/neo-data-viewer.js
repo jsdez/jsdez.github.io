@@ -243,16 +243,52 @@ export class neoTable extends LitElement {
 
     return html`
       <style>
+        .neo-table {
+          border-radius: var(--ntx-form-theme-border-radius, 4px);
+          background: var(--ntx-form-theme-color-form-background, #fff);
+          color: var(--ntx-form-theme-color-input-text, #222);
+          font-family: var(--ntx-form-theme-font-family, inherit);
+          font-size: var(--ntx-form-theme-text-input-size, 1rem);
+        }
+        .neo-table th, .neo-table td {
+          border: 1px solid var(--ntx-form-theme-color-border, #dee2e6);
+          background: var(--ntx-form-theme-color-input-background, #f8f9fa);
+          color: var(--ntx-form-theme-color-input-text, #222);
+          padding: 0.5rem 0.75rem;
+        }
+        .neo-table th {
+          background: var(--ntx-form-theme-color-page-background, #f4f4f4);
+          color: var(--ntx-form-theme-color-primary, #0056b3);
+          font-size: var(--ntx-form-theme-text-label-size, 1rem);
+        }
+        .neo-table tr {
+          border-radius: var(--ntx-form-theme-border-radius, 4px);
+        }
+        .neo-table tbody tr:nth-child(even) td {
+          background: var(--ntx-form-theme-color-form-background, #fff);
+        }
+        .neo-table tbody tr:nth-child(odd) td {
+          background: var(--ntx-form-theme-color-input-background, #f8f9fa);
+        }
+        .neo-table .error-message {
+          background: var(--ntx-form-theme-color-error, #ffe6e6);
+          color: var(--ntx-form-theme-color-error, #b30000);
+          border-radius: var(--ntx-form-theme-border-radius, 4px);
+          padding: 0.5rem;
+        }
         .json-debug-area {
-          background: #f8f9fa;
-          border: 1px solid #dee2e6;
-          border-radius: 4px;
-          font-family: monospace;
-          font-size: 0.95em;
+          background: var(--ntx-form-theme-color-input-background, #f8f9fa);
+          border: 1px solid var(--ntx-form-theme-color-border, #dee2e6);
+          border-radius: var(--ntx-form-theme-border-radius, 4px);
+          font-family: var(--ntx-form-theme-font-family, monospace);
+          font-size: var(--ntx-form-theme-text-input-size, 0.95em);
           margin-top: 1em;
           padding: 1em;
           max-height: 300px;
           overflow: auto;
+        }
+        .neo-table b {
+          color: var(--ntx-form-theme-color-secondary, #333);
         }
       </style>
       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
