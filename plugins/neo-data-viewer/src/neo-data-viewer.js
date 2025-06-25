@@ -68,6 +68,7 @@ export class neoTable extends LitElement {
     this.errorMessage = '';
     this._expandedMap = new Map(); // Use Map with path keys
     this._showDebug = false; // Track debug area toggle
+    this._editedSchema = ''; // Track edited schema text
   }
 
   toggleDebugArea() {
@@ -218,7 +219,17 @@ export class neoTable extends LitElement {
   }
 
   copyToClipboard(text) {
-    navigator.clipboard.writeText(text);
+    // Use a temporary textarea for better browser support
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  }
+
+  handleSchemaEdit(e) {
+    this._editedSchema = e.target.value;
   }
 
   buildSchemaFromJson(json) {
@@ -424,13 +435,15 @@ export class neoTable extends LitElement {
           <div class="json-debug-area" style="user-select:text;">
             <div class="d-flex mb-2 gap-2">
               <button class="btn btn-sm btn-outline-secondary" @click="${() => this.copyToClipboard(JSON.stringify(data, null, 2))}">Copy JSON</button>
-              <button class="btn btn-sm btn-outline-secondary" @click="${() => this.copyToClipboard(JSON.stringify(this.buildSchemaFromJson(data)).replace(/"/g, '\\"'))}">Copy Schema</button>
             </div>
             <pre style="user-select:text;">${JSON.stringify(data, null, 2)}</pre>
-            <div class="mt-2">
-              <b>Edit Schema (auto-generated from input JSON):</b>
-              <textarea style="width:100%;min-height:120px;font-family:monospace;" readonly>${JSON.stringify(this.buildSchemaFromJson(data), null, 2)}</textarea>
+          </div>
+          <div class="json-debug-area mt-2" style="user-select:text;">
+            <div class="d-flex mb-2 gap-2">
+              <button class="btn btn-sm btn-outline-secondary" @click="${() => this.copyToClipboard((this._editedSchema || JSON.stringify(this.buildSchemaFromJson(data), null, 2)).replace(/"/g, '\\"'))}">Copy Schema</button>
             </div>
+            <b>Edit Schema (auto-generated from input JSON):</b>
+            <textarea style="width:100%;min-height:120px;font-family:monospace;" @input="${e => this.handleSchemaEdit(e)}">${this._editedSchema || JSON.stringify(this.buildSchemaFromJson(data), null, 2)}</textarea>
           </div>
         ` : ''}
       </div>
