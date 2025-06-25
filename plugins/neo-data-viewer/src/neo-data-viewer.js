@@ -458,6 +458,21 @@ export class neoTable extends LitElement {
             </div>
             <b>Edit Schema (auto-generated from input JSON):</b>
             <textarea style="width:100%;min-height:120px;font-family:monospace;" @input="${e => this.handleSchemaEdit(e)}">${this._editedSchema || JSON.stringify(this.buildSchemaFromJson(data), null, 2)}</textarea>
+            <div class="mt-3">
+              <b>Schema Property Reference:</b>
+              <ul style="font-size:0.95em;line-height:1.5;">
+                <li><b>key</b>: The JSON property name to display (required).</li>
+                <li><b>title</b>: The column header/display name (optional).</li>
+                <li><b>type</b>: Data type (string, number, integer, boolean, array) (optional, default: string).</li>
+                <li><b>format</b>: Formatting hint (e.g., currency, longtext, formatted_address) (optional).</li>
+                <li><b>description</b>: Tooltip or help text for the column (optional).</li>
+                <li><b>visible</b>: true/false to show/hide the column (optional, default: true).</li>
+                <li><b>col</b>: Column width (1-12 for percent, 'auto' for flexible, optional).</li>
+                <li><b>prefix</b>: Text to prepend (e.g., £ for currency, optional).</li>
+                <li><b>items</b>: For type 'array', an array of schema objects for nested columns (optional).</li>
+                <li><b>parent</b>: For advanced/nested use, parent key for grouping (optional).</li>
+              </ul>
+            </div>
           </div>
         ` : ''}
       </div>
