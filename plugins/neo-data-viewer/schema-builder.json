@@ -1,12 +1,19 @@
 [
   {
+    "key": "se_choice_single_1_XdOkULqJkw",
+    "title": "Date of Job",
+    "type": "string",
+    "visible": true,
+    "col": 3
+  },
+  {
     "key": "se_address_1_5VCXHXBCUA",
     "title": "Address",
     "type": "string",
     "visible": true,
     "description": "Job address",
     "format": "formatted_address",
-    "col": 4
+    "col": 6
   },
   {
     "key": "se_repeating_section_1_16tUpmIQNj",
@@ -20,7 +27,7 @@
         "title": "Contract",
         "type": "string",
         "visible": true,
-        "col": 4
+        "col": 3
       },
       {
         "key": "se_choice_single_1_9zKRkuTGcA",
@@ -32,7 +39,7 @@
         "title": "Work Carried Out",
         "type": "string",
         "visible": true,
-        "col": 4
+        "col": 5
       },
       {
         "key": "se_number_1_CVOPwvSG2E",
@@ -59,13 +66,13 @@
       }
     ]
   },
-  {
+    {
     "key": "se_text_long_1_Zfp36PvFvc",
     "title": "Notes",
     "type": "string",
     "format": "longtext",
     "visible": true,
-    "col": 6
+    "col": 12
   },
   {
     "key": "se_currency_1_copy_nkLZCxSOFJ",
@@ -74,6 +81,6 @@
     "format": "currency",
     "prefix": "£",
     "visible": true,
-    "col": 2
+    "col": 3
   }
 ]
