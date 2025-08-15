@@ -24,7 +24,7 @@ const rsElementContract: PluginContract = {
     },
     rsinputtarget: {
       type: 'string',
-      title: 'CSS selector for input control (optional)',
+      title: 'CSS selector for input control',
       description: 'When specified, waits for this input control to lose focus before updating the repeating section. Useful for multi-choice controls to prevent dropdown collapse during selection.',
     },
     primaryFiller: {
