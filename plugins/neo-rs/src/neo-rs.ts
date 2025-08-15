@@ -78,18 +78,41 @@ class rsElement extends LitElement {
 
   // Try to find the "Add" button for the targeted repeating section
   private findAddButton(rsHost: Element): HTMLButtonElement | null {
+    console.log('[neo-rs] Looking for add button in/near:', rsHost);
+    
     const next = (rsHost as HTMLElement).nextElementSibling as HTMLElement | null;
+    console.log('[neo-rs] Next sibling:', next);
+    
     if (next) {
       const btn = next.querySelector<HTMLButtonElement>('button.ntx-repeating-section-add-button, button[aria-label="Add"], button[title*="Add"]');
-      if (btn) return btn;
+      if (btn) {
+        console.log('[neo-rs] Found add button in next sibling:', btn);
+        return btn;
+      }
     }
+    
     let btn = rsHost.querySelector<HTMLButtonElement>('button.ntx-repeating-section-add-button, button[aria-label="Add"], button[title*="Add"]');
-    if (btn) return btn;
+    if (btn) {
+      console.log('[neo-rs] Found add button in RS host:', btn);
+      return btn;
+    }
+    
     const sr = (rsHost as any).shadowRoot as ShadowRoot | undefined;
     if (sr) {
       btn = sr.querySelector<HTMLButtonElement>('button.ntx-repeating-section-add-button, button[aria-label="Add"], button[title*="Add"]');
-      if (btn) return btn;
+      if (btn) {
+        console.log('[neo-rs] Found add button in shadow root:', btn);
+        return btn;
+      }
     }
+    
+    // Let's also try some broader searches
+    const allButtons = document.querySelectorAll('button');
+    console.log('[neo-rs] Total buttons in document:', allButtons.length);
+    
+    const addButtons = document.querySelectorAll('button[title*="Add"], button[aria-label*="Add"], button:contains("Add")');
+    console.log('[neo-rs] Potential add buttons:', addButtons.length, addButtons);
+    
     return null;
   }
 
@@ -113,16 +136,30 @@ class rsElement extends LitElement {
 
   private getCurrentRowCount(rsHost: Element): number {
     const removeButtons = this.findRemoveButtons(rsHost);
+    console.log('[neo-rs] Remove buttons found:', removeButtons.length, removeButtons);
+    
     // If there's at least one remove button, assume count = removes + 1; else at least 1 row exists
     const count = removeButtons && removeButtons.length ? removeButtons.length + 1 : 1;
+    console.log('[neo-rs] Calculated current row count:', count);
     return count;
   }
 
   private async runActions() {
+    console.log('[neo-rs] runActions called', { rstarget: this.rstarget, rsnumber: this.rsnumber });
+    
     const targetClassName = (this.rstarget || '').trim();
     const desired = Math.max(1, Number(this.rsnumber) || 1);
-    if (!targetClassName) return;
-    if (this._isRunning) return;
+    
+    console.log('[neo-rs] Parsed values', { targetClassName, desired });
+    
+    if (!targetClassName) {
+      console.warn('[neo-rs] No target class specified');
+      return;
+    }
+    if (this._isRunning) {
+      console.log('[neo-rs] Already running, skipping');
+      return;
+    }
 
     const hasEscape = typeof (window as any).CSS !== 'undefined' && typeof (CSS as any).escape === 'function';
     const safeClass = hasEscape
@@ -130,9 +167,25 @@ class rsElement extends LitElement {
       : targetClassName.replace(/([^a-zA-Z0-9_-])/g, '\\$1');
 
     const key = `${safeClass}:${desired}`;
-    if (this._lastApplied === key) return;
+    if (this._lastApplied === key) {
+      console.log('[neo-rs] Already applied this configuration, skipping');
+      return;
+    }
 
+    console.log('[neo-rs] Looking for selector:', `.${safeClass}`);
     this._isRunning = true;
+
+    // First, let's see what elements exist in the document
+    const allElements = document.querySelectorAll('*');
+    console.log('[neo-rs] Total elements in document:', allElements.length);
+    
+    // Look for elements with our target class
+    const elementsWithClass = document.querySelectorAll(`.${safeClass}`);
+    console.log('[neo-rs] Elements with target class:', elementsWithClass.length, elementsWithClass);
+
+    // Look for any repeating section elements
+    const repeatingSections = document.querySelectorAll('ntx-repeating-section, [class*="repeating"], [class*="section"]');
+    console.log('[neo-rs] Possible repeating sections:', repeatingSections.length, repeatingSections);
 
     const rsHost = await this.waitForElement(`.${safeClass}`);
     if (!rsHost) {
@@ -141,21 +194,43 @@ class rsElement extends LitElement {
       return;
     }
 
+    console.log('[neo-rs] Found RS host:', rsHost);
+
     const addBtn = this.findAddButton(rsHost);
     if (!addBtn) {
       console.warn('[neo-rs] Add button not found near repeating section:', targetClassName);
+      console.log('[neo-rs] RS host HTML:', rsHost.outerHTML.substring(0, 500));
+      console.log('[neo-rs] Next sibling:', rsHost.nextElementSibling);
       this._isRunning = false;
       return;
     }
 
+    console.log('[neo-rs] Found add button:', addBtn);
+
     const currentCount = this.getCurrentRowCount(rsHost);
     const toAdd = Math.max(0, desired - currentCount);
-    for (let i = 0; i < toAdd; i++) {
-      try { addBtn.click(); } catch {}
+    
+    console.log('[neo-rs] Row calculation', { currentCount, desired, toAdd });
+
+    if (toAdd > 0) {
+      console.log('[neo-rs] Adding', toAdd, 'rows');
+      for (let i = 0; i < toAdd; i++) {
+        console.log('[neo-rs] Clicking add button, iteration:', i + 1);
+        try { 
+          addBtn.click(); 
+          // Small delay between clicks
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          console.error('[neo-rs] Error clicking add button:', error);
+        }
+      }
+    } else {
+      console.log('[neo-rs] No rows to add');
     }
 
     this._lastApplied = key;
     this._isRunning = false;
+    console.log('[neo-rs] runActions completed');
   }
   
   render() {
