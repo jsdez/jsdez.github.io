@@ -374,27 +374,35 @@ class rsElement extends LitElement {
       return;
     }
 
-    // Get all the repeated row sections
-    const repeatedRows = ntxRepeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
-    console.log('[neo-rs-filler] Found repeated rows for filling:', repeatedRows.length);
-
-    if (repeatedRows.length !== valuesArray.length) {
-      console.warn('[neo-rs-filler] Row count mismatch - rows:', repeatedRows.length, 'values:', valuesArray.length);
-    }
-
     const safeFieldClass = (typeof (window as any).CSS !== 'undefined' && typeof (CSS as any).escape === 'function')
       ? (CSS as any).escape(fieldTargetClassName)
       : fieldTargetClassName.replace(/([^a-zA-Z0-9_-])/g, '\\$1');
 
-    // Fill each row with corresponding value
-    for (let i = 0; i < Math.min(repeatedRows.length, valuesArray.length); i++) {
-      const row = repeatedRows[i];
+    console.log('[neo-rs-filler] Will fill', valuesArray.length, 'rows with values');
+
+    // Fill each row with corresponding value, waiting for each row to exist
+    for (let i = 0; i < valuesArray.length; i++) {
       const value = valuesArray[i];
+      console.log(`[neo-rs-filler] Processing row ${i + 1} with value:`, value);
       
-      console.log(`[neo-rs-filler] Filling row ${i + 1} with value:`, value);
+      // Wait for the specific row to exist (especially important for newly created rows)
+      const rowExists = await this.waitForRowToExist(ntxRepeatingSection, i);
+      if (!rowExists) {
+        console.warn(`[neo-rs-filler] Row ${i + 1} did not appear in DOM, skipping`);
+        continue;
+      }
+
+      // Get the most current row list (refresh each time)
+      const currentRows = ntxRepeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
+      const row = currentRows[i];
       
-      // Find the target field within this row
-      const targetField = row.querySelector(`.${safeFieldClass}`) as HTMLElement;
+      if (!row) {
+        console.warn(`[neo-rs-filler] Row ${i + 1} not found after waiting`);
+        continue;
+      }
+      
+      // Wait for the target field to exist within the row
+      const targetField = await this.waitForFieldInRow(row, safeFieldClass);
       if (!targetField) {
         console.warn(`[neo-rs-filler] Target field not found in row ${i + 1}:`, fieldTargetClassName);
         continue;
@@ -405,9 +413,57 @@ class rsElement extends LitElement {
       // Fill the field based on its type
       await this.setFieldValue(targetField, value, this.rsfieldtype);
       
+      console.log(`[neo-rs-filler] Successfully filled row ${i + 1}`);
+      
       // Small delay between filling each row
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
+    
+    console.log('[neo-rs-filler] Completed filling all rows');
+  }
+
+  /**
+   * Wait for a specific row index to exist in the repeating section
+   */
+  private async waitForRowToExist(ntxRepeatingSection: Element, rowIndex: number): Promise<boolean> {
+    const maxAttempts = 20; // 4 seconds max
+    const delay = 200;
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const rows = ntxRepeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
+      if (rows.length > rowIndex && rows[rowIndex]) {
+        console.log(`[neo-rs-filler] Row ${rowIndex + 1} exists (attempt ${attempt + 1})`);
+        return true;
+      }
+      
+      console.log(`[neo-rs-filler] Waiting for row ${rowIndex + 1} to exist... (attempt ${attempt + 1})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    
+    console.warn(`[neo-rs-filler] Row ${rowIndex + 1} did not appear after ${maxAttempts} attempts`);
+    return false;
+  }
+
+  /**
+   * Wait for the target field to exist within a specific row
+   */
+  private async waitForFieldInRow(row: Element, safeFieldClass: string): Promise<HTMLElement | null> {
+    const maxAttempts = 10; // 2 seconds max
+    const delay = 200;
+    
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const field = row.querySelector(`.${safeFieldClass}`) as HTMLElement;
+      if (field) {
+        console.log(`[neo-rs-filler] Field found in row (attempt ${attempt + 1})`);
+        return field;
+      }
+      
+      console.log(`[neo-rs-filler] Waiting for field to appear in row... (attempt ${attempt + 1})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    
+    console.warn(`[neo-rs-filler] Field did not appear in row after ${maxAttempts} attempts`);
+    return null;
   }
 
   private async setFieldValue(fieldElement: HTMLElement, value: any, fieldType: string) {
