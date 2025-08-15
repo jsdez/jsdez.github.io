@@ -157,6 +157,21 @@ class rsElement extends LitElement {
 
   // Find remove buttons scoped to this repeating section
   private findRemoveButtons(rsHost: Element): HTMLButtonElement[] {
+    const ntxRepeatingSection = rsHost.closest('ntx-repeating-section');
+    
+    if (ntxRepeatingSection) {
+      // Look for remove buttons within this specific repeating section
+      const removeButtons = ntxRepeatingSection.querySelectorAll('.ntx-repeating-section-remove-button') as NodeListOf<HTMLButtonElement>;
+      console.log('[neo-rs] Remove buttons in ntx-repeating-section:', removeButtons.length, removeButtons);
+      
+      // Filter out disabled buttons (typically the first row can't be removed)
+      const enabledButtons = Array.from(removeButtons).filter(btn => !btn.disabled);
+      console.log('[neo-rs] Enabled remove buttons:', enabledButtons.length, enabledButtons);
+      
+      return enabledButtons;
+    }
+    
+    // Fallback to original logic
     const scopes: Array<Element | ShadowRoot> = [
       rsHost,
       (rsHost as HTMLElement).nextElementSibling as HTMLElement | null,
@@ -263,9 +278,37 @@ class rsElement extends LitElement {
 
     const currentCount = this.getCurrentRowCount(rsHost);
     const toAdd = Math.max(0, desired - currentCount);
+    const toRemove = Math.max(0, currentCount - desired);
     
-    console.log('[neo-rs] Row calculation', { currentCount, desired, toAdd });
+    console.log('[neo-rs] Row calculation', { currentCount, desired, toAdd, toRemove });
 
+    // First remove excess rows if needed
+    if (toRemove > 0) {
+      console.log('[neo-rs] Removing', toRemove, 'rows');
+      const removeButtons = this.findRemoveButtons(rsHost);
+      
+      // Remove from the end (last rows first)
+      const buttonsToClick = removeButtons.slice(-toRemove);
+      console.log('[neo-rs] Remove buttons to click:', buttonsToClick);
+      
+      for (let i = 0; i < buttonsToClick.length; i++) {
+        console.log('[neo-rs] Clicking remove button, iteration:', i + 1);
+        try { 
+          buttonsToClick[i].click(); 
+          // Small delay between clicks to allow DOM updates
+          await new Promise(resolve => setTimeout(resolve, 150));
+        } catch (error) {
+          console.error('[neo-rs] Error clicking remove button:', error);
+        }
+      }
+      
+      // Wait a bit longer after removals before adding
+      if (toAdd > 0) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+
+    // Then add rows if needed
     if (toAdd > 0) {
       console.log('[neo-rs] Adding', toAdd, 'rows');
       for (let i = 0; i < toAdd; i++) {
@@ -278,8 +321,8 @@ class rsElement extends LitElement {
           console.error('[neo-rs] Error clicking add button:', error);
         }
       }
-    } else {
-      console.log('[neo-rs] No rows to add');
+    } else if (toRemove === 0) {
+      console.log('[neo-rs] No rows to add or remove - already at target count');
     }
 
     this._lastApplied = key;
