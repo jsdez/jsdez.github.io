@@ -12,10 +12,11 @@ const rsElementContract: PluginContract = {
   groupName: 'Form Tools',
   properties: {
     rsvalues: {
-      type: 'string',
+      type: 'object',
       title: 'Control values',
-      description: 'Array data stored as text to determine row count',
-    },
+      description: 'Array data to determine row count',
+      isValueField: true,
+    } as any, // Cast to any to allow array schema
     rstarget: {
       type: 'string',
       title: 'CSS class of the Repeating Section',
@@ -41,7 +42,7 @@ const rsElementContract: PluginContract = {
 };
 
 class rsElement extends LitElement {
-  @property({ type: String }) rsvalues: string = '';
+  @property({ type: Array }) rsvalues: any[] | string = [];
   @property({ type: String }) rstarget: string = '';
   @property({ type: String }) rsinputtarget: string = '';
   @property({ type: Boolean }) primaryFiller: boolean = false;
@@ -56,7 +57,7 @@ class rsElement extends LitElement {
 
   constructor() {
     super();
-    this.rsvalues = '';
+    this.rsvalues = [];
     this.rstarget = '';
     this.rsinputtarget = '';
     this.primaryFiller = false;
@@ -212,15 +213,23 @@ class rsElement extends LitElement {
     });
     
     const targetClassName = (this.rstarget || '').trim();
-    const valuesString = (this.rsvalues || '').trim();
+    
+    // Convert input to array if it's not already
+    let valuesArray: any[] = [];
+    if (Array.isArray(this.rsvalues)) {
+      valuesArray = this.rsvalues;
+    } else if (typeof this.rsvalues === 'string' && this.rsvalues.trim()) {
+      // Parse string input using the existing parsing logic
+      valuesArray = this.parseInputData(this.rsvalues.trim());
+    }
     
     if (!targetClassName) {
       console.warn('[neo-rs-filler] No target class specified');
       return;
     }
     
-    if (!valuesString) {
-      console.warn('[neo-rs-filler] No values specified');
+    if (!Array.isArray(valuesArray) || valuesArray.length === 0) {
+      console.warn('[neo-rs-filler] No values specified or values could not be parsed to array');
       return;
     }
 
@@ -241,9 +250,16 @@ class rsElement extends LitElement {
     console.log('[neo-rs-filler] executeRepeatingUpdate called');
     
     const targetClassName = (this.rstarget || '').trim();
-    const valuesString = (this.rsvalues || '').trim();
     
-    if (!targetClassName || !valuesString) {
+    // Convert input to array if it's not already
+    let valuesArray: any[] = [];
+    if (Array.isArray(this.rsvalues)) {
+      valuesArray = this.rsvalues;
+    } else if (typeof this.rsvalues === 'string' && this.rsvalues.trim()) {
+      valuesArray = this.parseInputData(this.rsvalues.trim());
+    }
+    
+    if (!targetClassName || !Array.isArray(valuesArray) || valuesArray.length === 0) {
       console.warn('[neo-rs-filler] Missing target class or values');
       return;
     }
@@ -253,21 +269,7 @@ class rsElement extends LitElement {
       return;
     }
 
-    // Parse the array values using smart format detection
-    let valuesArray: any[] = [];
-    try {
-      valuesArray = this.parseInputData(valuesString);
-      if (!Array.isArray(valuesArray)) {
-        console.error('[neo-rs-filler] Parsed data is not an array:', valuesArray);
-        return;
-      }
-      console.log('[neo-rs-filler] Successfully parsed input data:', valuesArray);
-    } catch (error) {
-      console.error('[neo-rs-filler] Failed to parse input data:', error, valuesString);
-      return;
-    }
-    
-    console.log('[neo-rs-filler] Parsed values array:', valuesArray);
+    console.log('[neo-rs-filler] Using values array:', valuesArray);
     
     const desiredRowCount = valuesArray.length;
     console.log('[neo-rs-filler] Desired row count based on array length:', desiredRowCount);
@@ -277,7 +279,7 @@ class rsElement extends LitElement {
       ? (CSS as any).escape(targetClassName)
       : targetClassName.replace(/([^a-zA-Z0-9_-])/g, '\\$1');
 
-    const key = `${safeClass}:${valuesString}`;
+    const key = `${safeClass}:${JSON.stringify(valuesArray)}`;
     if (this._lastApplied === key) {
       console.log('[neo-rs-filler] Already applied this configuration, skipping');
       return;
@@ -511,6 +513,11 @@ class rsElement extends LitElement {
 
   render() {
     return html`<div style="display: none;"></div>`;
+  }
+
+  // Include the contract information using @nintex/form-plugin-contract
+  static getMetaConfig(): PluginContract {
+    return rsElementContract;
   }
 }
 
