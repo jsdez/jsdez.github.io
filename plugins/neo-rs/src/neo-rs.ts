@@ -80,18 +80,51 @@ class rsElement extends LitElement {
   private findAddButton(rsHost: Element): HTMLButtonElement | null {
     console.log('[neo-rs] Looking for add button in/near:', rsHost);
     
+    // The button is actually a sibling of the ntx-repeating-section parent
+    const ntxRepeatingSection = rsHost.closest('ntx-repeating-section');
+    console.log('[neo-rs] Parent ntx-repeating-section:', ntxRepeatingSection);
+    
+    if (ntxRepeatingSection) {
+      // Look for the button as next sibling of ntx-repeating-section
+      const next = ntxRepeatingSection.nextElementSibling as HTMLElement | null;
+      console.log('[neo-rs] Next sibling of ntx-repeating-section:', next);
+      
+      if (next && next.classList.contains('btn-repeating-section-new-row')) {
+        console.log('[neo-rs] Found add button as next sibling:', next);
+        return next as HTMLButtonElement;
+      }
+      
+      // Also check if the button is inside the ntx-repeating-section
+      const btn = ntxRepeatingSection.querySelector<HTMLButtonElement>('.btn-repeating-section-new-row');
+      if (btn) {
+        console.log('[neo-rs] Found add button inside ntx-repeating-section:', btn);
+        return btn;
+      }
+    }
+    
+    // Fallback: look for button anywhere in the document near our target
+    const allAddButtons = document.querySelectorAll('.btn-repeating-section-new-row');
+    console.log('[neo-rs] All add buttons in document:', allAddButtons.length, allAddButtons);
+    
+    // If there's only one, use it
+    if (allAddButtons.length === 1) {
+      console.log('[neo-rs] Using the only add button found:', allAddButtons[0]);
+      return allAddButtons[0] as HTMLButtonElement;
+    }
+    
+    // Original fallback logic
     const next = (rsHost as HTMLElement).nextElementSibling as HTMLElement | null;
-    console.log('[neo-rs] Next sibling:', next);
+    console.log('[neo-rs] Next sibling of rsHost:', next);
     
     if (next) {
-      const btn = next.querySelector<HTMLButtonElement>('button.ntx-repeating-section-add-button, button[aria-label="Add"], button[title*="Add"]');
+      const btn = next.querySelector<HTMLButtonElement>('button.ntx-repeating-section-add-button, button[aria-label="Add"], button[title*="Add"], .btn-repeating-section-new-row');
       if (btn) {
         console.log('[neo-rs] Found add button in next sibling:', btn);
         return btn;
       }
     }
     
-    let btn = rsHost.querySelector<HTMLButtonElement>('button.ntx-repeating-section-add-button, button[aria-label="Add"], button[title*="Add"]');
+    let btn = rsHost.querySelector<HTMLButtonElement>('button.ntx-repeating-section-add-button, button[aria-label="Add"], button[title*="Add"], .btn-repeating-section-new-row');
     if (btn) {
       console.log('[neo-rs] Found add button in RS host:', btn);
       return btn;
@@ -99,7 +132,7 @@ class rsElement extends LitElement {
     
     const sr = (rsHost as any).shadowRoot as ShadowRoot | undefined;
     if (sr) {
-      btn = sr.querySelector<HTMLButtonElement>('button.ntx-repeating-section-add-button, button[aria-label="Add"], button[title*="Add"]');
+      btn = sr.querySelector<HTMLButtonElement>('button.ntx-repeating-section-add-button, button[aria-label="Add"], button[title*="Add"], .btn-repeating-section-new-row');
       if (btn) {
         console.log('[neo-rs] Found add button in shadow root:', btn);
         return btn;
