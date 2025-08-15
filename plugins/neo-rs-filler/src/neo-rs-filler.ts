@@ -237,6 +237,10 @@ class rsElement extends LitElement {
       rsfieldtype: this.rsfieldtype 
     });
     
+    console.log('[neo-rs-filler] Raw rsvalues value:', this.rsvalues);
+    console.log('[neo-rs-filler] rsvalues type:', typeof this.rsvalues);
+    console.log('[neo-rs-filler] rsvalues length:', this.rsvalues?.length);
+    
     const targetClassName = (this.rstarget || '').trim();
     const fieldTargetClassName = (this.rsfieldtarget || '').trim();
     const valuesString = (this.rsvalues || '').trim();
@@ -461,8 +465,23 @@ class rsElement extends LitElement {
   }
   
   render() {
+    console.log('[neo-rs-filler] Raw rsvalues in render:', this.rsvalues);
+    
+    let displayInfo = 'none';
+    if (this.rsvalues) {
+      try {
+        const parsed = JSON.parse(this.rsvalues);
+        displayInfo = `${parsed.length} items`;
+      } catch (e) {
+        displayInfo = 'invalid JSON';
+      }
+    }
+    
     return html`
-      <div>Array Values: ${this.rsvalues ? `${JSON.parse(this.rsvalues || '[]').length} items` : 'none'}</div>
+      <div>
+        <div>Raw rsvalues: ${this.rsvalues || '(empty)'}</div>
+        <div>Parsed: ${displayInfo}</div>
+      </div>
     `;
   }
 
