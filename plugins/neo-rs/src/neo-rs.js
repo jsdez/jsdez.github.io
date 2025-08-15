@@ -15,7 +15,7 @@ const rsElementContract = {
     controlName: 'neo-rs',
     description: 'Repeating section manipulator',
     iconUrl: 'repeating-section',
-    groupName: 'Form Tools',
+    groupName: 'NEO',
     properties: {
         rsnumber: {
             type: 'number',
@@ -46,37 +46,93 @@ class rsElement extends lit_1.LitElement {
     }
     updated(changedProperties) {
         super.updated(changedProperties);
-        if (changedProperties.has('rsnumber')) {
+        if (changedProperties.has('rsnumber') || changedProperties.has('rstarget')) {
             this.runActions();
-            this.requestUpdate();
         }
     }
-    runActions() {
-        console.log('runActions called');
-        console.log('rsnumber:', this.rsnumber);
-        // Construct the class selector based on this.rstarget
-        const targetClassName = this.rstarget;
-        // Select the repeating section with the dynamic target class
-        const targetRepeatingSection = this.shadowRoot.querySelector(`.${targetClassName}`);
-        if (targetRepeatingSection) {
-            // Find the next sibling element (which should be the button)
-            const button = targetRepeatingSection.nextElementSibling;
-            if (button) {
-                // Click the button to add new repeating sections
-                for (let i = 0; i < this.rsnumber - 1; i++) {
-                    button.click();
+    // Utility: wait for an element to appear in the main document
+    async waitForElement(selector, timeout = 8000) {
+        const root = this.ownerDocument || document;
+        const existing = root.querySelector(selector);
+        if (existing)
+            return existing;
+        return new Promise((resolve) => {
+            const obs = new MutationObserver(() => {
+                const el = root.querySelector(selector);
+                if (el) {
+                    obs.disconnect();
+                    resolve(el);
                 }
-            }
-        }
-        // Handle clearing existing repeating sections when rsnumber changes
-        this.clearExistingRepeatingSections();
+            });
+            obs.observe(root.documentElement, { childList: true, subtree: true });
+            setTimeout(() => {
+                obs.disconnect();
+                resolve(null);
+            }, timeout);
+        });
     }
-    clearExistingRepeatingSections() {
-        // Select all delete buttons for existing repeating sections
-        const deleteButtons = this.shadowRoot.querySelectorAll("button.ntx-repeating-section-remove-button");
-        // Click each delete button to remove existing repeating sections
-        for (const deleteButton of deleteButtons) {
-            deleteButton.click(); // Cast to HTMLButtonElement
+    // Try to find the "Add" button for the targeted repeating section
+    findAddButton(rsHost) {
+        var _a, _b, _c;
+        const next = rsHost === null || rsHost === void 0 ? void 0 : rsHost.nextElementSibling;
+        if (next) {
+            const btn = next.querySelector('button.ntx-repeating-section-add-button, button[aria-label="Add"], button[title*="Add"]');
+            if (btn)
+                return btn;
+        }
+        let btn = (_a = rsHost) === null || _a === void 0 ? void 0 : _a.querySelector('button.ntx-repeating-section-add-button, button[aria-label="Add"], button[title*="Add"]');
+        if (btn)
+            return btn;
+        if (rsHost === null || rsHost === void 0 ? void 0 : rsHost.shadowRoot) {
+            btn = (_c = (_b = rsHost.shadowRoot) === null || _b === void 0 ? void 0 : _b.querySelector('button.ntx-repeating-section-add-button, button[aria-label="Add"], button[title*="Add"]')) !== null && _c !== void 0 ? _c : null;
+            if (btn)
+                return btn;
+        }
+        return null;
+    }
+    // Find remove buttons scoped to this repeating section
+    findRemoveButtons(rsHost) {
+        var _a, _b, _c;
+        const containers = [rsHost, rsHost === null || rsHost === void 0 ? void 0 : rsHost.nextElementSibling, rsHost === null || rsHost === void 0 ? void 0 : rsHost.shadowRoot].filter(Boolean);
+        for (const scope of containers) {
+            const btns = (_a = scope.querySelectorAll) === null || _a === void 0 ? void 0 : _a.call(scope, 'button.ntx-repeating-section-remove-button, button[aria-label="Remove"], button[title*="Remove"]');
+            if (btns && btns.length)
+                return Array.from(btns);
+        }
+        const root = this.ownerDocument || document;
+        return Array.from((_c = (_b = root) === null || _b === void 0 ? void 0 : _b.querySelectorAll('button.ntx-repeating-section-remove-button, button[aria-label="Remove"], button[title*="Remove"]')) !== null && _c !== void 0 ? _c : []);
+    }
+    async runActions() {
+        const targetClassName = (this.rstarget || '').trim();
+        const desired = Math.max(1, Number(this.rsnumber) || 1);
+        if (!targetClassName)
+            return;
+        const safeClass = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(targetClassName) : targetClassName.replace(/([^a-zA-Z0-9_-])/g, '\\$1');
+        const rsHost = await this.waitForElement(`.${safeClass}`);
+        if (!rsHost) {
+            console.warn('[neo-rs] Repeating section not found:', targetClassName);
+            return;
+        }
+        this.clearExistingRepeatingSections(rsHost);
+        const addBtn = this.findAddButton(rsHost);
+        if (!addBtn) {
+            console.warn('[neo-rs] Add button not found near repeating section:', targetClassName);
+            return;
+        }
+        for (let i = 1; i < desired; i++) {
+            try {
+                addBtn.click();
+            }
+            catch (_a) { }
+        }
+    }
+    clearExistingRepeatingSections(rsHost) {
+        const removeButtons = this.findRemoveButtons(rsHost);
+        for (const btn of removeButtons) {
+            try {
+                btn.click();
+            }
+            catch (_a) { }
         }
     }
     render() {
@@ -92,4 +148,7 @@ class rsElement extends lit_1.LitElement {
 __decorate([
     (0, decorators_js_1.property)({ type: Number })
 ], rsElement.prototype, "rsnumber", void 0);
+__decorate([
+    (0, decorators_js_1.property)({ type: String })
+], rsElement.prototype, "rstarget", void 0);
 customElements.define('neo-rs', rsElement);
