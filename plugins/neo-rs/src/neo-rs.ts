@@ -174,11 +174,26 @@ class rsElement extends LitElement {
   }
 
   private getCurrentRowCount(rsHost: Element): number {
+    // In Nintex, each row has a remove button (even if disabled), so count the actual rows
+    const ntxRepeatingSection = rsHost.closest('ntx-repeating-section');
+    
+    if (ntxRepeatingSection) {
+      // Count the actual repeated sections
+      const repeatedRows = ntxRepeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
+      console.log('[neo-rs] Repeated rows found:', repeatedRows.length, repeatedRows);
+      
+      if (repeatedRows.length > 0) {
+        console.log('[neo-rs] Using repeated rows count:', repeatedRows.length);
+        return repeatedRows.length;
+      }
+    }
+    
+    // Fallback: count remove buttons 
     const removeButtons = this.findRemoveButtons(rsHost);
     console.log('[neo-rs] Remove buttons found:', removeButtons.length, removeButtons);
     
-    // If there's at least one remove button, assume count = removes + 1; else at least 1 row exists
-    const count = removeButtons && removeButtons.length ? removeButtons.length + 1 : 1;
+    // In Nintex, each row typically has a remove button, so the count should be equal to buttons
+    const count = removeButtons && removeButtons.length ? removeButtons.length : 1;
     console.log('[neo-rs] Calculated current row count:', count);
     return count;
   }
