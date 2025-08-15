@@ -265,16 +265,17 @@ class rsElement extends LitElement {
       return;
     }
 
-    // Parse the array values
+    // Parse the array values using smart format detection
     let valuesArray: any[] = [];
     try {
-      valuesArray = JSON.parse(valuesString);
+      valuesArray = this.parseInputData(valuesString);
       if (!Array.isArray(valuesArray)) {
-        console.error('[neo-rs-filler] Values must be an array:', valuesString);
+        console.error('[neo-rs-filler] Parsed data is not an array:', valuesArray);
         return;
       }
+      console.log('[neo-rs-filler] Successfully parsed input data:', valuesArray);
     } catch (error) {
-      console.error('[neo-rs-filler] Invalid JSON array:', error, valuesString);
+      console.error('[neo-rs-filler] Failed to parse input data:', error, valuesString);
       return;
     }
     
@@ -463,23 +464,211 @@ class rsElement extends LitElement {
     targetElement.dispatchEvent(new Event('change', { bubbles: true }));
     targetElement.dispatchEvent(new Event('blur', { bubbles: true }));
   }
+
+  /**
+   * Detects the format of the input data
+   */
+  private detectInputFormat(input: string): { format: string; confidence: number; details: string } {
+    const trimmed = input.trim();
+    
+    // Empty check
+    if (!trimmed) {
+      return { format: 'empty', confidence: 1.0, details: 'No input provided' };
+    }
+
+    // JSON Array check
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return { 
+            format: 'json-array', 
+            confidence: 0.95, 
+            details: `Valid JSON array with ${parsed.length} items` 
+          };
+        }
+      } catch (e) {
+        return { 
+          format: 'malformed-json', 
+          confidence: 0.8, 
+          details: 'Looks like JSON array but has syntax errors' 
+        };
+      }
+    }
+
+    // JSON Object check
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return { 
+          format: 'json-object', 
+          confidence: 0.9, 
+          details: 'Valid JSON object' 
+        };
+      } catch (e) {
+        return { 
+          format: 'malformed-json', 
+          confidence: 0.7, 
+          details: 'Looks like JSON object but has syntax errors' 
+        };
+      }
+    }
+
+    // CSV check (contains commas, no brackets)
+    if (trimmed.includes(',') && !trimmed.includes('[') && !trimmed.includes('{')) {
+      const commaCount = (trimmed.match(/,/g) || []).length;
+      return { 
+        format: 'csv', 
+        confidence: 0.8, 
+        details: `Comma-separated values (${commaCount + 1} items)` 
+      };
+    }
+
+    // Pipe-separated check
+    if (trimmed.includes('|')) {
+      const pipeCount = (trimmed.match(/\|/g) || []).length;
+      return { 
+        format: 'pipe-separated', 
+        confidence: 0.7, 
+        details: `Pipe-separated values (${pipeCount + 1} items)` 
+      };
+    }
+
+    // Newline-separated check
+    if (trimmed.includes('\n')) {
+      const lines = trimmed.split('\n').filter(line => line.trim());
+      return { 
+        format: 'newline-separated', 
+        confidence: 0.8, 
+        details: `Newline-separated values (${lines.length} items)` 
+      };
+    }
+
+    // Single value
+    return { 
+      format: 'single-value', 
+      confidence: 0.9, 
+      details: 'Single text value' 
+    };
+  }
+
+  /**
+   * Parses input data based on detected format
+   */
+  private parseInputData(input: string): any[] {
+    const detection = this.detectInputFormat(input);
+    const trimmed = input.trim();
+    
+    console.log('[neo-rs-filler] Input format detection:', detection);
+
+    switch (detection.format) {
+      case 'empty':
+        return [];
+
+      case 'json-array':
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+          throw new Error('Parsed JSON is not an array');
+        } catch (e) {
+          throw new Error(`JSON parsing failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        }
+
+      case 'json-object':
+        try {
+          const parsed = JSON.parse(trimmed);
+          // Convert single object to array
+          return [parsed];
+        } catch (e) {
+          throw new Error(`JSON parsing failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        }
+
+      case 'csv':
+        // Split by comma and clean up values
+        return trimmed.split(',').map(item => {
+          const cleaned = item.trim();
+          // Try to parse as number if it looks like one
+          if (/^\d+(\.\d+)?$/.test(cleaned)) {
+            return Number(cleaned);
+          }
+          // Try to parse as boolean
+          if (cleaned.toLowerCase() === 'true') return true;
+          if (cleaned.toLowerCase() === 'false') return false;
+          // Remove quotes if present
+          if ((cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+              (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+            return cleaned.slice(1, -1);
+          }
+          return cleaned;
+        });
+
+      case 'pipe-separated':
+        return trimmed.split('|').map(item => item.trim());
+
+      case 'newline-separated':
+        return trimmed.split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0);
+
+      case 'single-value':
+        // Try to parse as number or boolean, otherwise keep as string
+        if (/^\d+(\.\d+)?$/.test(trimmed)) {
+          return [Number(trimmed)];
+        }
+        if (trimmed.toLowerCase() === 'true') return [true];
+        if (trimmed.toLowerCase() === 'false') return [false];
+        return [trimmed];
+
+      case 'malformed-json':
+        // Try to fix common JSON issues
+        try {
+          // Fix common issues like single quotes, missing quotes
+          let fixed = trimmed
+            .replace(/'/g, '"')  // Replace single quotes with double
+            .replace(/(\w+):/g, '"$1":')  // Add quotes around keys
+            .replace(/,(\s*[}\]])/g, '$1');  // Remove trailing commas
+          
+          const parsed = JSON.parse(fixed);
+          if (Array.isArray(parsed)) {
+            console.log('[neo-rs-filler] Successfully fixed malformed JSON');
+            return parsed;
+          }
+          return [parsed];
+        } catch (e) {
+          console.warn('[neo-rs-filler] Could not fix malformed JSON, treating as CSV');
+          // Fallback to CSV parsing
+          return trimmed.split(',').map(item => item.trim());
+        }
+
+      default:
+        throw new Error(`Unsupported format: ${detection.format}`);
+    }
+  }
   
   render() {
     console.log('[neo-rs-filler] Raw rsvalues in render:', this.rsvalues);
     
     let displayInfo = 'none';
+    let formatInfo = 'unknown';
+    
     if (this.rsvalues) {
+      const detection = this.detectInputFormat(this.rsvalues);
+      formatInfo = detection.format;
+      
       try {
-        const parsed = JSON.parse(this.rsvalues);
+        const parsed = this.parseInputData(this.rsvalues);
         displayInfo = `${parsed.length} items`;
       } catch (e) {
-        displayInfo = 'invalid JSON';
+        displayInfo = `parsing error: ${e instanceof Error ? e.message : 'Unknown error'}`;
       }
     }
     
     return html`
       <div>
         <div>Raw rsvalues: ${this.rsvalues || '(empty)'}</div>
+        <div>Format: ${formatInfo}</div>
         <div>Parsed: ${displayInfo}</div>
       </div>
     `;
