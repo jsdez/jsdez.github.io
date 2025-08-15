@@ -710,90 +710,145 @@ class rsElement extends LitElement {
   }
 
   /**
-   * Handle Nintex ng-select dropdown values
+   * Handle Nintex ng-select dropdown values with read-only bypass and focus management
    */
   private async setNintexDropdownValue(fieldElement: HTMLElement, targetValue: string) {
     console.log('[neo-rs-filler] Setting Nintex dropdown value:', targetValue);
     
-    // Look for the input element within the ng-select
+    // Look for the ng-select container and input element
+    const ngSelect = fieldElement.querySelector('ng-select') as HTMLElement;
     const input = fieldElement.querySelector('ng-select input, ntx-simple-select-single input') as HTMLInputElement;
-    if (!input) {
-      console.warn('[neo-rs-filler] No input found in Nintex dropdown');
+    
+    if (!input || !ngSelect) {
+      console.warn('[neo-rs-filler] No input or ng-select found in Nintex dropdown');
       return;
     }
     
     console.log('[neo-rs-filler] Found dropdown input:', input);
     
-    // Set the input value (this will trigger the filter/search)
-    input.value = targetValue;
+    // Store original states for restoration
+    const wasInputDisabled = input.disabled;
+    const wasNgSelectDisabled = ngSelect.classList.contains('ng-select-disabled');
+    const previouslyFocused = document.activeElement;
     
-    // Trigger input events to activate the dropdown filtering
-    this.triggerInputEvents(input);
-    
-    // Focus the input to open the dropdown
-    input.focus();
-    
-    // Wait a bit for the dropdown options to appear
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // Try to find and click the matching option
-    const dropdownOptions = document.querySelectorAll('ng-option, .ng-option');
-    console.log('[neo-rs-filler] Available dropdown options:', dropdownOptions.length);
-    
-    let optionFound = false;
-    const lowerTargetValue = targetValue.toLowerCase();
-    
-    for (const option of Array.from(dropdownOptions)) {
-      const optionText = option.textContent?.trim() || '';
-      const lowerOptionText = optionText.toLowerCase();
-      
-      console.log('[neo-rs-filler] Checking option:', optionText);
-      
-      // Try exact match first
-      if (optionText === targetValue || lowerOptionText === lowerTargetValue) {
-        console.log('[neo-rs-filler] Found exact match, clicking option:', optionText);
-        (option as HTMLElement).click();
-        optionFound = true;
-        break;
+    try {
+      // Temporarily enable the dropdown if it's read-only/disabled
+      if (wasInputDisabled) {
+        input.disabled = false;
+        console.log('[neo-rs-filler] Temporarily enabled disabled input');
       }
-    }
-    
-    // If no exact match, try partial match
-    if (!optionFound) {
+      if (wasNgSelectDisabled) {
+        ngSelect.classList.remove('ng-select-disabled');
+        console.log('[neo-rs-filler] Temporarily removed ng-select-disabled class');
+      }
+      
+      // Clear existing value and set new value to trigger filtering
+      input.value = '';
+      this.triggerInputEvents(input);
+      
+      input.value = targetValue;
+      this.triggerInputEvents(input);
+      
+      // Open dropdown using keyboard navigation to avoid focus issues
+      input.focus();
+      const arrowDownEvent = new KeyboardEvent('keydown', {
+        key: 'ArrowDown',
+        code: 'ArrowDown',
+        keyCode: 40,
+        bubbles: true,
+        cancelable: true
+      });
+      input.dispatchEvent(arrowDownEvent);
+      
+      // Wait for dropdown options to appear
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Try to find and select the matching option using keyboard navigation
+      const dropdownOptions = document.querySelectorAll('ng-option, .ng-option');
+      console.log('[neo-rs-filler] Available dropdown options:', dropdownOptions.length);
+      
+      let optionFound = false;
+      const lowerTargetValue = targetValue.toLowerCase();
+      
+      // First try exact match
       for (const option of Array.from(dropdownOptions)) {
         const optionText = option.textContent?.trim() || '';
         const lowerOptionText = optionText.toLowerCase();
         
-        if (lowerOptionText.includes(lowerTargetValue)) {
-          console.log('[neo-rs-filler] Found partial match, clicking option:', optionText);
-          (option as HTMLElement).click();
+        if (optionText === targetValue || lowerOptionText === lowerTargetValue) {
+          console.log('[neo-rs-filler] Found exact match, selecting via Enter key:', optionText);
+          
+          // Use Enter key instead of click to maintain focus control
+          const enterEvent = new KeyboardEvent('keydown', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            bubbles: true,
+            cancelable: true
+          });
+          input.dispatchEvent(enterEvent);
           optionFound = true;
           break;
         }
       }
-    }
-    
-    if (!optionFound) {
-      console.warn('[neo-rs-filler] No matching option found for value:', targetValue);
       
-      // Try to trigger Enter key to select the filtered value
-      const enterEvent = new KeyboardEvent('keydown', {
-        key: 'Enter',
-        code: 'Enter',
-        keyCode: 13,
+      // If no exact match, try partial match
+      if (!optionFound) {
+        for (const option of Array.from(dropdownOptions)) {
+          const optionText = option.textContent?.trim() || '';
+          const lowerOptionText = optionText.toLowerCase();
+          
+          if (lowerOptionText.includes(lowerTargetValue)) {
+            console.log('[neo-rs-filler] Found partial match, selecting via Enter key:', optionText);
+            
+            const enterEvent = new KeyboardEvent('keydown', {
+              key: 'Enter',
+              code: 'Enter',
+              keyCode: 13,
+              bubbles: true,
+              cancelable: true
+            });
+            input.dispatchEvent(enterEvent);
+            optionFound = true;
+            break;
+          }
+        }
+      }
+      
+      if (!optionFound) {
+        console.warn('[neo-rs-filler] No matching option found for value:', targetValue);
+      }
+      
+      // Close dropdown with Escape key to maintain control
+      const escapeEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        code: 'Escape',
+        keyCode: 27,
         bubbles: true,
         cancelable: true
       });
-      input.dispatchEvent(enterEvent);
+      input.dispatchEvent(escapeEvent);
       
-      console.log('[neo-rs-filler] Attempted to select via Enter key');
-    } else {
-      // Blur the input to close the dropdown
-      input.blur();
+    } finally {
+      // Always restore original states
+      if (wasInputDisabled) {
+        input.disabled = true;
+        console.log('[neo-rs-filler] Restored disabled state to input');
+      }
+      if (wasNgSelectDisabled) {
+        ngSelect.classList.add('ng-select-disabled');
+        console.log('[neo-rs-filler] Restored ng-select-disabled class');
+      }
+      
+      // Restore focus to prevent dropdown collapse issues
+      if (previouslyFocused && previouslyFocused !== input) {
+        (previouslyFocused as HTMLElement).focus();
+        console.log('[neo-rs-filler] Restored focus to previous element');
+      }
+      
+      // Final trigger of change events
+      this.triggerInputEvents(input);
     }
-    
-    // Final trigger of change events
-    this.triggerInputEvents(input);
   }
 
   /**
@@ -846,66 +901,125 @@ class rsElement extends LitElement {
   private async setNintexMultiSelectValue(fieldElement: HTMLElement, values: string[]) {
     console.log('[neo-rs-filler] Setting Nintex multi-select values:', values);
     
-    // Look for the input element within the multi-select
+    // Look for the ng-select container and input element
+    const ngSelect = fieldElement.querySelector('ng-select') as HTMLElement;
     const input = fieldElement.querySelector('ng-select input, ntx-simple-select-multi input') as HTMLInputElement;
-    if (!input) {
-      console.warn('[neo-rs-filler] No input found in Nintex multi-select');
+    
+    if (!input || !ngSelect) {
+      console.warn('[neo-rs-filler] No input or ng-select found in Nintex multi-select');
       return;
     }
     
     console.log('[neo-rs-filler] Found multi-select input:', input);
     
-    // Process each value
-    for (let i = 0; i < values.length; i++) {
-      const targetValue = values[i];
-      console.log(`[neo-rs-filler] Processing value ${i + 1}/${values.length}:`, targetValue);
-      
-      // Set the input value to filter options
-      input.value = targetValue;
-      this.triggerInputEvents(input);
-      input.focus();
-      
-      // Wait for dropdown options to appear
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Find and click the matching option
-      const dropdownOptions = document.querySelectorAll('ng-option, .ng-option');
-      let optionFound = false;
-      const lowerTargetValue = targetValue.toLowerCase();
-      
-      for (const option of Array.from(dropdownOptions)) {
-        const optionText = option.textContent?.trim() || '';
-        const lowerOptionText = optionText.toLowerCase();
-        
-        if (optionText === targetValue || lowerOptionText === lowerTargetValue || 
-            lowerOptionText.includes(lowerTargetValue)) {
-          console.log('[neo-rs-filler] Selecting multi-select option:', optionText);
-          (option as HTMLElement).click();
-          optionFound = true;
-          break;
-        }
-      }
-      
-      if (!optionFound) {
-        console.warn('[neo-rs-filler] No matching option found for value:', targetValue);
-        // Try Enter key as fallback
-        const enterEvent = new KeyboardEvent('keydown', {
-          key: 'Enter',
-          code: 'Enter',
-          keyCode: 13,
-          bubbles: true
-        });
-        input.dispatchEvent(enterEvent);
-      }
-      
-      // Clear input for next value
-      input.value = '';
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
+    // Store original states for restoration
+    const wasInputDisabled = input.disabled;
+    const wasNgSelectDisabled = ngSelect.classList.contains('ng-select-disabled');
+    const previouslyFocused = document.activeElement;
     
-    // Final blur and trigger events
-    input.blur();
-    this.triggerInputEvents(input);
+    try {
+      // Temporarily enable the dropdown if it's read-only/disabled
+      if (wasInputDisabled) {
+        input.disabled = false;
+        console.log('[neo-rs-filler] Temporarily enabled disabled multi-select input');
+      }
+      if (wasNgSelectDisabled) {
+        ngSelect.classList.remove('ng-select-disabled');
+        console.log('[neo-rs-filler] Temporarily removed ng-select-disabled class from multi-select');
+      }
+      
+      // Process each value
+      for (let i = 0; i < values.length; i++) {
+        const targetValue = values[i];
+        console.log(`[neo-rs-filler] Processing value ${i + 1}/${values.length}:`, targetValue);
+        
+        // Clear and set the input value to filter options
+        input.value = '';
+        this.triggerInputEvents(input);
+        
+        input.value = targetValue;
+        this.triggerInputEvents(input);
+        
+        // Open dropdown using keyboard navigation
+        input.focus();
+        const arrowDownEvent = new KeyboardEvent('keydown', {
+          key: 'ArrowDown',
+          code: 'ArrowDown',
+          keyCode: 40,
+          bubbles: true,
+          cancelable: true
+        });
+        input.dispatchEvent(arrowDownEvent);
+        
+        // Wait for dropdown options to appear
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Find and select the matching option using keyboard navigation
+        const dropdownOptions = document.querySelectorAll('ng-option, .ng-option');
+        let optionFound = false;
+        const lowerTargetValue = targetValue.toLowerCase();
+        
+        for (const option of Array.from(dropdownOptions)) {
+          const optionText = option.textContent?.trim() || '';
+          const lowerOptionText = optionText.toLowerCase();
+          
+          if (optionText === targetValue || lowerOptionText === lowerTargetValue || 
+              lowerOptionText.includes(lowerTargetValue)) {
+            console.log('[neo-rs-filler] Selecting multi-select option via Enter key:', optionText);
+            
+            // Use Enter key instead of click to maintain focus control
+            const enterEvent = new KeyboardEvent('keydown', {
+              key: 'Enter',
+              code: 'Enter',
+              keyCode: 13,
+              bubbles: true,
+              cancelable: true
+            });
+            input.dispatchEvent(enterEvent);
+            optionFound = true;
+            break;
+          }
+        }
+        
+        if (!optionFound) {
+          console.warn('[neo-rs-filler] No matching option found for value:', targetValue);
+        }
+        
+        // Clear input for next value but don't close dropdown yet
+        input.value = '';
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      // Close dropdown with Escape key
+      const escapeEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        code: 'Escape',
+        keyCode: 27,
+        bubbles: true,
+        cancelable: true
+      });
+      input.dispatchEvent(escapeEvent);
+      
+    } finally {
+      // Always restore original states
+      if (wasInputDisabled) {
+        input.disabled = true;
+        console.log('[neo-rs-filler] Restored disabled state to multi-select input');
+      }
+      if (wasNgSelectDisabled) {
+        ngSelect.classList.add('ng-select-disabled');
+        console.log('[neo-rs-filler] Restored ng-select-disabled class to multi-select');
+      }
+      
+      // Restore focus to prevent dropdown issues
+      if (previouslyFocused && previouslyFocused !== input) {
+        (previouslyFocused as HTMLElement).focus();
+        console.log('[neo-rs-filler] Restored focus to previous element');
+      }
+      
+      // Final trigger of change events
+      this.triggerInputEvents(input);
+    }
   }
 
   /**
