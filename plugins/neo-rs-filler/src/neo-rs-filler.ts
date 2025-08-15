@@ -33,10 +33,17 @@ const rsElementContract: PluginContract = {
       description: 'data type of the field in the repeating section',
       defaultValue: 'string',
     },
+    primaryFiller: {
+      type: 'boolean',
+      title: 'Primary Filler',
+      description: 'When true, this component manages row count (add/remove). When false, only fills data in existing rows.',
+      defaultValue: true,
+    },
   },
   standardProperties: {
-    fieldLabel: true,
-    description: true,
+    fieldLabel: false,
+    description: false,
+    visibility: true,
   },
 };
 
@@ -45,6 +52,7 @@ class rsElement extends LitElement {
   @property({ type: String }) rstarget: string = '';
   @property({ type: String }) rsfieldtarget: string = '';
   @property({ type: String }) rsfieldtype: string = 'string';
+  @property({ type: Boolean }) primaryFiller: boolean = true;
 
   // internal guards
   private _isRunning = false;
@@ -234,7 +242,8 @@ class rsElement extends LitElement {
       rstarget: this.rstarget, 
       rsfieldtarget: this.rsfieldtarget,
       rsvalues: this.rsvalues,
-      rsfieldtype: this.rsfieldtype 
+      rsfieldtype: this.rsfieldtype,
+      primaryFiller: this.primaryFiller
     });
     
     console.log('[neo-rs-filler] Raw rsvalues value:', this.rsvalues);
@@ -311,59 +320,67 @@ class rsElement extends LitElement {
     const currentCount = this.getCurrentRowCount(rsHost);
     console.log('[neo-rs-filler] Current row count:', currentCount);
 
-    // Ensure we have the right number of rows
-    if (currentCount !== desiredRowCount) {
-      console.log('[neo-rs-filler] Adjusting row count from', currentCount, 'to', desiredRowCount);
+    // Only adjust row count if this is the primary filler
+    if (this.primaryFiller) {
+      console.log('[neo-rs-filler] This is the primary filler - managing row count');
       
-      const addBtn = this.findAddButton(rsHost);
-      if (!addBtn) {
-        console.warn('[neo-rs-filler] Add button not found, cannot adjust rows');
-        this._isRunning = false;
-        return;
-      }
+      // Ensure we have the right number of rows
+      if (currentCount !== desiredRowCount) {
+        console.log('[neo-rs-filler] Adjusting row count from', currentCount, 'to', desiredRowCount);
+        
+        const addBtn = this.findAddButton(rsHost);
+        if (!addBtn) {
+          console.warn('[neo-rs-filler] Add button not found, cannot adjust rows');
+          this._isRunning = false;
+          return;
+        }
 
-      if (currentCount < desiredRowCount) {
-        // Add rows with DOM observation
-        const toAdd = desiredRowCount - currentCount;
-        console.log('[neo-rs-filler] Adding', toAdd, 'rows');
-        
-        for (let i = 0; i < toAdd; i++) {
-          try { 
-            const targetRowIndex = currentCount + i;
-            console.log(`[neo-rs-filler] Adding row ${targetRowIndex + 1}`);
-            
-            addBtn.click();
-            
-            // Wait for the new row to actually appear instead of using fixed delay
-            const ntxRepeatingSection = rsHost.closest('ntx-repeating-section');
-            if (ntxRepeatingSection) {
-              await this.waitForRowToExist(ntxRepeatingSection, targetRowIndex);
+        if (currentCount < desiredRowCount) {
+          // Add rows with DOM observation
+          const toAdd = desiredRowCount - currentCount;
+          console.log('[neo-rs-filler] Adding', toAdd, 'rows');
+          
+          for (let i = 0; i < toAdd; i++) {
+            try { 
+              const targetRowIndex = currentCount + i;
+              console.log(`[neo-rs-filler] Adding row ${targetRowIndex + 1}`);
+              
+              addBtn.click();
+              
+              // Wait for the new row to actually appear instead of using fixed delay
+              const ntxRepeatingSection = rsHost.closest('ntx-repeating-section');
+              if (ntxRepeatingSection) {
+                await this.waitForRowToExist(ntxRepeatingSection, targetRowIndex);
+              }
+            } catch (error) {
+              console.error('[neo-rs-filler] Error adding row:', error);
             }
-          } catch (error) {
-            console.error('[neo-rs-filler] Error adding row:', error);
+          }
+        } else if (currentCount > desiredRowCount) {
+          // Remove excess rows
+          const toRemove = currentCount - desiredRowCount;
+          console.log('[neo-rs-filler] Removing', toRemove, 'excess rows');
+          
+          const removeButtons = this.findRemoveButtons(rsHost);
+          const buttonsToClick = removeButtons.slice(-toRemove);
+          
+          for (let i = 0; i < buttonsToClick.length; i++) {
+            try { 
+              buttonsToClick[i].click(); 
+              // Small delay for row removal to process
+              await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (error) {
+              console.error('[neo-rs-filler] Error removing row:', error);
+            }
           }
         }
-      } else if (currentCount > desiredRowCount) {
-        // Remove excess rows
-        const toRemove = currentCount - desiredRowCount;
-        console.log('[neo-rs-filler] Removing', toRemove, 'excess rows');
         
-        const removeButtons = this.findRemoveButtons(rsHost);
-        const buttonsToClick = removeButtons.slice(-toRemove);
-        
-        for (let i = 0; i < buttonsToClick.length; i++) {
-          try { 
-            buttonsToClick[i].click(); 
-            // Small delay for row removal to process
-            await new Promise(resolve => setTimeout(resolve, 100));
-          } catch (error) {
-            console.error('[neo-rs-filler] Error removing row:', error);
-          }
-        }
+        // Brief pause to let any final DOM changes settle
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
-      
-      // Brief pause to let any final DOM changes settle
-      await new Promise(resolve => setTimeout(resolve, 100));
+    } else {
+      console.log('[neo-rs-filler] This is a secondary filler - skipping row count management');
+      console.log('[neo-rs-filler] Will fill data in existing', currentCount, 'rows with', valuesArray.length, 'values');
     }
 
     // Now fill the values in each row
@@ -387,18 +404,32 @@ class rsElement extends LitElement {
       ? (CSS as any).escape(fieldTargetClassName)
       : fieldTargetClassName.replace(/([^a-zA-Z0-9_-])/g, '\\$1');
 
-    console.log('[neo-rs-filler] Will fill', valuesArray.length, 'rows with values');
+    // Get current row count to determine how many rows to fill
+    const currentRows = ntxRepeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
+    const rowsToFill = Math.min(valuesArray.length, currentRows.length);
+    
+    if (this.primaryFiller) {
+      console.log('[neo-rs-filler] Primary filler - will fill', valuesArray.length, 'values in', valuesArray.length, 'rows');
+    } else {
+      console.log('[neo-rs-filler] Secondary filler - will fill', rowsToFill, 'values in', currentRows.length, 'existing rows');
+      if (valuesArray.length > currentRows.length) {
+        console.warn('[neo-rs-filler] More values than existing rows - some values will be skipped');
+      }
+    }
 
     // Fill each row with corresponding value, waiting for each row to exist
-    for (let i = 0; i < valuesArray.length; i++) {
+    for (let i = 0; i < rowsToFill; i++) {
       const value = valuesArray[i];
       console.log(`[neo-rs-filler] Processing row ${i + 1} with value:`, value);
       
-      // Wait for the specific row to exist (especially important for newly created rows)
-      const rowExists = await this.waitForRowToExist(ntxRepeatingSection, i);
-      if (!rowExists) {
-        console.warn(`[neo-rs-filler] Row ${i + 1} did not appear in DOM, skipping`);
-        continue;
+      // For primary fillers, wait for rows to exist (they might be newly created)
+      // For secondary fillers, rows should already exist
+      if (this.primaryFiller) {
+        const rowExists = await this.waitForRowToExist(ntxRepeatingSection, i);
+        if (!rowExists) {
+          console.warn(`[neo-rs-filler] Row ${i + 1} did not appear in DOM, skipping`);
+          continue;
+        }
       }
 
       // Get the most current row list (refresh each time)
@@ -830,6 +861,7 @@ class rsElement extends LitElement {
         <div>Raw rsvalues: ${this.rsvalues || '(empty)'}</div>
         <div>Format: ${formatInfo}</div>
         <div>Parsed: ${displayInfo}</div>
+        <div>Mode: ${this.primaryFiller ? 'Primary (manages rows)' : 'Secondary (fills only)'}</div>
       </div>
     `;
   }
