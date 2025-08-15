@@ -674,16 +674,26 @@ class rsElement extends LitElement {
   }
 
   /**
-   * Set value for Choice - Single control (dropdown/select or radio buttons)
+   * Set value for Choice - Single control (Nintex ng-select dropdown or radio buttons)
    */
   private async setChoiceSingleValue(fieldElement: HTMLElement, value: any) {
     const stringValue = String(value);
     console.log('[neo-rs-filler] Setting choice-single value:', stringValue);
     
-    // First, try to find a dropdown/select element
+    // First, look for Nintex ng-select dropdown
+    const ngSelect = fieldElement.querySelector('ng-select') as any;
+    const ntxSimpleSelect = fieldElement.querySelector('ntx-simple-select-single') as HTMLElement;
+    
+    if (ngSelect || ntxSimpleSelect) {
+      console.log('[neo-rs-filler] Found Nintex ng-select dropdown');
+      await this.setNintexDropdownValue(fieldElement, stringValue);
+      return;
+    }
+    
+    // Fallback: look for standard HTML select (less likely in Nintex)
     const select = fieldElement.querySelector('select') as HTMLSelectElement;
     if (select) {
-      console.log('[neo-rs-filler] Found dropdown, attempting to select option');
+      console.log('[neo-rs-filler] Found standard dropdown');
       await this.setSelectValue(select, stringValue);
       return;
     }
@@ -700,7 +710,94 @@ class rsElement extends LitElement {
   }
 
   /**
-   * Set value for Choice - Multiple control (multi-select dropdown or checkboxes)
+   * Handle Nintex ng-select dropdown values
+   */
+  private async setNintexDropdownValue(fieldElement: HTMLElement, targetValue: string) {
+    console.log('[neo-rs-filler] Setting Nintex dropdown value:', targetValue);
+    
+    // Look for the input element within the ng-select
+    const input = fieldElement.querySelector('ng-select input, ntx-simple-select-single input') as HTMLInputElement;
+    if (!input) {
+      console.warn('[neo-rs-filler] No input found in Nintex dropdown');
+      return;
+    }
+    
+    console.log('[neo-rs-filler] Found dropdown input:', input);
+    
+    // Set the input value (this will trigger the filter/search)
+    input.value = targetValue;
+    
+    // Trigger input events to activate the dropdown filtering
+    this.triggerInputEvents(input);
+    
+    // Focus the input to open the dropdown
+    input.focus();
+    
+    // Wait a bit for the dropdown options to appear
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Try to find and click the matching option
+    const dropdownOptions = document.querySelectorAll('ng-option, .ng-option');
+    console.log('[neo-rs-filler] Available dropdown options:', dropdownOptions.length);
+    
+    let optionFound = false;
+    const lowerTargetValue = targetValue.toLowerCase();
+    
+    for (const option of Array.from(dropdownOptions)) {
+      const optionText = option.textContent?.trim() || '';
+      const lowerOptionText = optionText.toLowerCase();
+      
+      console.log('[neo-rs-filler] Checking option:', optionText);
+      
+      // Try exact match first
+      if (optionText === targetValue || lowerOptionText === lowerTargetValue) {
+        console.log('[neo-rs-filler] Found exact match, clicking option:', optionText);
+        (option as HTMLElement).click();
+        optionFound = true;
+        break;
+      }
+    }
+    
+    // If no exact match, try partial match
+    if (!optionFound) {
+      for (const option of Array.from(dropdownOptions)) {
+        const optionText = option.textContent?.trim() || '';
+        const lowerOptionText = optionText.toLowerCase();
+        
+        if (lowerOptionText.includes(lowerTargetValue)) {
+          console.log('[neo-rs-filler] Found partial match, clicking option:', optionText);
+          (option as HTMLElement).click();
+          optionFound = true;
+          break;
+        }
+      }
+    }
+    
+    if (!optionFound) {
+      console.warn('[neo-rs-filler] No matching option found for value:', targetValue);
+      
+      // Try to trigger Enter key to select the filtered value
+      const enterEvent = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        code: 'Enter',
+        keyCode: 13,
+        bubbles: true,
+        cancelable: true
+      });
+      input.dispatchEvent(enterEvent);
+      
+      console.log('[neo-rs-filler] Attempted to select via Enter key');
+    } else {
+      // Blur the input to close the dropdown
+      input.blur();
+    }
+    
+    // Final trigger of change events
+    this.triggerInputEvents(input);
+  }
+
+  /**
+   * Set value for Choice - Multiple control (Nintex multi-select dropdown or checkboxes)
    */
   private async setChoiceMultipleValue(fieldElement: HTMLElement, value: any) {
     // Handle array of values for multiple selection
@@ -714,10 +811,20 @@ class rsElement extends LitElement {
     
     console.log('[neo-rs-filler] Setting choice-multiple values:', values);
     
-    // First, try to find a multi-select dropdown
+    // First, look for Nintex multi-select dropdown
+    const ntxMultiSelect = fieldElement.querySelector('ntx-simple-select-multi') as HTMLElement;
+    const ngSelect = fieldElement.querySelector('ng-select') as any;
+    
+    if (ntxMultiSelect || ngSelect) {
+      console.log('[neo-rs-filler] Found Nintex multi-select dropdown');
+      await this.setNintexMultiSelectValue(fieldElement, values);
+      return;
+    }
+    
+    // Fallback: look for standard multi-select dropdown
     const multiSelect = fieldElement.querySelector('select[multiple]') as HTMLSelectElement;
     if (multiSelect) {
-      console.log('[neo-rs-filler] Found multi-select dropdown');
+      console.log('[neo-rs-filler] Found standard multi-select dropdown');
       await this.setMultiSelectValue(multiSelect, values);
       return;
     }
@@ -731,6 +838,74 @@ class rsElement extends LitElement {
     }
     
     console.warn('[neo-rs-filler] No multi-select or checkboxes found in choice-multiple field');
+  }
+
+  /**
+   * Handle Nintex ng-select multi-select dropdown values
+   */
+  private async setNintexMultiSelectValue(fieldElement: HTMLElement, values: string[]) {
+    console.log('[neo-rs-filler] Setting Nintex multi-select values:', values);
+    
+    // Look for the input element within the multi-select
+    const input = fieldElement.querySelector('ng-select input, ntx-simple-select-multi input') as HTMLInputElement;
+    if (!input) {
+      console.warn('[neo-rs-filler] No input found in Nintex multi-select');
+      return;
+    }
+    
+    console.log('[neo-rs-filler] Found multi-select input:', input);
+    
+    // Process each value
+    for (let i = 0; i < values.length; i++) {
+      const targetValue = values[i];
+      console.log(`[neo-rs-filler] Processing value ${i + 1}/${values.length}:`, targetValue);
+      
+      // Set the input value to filter options
+      input.value = targetValue;
+      this.triggerInputEvents(input);
+      input.focus();
+      
+      // Wait for dropdown options to appear
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Find and click the matching option
+      const dropdownOptions = document.querySelectorAll('ng-option, .ng-option');
+      let optionFound = false;
+      const lowerTargetValue = targetValue.toLowerCase();
+      
+      for (const option of Array.from(dropdownOptions)) {
+        const optionText = option.textContent?.trim() || '';
+        const lowerOptionText = optionText.toLowerCase();
+        
+        if (optionText === targetValue || lowerOptionText === lowerTargetValue || 
+            lowerOptionText.includes(lowerTargetValue)) {
+          console.log('[neo-rs-filler] Selecting multi-select option:', optionText);
+          (option as HTMLElement).click();
+          optionFound = true;
+          break;
+        }
+      }
+      
+      if (!optionFound) {
+        console.warn('[neo-rs-filler] No matching option found for value:', targetValue);
+        // Try Enter key as fallback
+        const enterEvent = new KeyboardEvent('keydown', {
+          key: 'Enter',
+          code: 'Enter',
+          keyCode: 13,
+          bubbles: true
+        });
+        input.dispatchEvent(enterEvent);
+      }
+      
+      // Clear input for next value
+      input.value = '';
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    // Final blur and trigger events
+    input.blur();
+    this.triggerInputEvents(input);
   }
 
   /**
