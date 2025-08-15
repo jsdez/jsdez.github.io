@@ -13,7 +13,7 @@ const rsElementContract: PluginContract = {
   properties: {
     rsvalues: {
       type: 'string',
-      title: 'Array of values as text to be added to the repeating section',
+      title: 'Control values',
       description: 'Please ensure you first store the array a form variable as text first',
     },
     rstarget: {
