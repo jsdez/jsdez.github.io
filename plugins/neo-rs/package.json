@@ -2,7 +2,7 @@
   "name": "neo-rs",
   "version": "1.0.0",
   "description": "",
-  "main": "./src/neo-rs.js",
+  "main": "./dist/neo-rs.js",
   "browser": "./src/index.html",
   "scripts": {
     "build": "webpack"

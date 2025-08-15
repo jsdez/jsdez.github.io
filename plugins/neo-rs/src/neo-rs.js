@@ -18,7 +18,7 @@ const rsElementContract = {
     groupName: 'NEO',
     properties: {
         rsnumber: {
-            type: 'number',
+            type: 'integer',
             title: 'Number of sections by default',
             description: 'Please ensure the default value of sections is not changed from 1',
         },
@@ -39,6 +39,9 @@ class rsElement extends lit_1.LitElement {
         this.rstarget = '';
         this.rsnumber = 0;
         this.rstarget = '';
+    // internal guards
+    this._isRunning = false;
+    this._lastApplied = null;
     }
     firstUpdated(changedProperties) {
         super.firstUpdated(changedProperties);
@@ -107,24 +110,42 @@ class rsElement extends lit_1.LitElement {
         const desired = Math.max(1, Number(this.rsnumber) || 1);
         if (!targetClassName)
             return;
+        if (this._isRunning)
+            return;
         const safeClass = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(targetClassName) : targetClassName.replace(/([^a-zA-Z0-9_-])/g, '\\$1');
+        const key = `${safeClass}:${desired}`;
+        if (this._lastApplied === key)
+            return;
+        this._isRunning = true;
         const rsHost = await this.waitForElement(`.${safeClass}`);
         if (!rsHost) {
             console.warn('[neo-rs] Repeating section not found:', targetClassName);
+            this._isRunning = false;
             return;
         }
-        this.clearExistingRepeatingSections(rsHost);
         const addBtn = this.findAddButton(rsHost);
         if (!addBtn) {
             console.warn('[neo-rs] Add button not found near repeating section:', targetClassName);
+            this._isRunning = false;
             return;
         }
-        for (let i = 1; i < desired; i++) {
+        // Determine current count by counting remove buttons + 1 (first row usually has no remove)
+        const currentCount = this.getCurrentRowCount(rsHost);
+        const toAdd = Math.max(0, desired - currentCount);
+        for (let i = 0; i < toAdd; i++) {
             try {
                 addBtn.click();
             }
             catch (_a) { }
         }
+        this._lastApplied = key;
+        this._isRunning = false;
+    }
+    getCurrentRowCount(rsHost) {
+        const removeButtons = this.findRemoveButtons(rsHost);
+        // If there's at least one remove button, assume count = removes + 1; else at least 1 row exists
+        const count = (removeButtons && removeButtons.length) ? removeButtons.length + 1 : 1;
+        return count;
     }
     clearExistingRepeatingSections(rsHost) {
         const removeButtons = this.findRemoveButtons(rsHost);
