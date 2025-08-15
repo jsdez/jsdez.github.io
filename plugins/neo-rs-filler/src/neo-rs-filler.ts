@@ -323,14 +323,22 @@ class rsElement extends LitElement {
       }
 
       if (currentCount < desiredRowCount) {
-        // Add rows
+        // Add rows with DOM observation
         const toAdd = desiredRowCount - currentCount;
         console.log('[neo-rs-filler] Adding', toAdd, 'rows');
         
         for (let i = 0; i < toAdd; i++) {
           try { 
-            addBtn.click(); 
-            await new Promise(resolve => setTimeout(resolve, 200));
+            const targetRowIndex = currentCount + i;
+            console.log(`[neo-rs-filler] Adding row ${targetRowIndex + 1}`);
+            
+            addBtn.click();
+            
+            // Wait for the new row to actually appear instead of using fixed delay
+            const ntxRepeatingSection = rsHost.closest('ntx-repeating-section');
+            if (ntxRepeatingSection) {
+              await this.waitForRowToExist(ntxRepeatingSection, targetRowIndex);
+            }
           } catch (error) {
             console.error('[neo-rs-filler] Error adding row:', error);
           }
@@ -346,15 +354,16 @@ class rsElement extends LitElement {
         for (let i = 0; i < buttonsToClick.length; i++) {
           try { 
             buttonsToClick[i].click(); 
-            await new Promise(resolve => setTimeout(resolve, 200));
+            // Small delay for row removal to process
+            await new Promise(resolve => setTimeout(resolve, 100));
           } catch (error) {
             console.error('[neo-rs-filler] Error removing row:', error);
           }
         }
       }
       
-      // Wait for DOM to update after row changes
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Brief pause to let any final DOM changes settle
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     // Now fill the values in each row
@@ -415,55 +424,150 @@ class rsElement extends LitElement {
       
       console.log(`[neo-rs-filler] Successfully filled row ${i + 1}`);
       
-      // Small delay between filling each row
-      await new Promise(resolve => setTimeout(resolve, 150));
+      // No delay needed since we wait properly for DOM changes
     }
     
     console.log('[neo-rs-filler] Completed filling all rows');
   }
 
   /**
-   * Wait for a specific row index to exist in the repeating section
+   * Wait for a specific row index to exist in the repeating section using MutationObserver
    */
   private async waitForRowToExist(ntxRepeatingSection: Element, rowIndex: number): Promise<boolean> {
-    const maxAttempts = 20; // 4 seconds max
-    const delay = 200;
-    
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const rows = ntxRepeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
-      if (rows.length > rowIndex && rows[rowIndex]) {
-        console.log(`[neo-rs-filler] Row ${rowIndex + 1} exists (attempt ${attempt + 1})`);
-        return true;
-      }
-      
-      console.log(`[neo-rs-filler] Waiting for row ${rowIndex + 1} to exist... (attempt ${attempt + 1})`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+    // First check if it already exists
+    const existingRows = ntxRepeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
+    if (existingRows.length > rowIndex && existingRows[rowIndex]) {
+      console.log(`[neo-rs-filler] Row ${rowIndex + 1} already exists`);
+      return true;
     }
+
+    console.log(`[neo-rs-filler] Waiting for row ${rowIndex + 1} to appear in DOM...`);
     
-    console.warn(`[neo-rs-filler] Row ${rowIndex + 1} did not appear after ${maxAttempts} attempts`);
-    return false;
+    return new Promise<boolean>((resolve) => {
+      const observer = new MutationObserver((mutations) => {
+        // Check if the row now exists
+        const currentRows = ntxRepeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
+        if (currentRows.length > rowIndex && currentRows[rowIndex]) {
+          console.log(`[neo-rs-filler] Row ${rowIndex + 1} appeared in DOM`);
+          observer.disconnect();
+          resolve(true);
+          return;
+        }
+        
+        // Also check if any mutations added the row we're looking for
+        for (const mutation of mutations) {
+          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            for (const node of Array.from(mutation.addedNodes)) {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                const element = node as Element;
+                // Check if this node or its descendants contain our target row
+                if (element.classList?.contains('ntx-repeating-section-repeated-section') ||
+                    element.querySelector?.('.ntx-repeating-section-repeated-section')) {
+                  const updatedRows = ntxRepeatingSection.querySelectorAll('.ntx-repeating-section-repeated-section');
+                  if (updatedRows.length > rowIndex && updatedRows[rowIndex]) {
+                    console.log(`[neo-rs-filler] Row ${rowIndex + 1} detected via mutation`);
+                    observer.disconnect();
+                    resolve(true);
+                    return;
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Observe changes in the repeating section
+      observer.observe(ntxRepeatingSection, {
+        childList: true,
+        subtree: true
+      });
+
+      // Timeout fallback after 5 seconds
+      setTimeout(() => {
+        observer.disconnect();
+        console.warn(`[neo-rs-filler] Timeout waiting for row ${rowIndex + 1}`);
+        resolve(false);
+      }, 5000);
+    });
   }
 
   /**
-   * Wait for the target field to exist within a specific row
+   * Wait for the target field to exist within a specific row using MutationObserver
    */
   private async waitForFieldInRow(row: Element, safeFieldClass: string): Promise<HTMLElement | null> {
-    const maxAttempts = 10; // 2 seconds max
-    const delay = 200;
-    
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const field = row.querySelector(`.${safeFieldClass}`) as HTMLElement;
-      if (field) {
-        console.log(`[neo-rs-filler] Field found in row (attempt ${attempt + 1})`);
-        return field;
-      }
-      
-      console.log(`[neo-rs-filler] Waiting for field to appear in row... (attempt ${attempt + 1})`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+    // First check if it already exists
+    const existingField = row.querySelector(`.${safeFieldClass}`) as HTMLElement;
+    if (existingField) {
+      console.log(`[neo-rs-filler] Field already exists in row`);
+      return existingField;
     }
+
+    console.log(`[neo-rs-filler] Waiting for field .${safeFieldClass} to appear in row...`);
     
-    console.warn(`[neo-rs-filler] Field did not appear in row after ${maxAttempts} attempts`);
-    return null;
+    return new Promise<HTMLElement | null>((resolve) => {
+      const observer = new MutationObserver((mutations) => {
+        // Check if the field now exists
+        const field = row.querySelector(`.${safeFieldClass}`) as HTMLElement;
+        if (field) {
+          console.log(`[neo-rs-filler] Field appeared in row`);
+          observer.disconnect();
+          resolve(field);
+          return;
+        }
+
+        // Also check mutations for the specific field
+        for (const mutation of mutations) {
+          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            for (const node of Array.from(mutation.addedNodes)) {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                const element = node as Element;
+                // Check if this node is our target or contains our target
+                if (element.classList?.contains(safeFieldClass.replace(/\\/g, '')) ||
+                    element.querySelector?.(`.${safeFieldClass}`)) {
+                  const foundField = row.querySelector(`.${safeFieldClass}`) as HTMLElement;
+                  if (foundField) {
+                    console.log(`[neo-rs-filler] Field detected via mutation`);
+                    observer.disconnect();
+                    resolve(foundField);
+                    return;
+                  }
+                }
+              }
+            }
+          }
+          // Also check for attribute changes that might make the field visible
+          else if (mutation.type === 'attributes' && mutation.target.nodeType === Node.ELEMENT_NODE) {
+            const target = mutation.target as Element;
+            if (target.classList?.contains(safeFieldClass.replace(/\\/g, '')) ||
+                target.querySelector?.(`.${safeFieldClass}`)) {
+              const foundField = row.querySelector(`.${safeFieldClass}`) as HTMLElement;
+              if (foundField) {
+                console.log(`[neo-rs-filler] Field became available via attribute change`);
+                observer.disconnect();
+                resolve(foundField);
+                return;
+              }
+            }
+          }
+        }
+      });
+
+      // Observe changes in the row
+      observer.observe(row, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'style']
+      });
+
+      // Timeout fallback after 3 seconds
+      setTimeout(() => {
+        observer.disconnect();
+        console.warn(`[neo-rs-filler] Timeout waiting for field in row`);
+        resolve(null);
+      }, 3000);
+    });
   }
 
   private async setFieldValue(fieldElement: HTMLElement, value: any, fieldType: string) {
