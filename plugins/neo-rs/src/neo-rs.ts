@@ -110,8 +110,14 @@ class rsElement extends LitElement {
     const allButtons = document.querySelectorAll('button');
     console.log('[neo-rs] Total buttons in document:', allButtons.length);
     
-    const addButtons = document.querySelectorAll('button[title*="Add"], button[aria-label*="Add"], button:contains("Add")');
-    console.log('[neo-rs] Potential add buttons:', addButtons.length, addButtons);
+    const addButtons = document.querySelectorAll('button[title*="Add"], button[aria-label*="Add"]');
+    console.log('[neo-rs] Potential add buttons by attributes:', addButtons.length, addButtons);
+    
+    // Check buttons by text content (since :contains() isn't valid CSS)
+    const buttonsByText = Array.from(allButtons).filter(btn => 
+      btn.textContent && btn.textContent.toLowerCase().includes('add')
+    );
+    console.log('[neo-rs] Buttons with "add" in text:', buttonsByText.length, buttonsByText);
     
     return null;
   }
