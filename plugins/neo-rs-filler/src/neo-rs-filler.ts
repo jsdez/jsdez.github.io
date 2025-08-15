@@ -33,6 +33,11 @@ const rsElementContract: PluginContract = {
       description: 'Type of control in the repeating section',
       defaultValue: 'text-short',
     },
+    rsinputtarget: {
+      type: 'string',
+      title: 'CSS selector for input control (optional)',
+      description: 'When specified, waits for this input control to lose focus before updating the repeating section. Useful for multi-choice controls to prevent dropdown collapse during selection.',
+    },
     primaryFiller: {
       type: 'boolean',
       title: 'Primary Filler',
@@ -52,11 +57,16 @@ class rsElement extends LitElement {
   @property({ type: String }) rstarget: string = '';
   @property({ type: String }) rsfieldtarget: string = '';
   @property({ type: String }) rscontroltype: string = 'text-short';
+  @property({ type: String }) rsinputtarget: string = '';
   @property({ type: Boolean }) primaryFiller: boolean = false;
 
   // internal guards
   private _isRunning = false;
   private _lastApplied: string | null = null;
+  private _inputFocusListener?: EventListener;
+  private _inputBlurListener?: EventListener;
+  private _delayedExecutionTimer?: number;
+  private _pendingExecution = false;
 
   constructor() {
     super();
@@ -69,15 +79,122 @@ class rsElement extends LitElement {
 
   firstUpdated(changedProperties: PropertyValues) {
     super.firstUpdated(changedProperties);
+    this.setupInputMonitoring();
     this.runActions();
   }
 
   updated(changedProperties: PropertyValues) {
     super.updated(changedProperties);
 
-    if (changedProperties.has('rsvalues') || changedProperties.has('rstarget') || changedProperties.has('rsfieldtarget') || changedProperties.has('primaryFiller')) {
+    if (changedProperties.has('rsvalues') || changedProperties.has('rstarget') || changedProperties.has('rsfieldtarget') || changedProperties.has('rsinputtarget') || changedProperties.has('primaryFiller')) {
+      this.setupInputMonitoring();
       this.runActions();
     }
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.cleanupInputMonitoring();
+  }
+
+  /**
+   * Set up input focus monitoring if rsinputtarget is specified
+   */
+  private setupInputMonitoring() {
+    // Clean up existing listeners
+    this.cleanupInputMonitoring();
+
+    if (!this.rsinputtarget) {
+      console.log('[neo-rs-filler] No rsinputtarget specified, using immediate execution mode');
+      return;
+    }
+
+    console.log('[neo-rs-filler] Setting up input monitoring for:', this.rsinputtarget);
+    
+    // Find the input control element
+    const inputElement = document.querySelector(this.rsinputtarget) as HTMLElement;
+    if (!inputElement) {
+      console.warn('[neo-rs-filler] Input target not found:', this.rsinputtarget);
+      return;
+    }
+
+    console.log('[neo-rs-filler] Found input element:', inputElement);
+
+    // Set up focus event listeners
+    this._inputFocusListener = () => {
+      console.log('[neo-rs-filler] Input focused, clearing any pending execution');
+      this._pendingExecution = false;
+      if (this._delayedExecutionTimer) {
+        clearTimeout(this._delayedExecutionTimer);
+        this._delayedExecutionTimer = undefined;
+      }
+    };
+
+    this._inputBlurListener = () => {
+      console.log('[neo-rs-filler] Input lost focus, scheduling delayed execution');
+      this._pendingExecution = true;
+      
+      // Clear any existing timer
+      if (this._delayedExecutionTimer) {
+        clearTimeout(this._delayedExecutionTimer);
+      }
+      
+      // Schedule execution after a short delay to allow for quick refocus
+      this._delayedExecutionTimer = window.setTimeout(() => {
+        if (this._pendingExecution) {
+          console.log('[neo-rs-filler] Executing delayed update after input focus lost');
+          this.executeRepeatingUpdate();
+        }
+      }, 500); // 500ms delay to allow for quick refocus scenarios
+    };
+
+    // Add listeners to the input and its relevant child elements
+    inputElement.addEventListener('focus', this._inputFocusListener, true);
+    inputElement.addEventListener('blur', this._inputBlurListener, true);
+
+    // Also listen for focus/blur on dropdowns within the input control
+    const dropdownElements = inputElement.querySelectorAll('ng-select, select, input');
+    dropdownElements.forEach(element => {
+      element.addEventListener('focus', this._inputFocusListener!, true);
+      element.addEventListener('blur', this._inputBlurListener!, true);
+    });
+  }
+
+  /**
+   * Clean up input monitoring listeners
+   */
+  private cleanupInputMonitoring() {
+    if (this._delayedExecutionTimer) {
+      clearTimeout(this._delayedExecutionTimer);
+      this._delayedExecutionTimer = undefined;
+    }
+
+    if (this.rsinputtarget && (this._inputFocusListener || this._inputBlurListener)) {
+      const inputElement = document.querySelector(this.rsinputtarget) as HTMLElement;
+      if (inputElement) {
+        if (this._inputFocusListener) {
+          inputElement.removeEventListener('focus', this._inputFocusListener, true);
+        }
+        if (this._inputBlurListener) {
+          inputElement.removeEventListener('blur', this._inputBlurListener, true);
+        }
+
+        // Also remove from dropdown elements
+        const dropdownElements = inputElement.querySelectorAll('ng-select, select, input');
+        dropdownElements.forEach(element => {
+          if (this._inputFocusListener) {
+            element.removeEventListener('focus', this._inputFocusListener, true);
+          }
+          if (this._inputBlurListener) {
+            element.removeEventListener('blur', this._inputBlurListener, true);
+          }
+        });
+      }
+    }
+
+    this._inputFocusListener = undefined;
+    this._inputBlurListener = undefined;
+    this._pendingExecution = false;
   }
 
   // Utility: wait for an element to appear in the main document
@@ -242,6 +359,7 @@ class rsElement extends LitElement {
     console.log('[neo-rs-filler] runActions called', { 
       rstarget: this.rstarget, 
       rsfieldtarget: this.rsfieldtarget,
+      rsinputtarget: this.rsinputtarget,
       rsvalues: this.rsvalues,
       rscontroltype: this.rscontroltype,
       primaryFiller: this.primaryFiller
@@ -250,6 +368,41 @@ class rsElement extends LitElement {
     console.log('[neo-rs-filler] Raw rsvalues value:', this.rsvalues);
     console.log('[neo-rs-filler] rsvalues type:', typeof this.rsvalues);
     console.log('[neo-rs-filler] rsvalues length:', this.rsvalues?.length);
+    
+    const targetClassName = (this.rstarget || '').trim();
+    const fieldTargetClassName = (this.rsfieldtarget || '').trim();
+    const valuesString = (this.rsvalues || '').trim();
+    
+    if (!targetClassName) {
+      console.warn('[neo-rs-filler] No target class specified');
+      return;
+    }
+    
+    if (!fieldTargetClassName) {
+      console.warn('[neo-rs-filler] No field target class specified');
+      return;
+    }
+    
+    if (!valuesString) {
+      console.warn('[neo-rs-filler] No values specified');
+      return;
+    }
+
+    // If input monitoring is enabled, don't execute immediately
+    if (this.rsinputtarget) {
+      console.log('[neo-rs-filler] Input monitoring enabled, deferring execution until input loses focus');
+      return;
+    }
+
+    // Execute immediately if no input monitoring
+    await this.executeRepeatingUpdate();
+  }
+
+  /**
+   * Execute the repeating section update logic
+   */
+  private async executeRepeatingUpdate() {
+    console.log('[neo-rs-filler] executeRepeatingUpdate called');
     
     const targetClassName = (this.rstarget || '').trim();
     const fieldTargetClassName = (this.rsfieldtarget || '').trim();
