@@ -26,12 +26,12 @@ const rsElementContract: PluginContract = {
       title: 'CSS class of the field',
       description: 'Class name used to target field in the repeating section',
     },
-    rsfieldtype: {
+    rscontroltype: {
       type: 'string',
-      enum: ['string', 'number','integer','boolean','object','array','datetime'],
-      title: 'Field type in the Repeating Section',
-      description: 'data type of the field in the repeating section',
-      defaultValue: 'string',
+      enum: ['text-short', 'text-long', 'choice-single', 'choice-multiple', 'currency', 'datetime', 'email', 'number', 'yes-no'],
+      title: 'Control type in the Repeating Section',
+      description: 'Type of control in the repeating section',
+      defaultValue: 'text-short',
     },
     primaryFiller: {
       type: 'boolean',
@@ -51,7 +51,7 @@ class rsElement extends LitElement {
   @property({ type: String }) rsvalues: string = '';
   @property({ type: String }) rstarget: string = '';
   @property({ type: String }) rsfieldtarget: string = '';
-  @property({ type: String }) rsfieldtype: string = 'string';
+  @property({ type: String }) rscontroltype: string = 'text-short';
   @property({ type: Boolean }) primaryFiller: boolean = false;
 
   // internal guards
@@ -63,7 +63,7 @@ class rsElement extends LitElement {
     this.rsvalues = '';
     this.rstarget = '';
     this.rsfieldtarget = '';
-    this.rsfieldtype = 'string';
+    this.rscontroltype = 'text-short';
     this.primaryFiller = false;
   }
 
@@ -243,7 +243,7 @@ class rsElement extends LitElement {
       rstarget: this.rstarget, 
       rsfieldtarget: this.rsfieldtarget,
       rsvalues: this.rsvalues,
-      rsfieldtype: this.rsfieldtype,
+      rscontroltype: this.rscontroltype,
       primaryFiller: this.primaryFiller
     });
     
@@ -452,7 +452,7 @@ class rsElement extends LitElement {
       console.log(`[neo-rs-filler] Found target field in row ${i + 1}:`, targetField);
       
       // Fill the field based on its type
-      await this.setFieldValue(targetField, value, this.rsfieldtype);
+      await this.setFieldValue(targetField, value, this.rscontroltype);
       
       console.log(`[neo-rs-filler] Successfully filled row ${i + 1}`);
       
@@ -602,59 +602,425 @@ class rsElement extends LitElement {
     });
   }
 
-  private async setFieldValue(fieldElement: HTMLElement, value: any, fieldType: string) {
-    console.log('[neo-rs-filler] Setting field value:', { fieldElement, value, fieldType });
+  private async setFieldValue(fieldElement: HTMLElement, value: any, controlType: string) {
+    console.log('[neo-rs-filler] Setting field value:', { fieldElement, value, controlType });
     
-    // Look for different types of input elements within the field
-    const input = fieldElement.querySelector('input') as HTMLInputElement;
-    const textarea = fieldElement.querySelector('textarea') as HTMLTextAreaElement;
-    const select = fieldElement.querySelector('select') as HTMLSelectElement;
-    
-    let targetElement = input || textarea || select;
-    
-    if (!targetElement) {
-      console.warn('[neo-rs-filler] No input element found in field:', fieldElement);
-      return;
-    }
-
-    // Convert value based on field type
-    let convertedValue: string;
     try {
-      switch (fieldType) {
-        case 'string':
-          convertedValue = String(value);
+      switch (controlType) {
+        case 'text-short':
+          await this.setTextShortValue(fieldElement, value);
           break;
-        case 'number':
-        case 'integer':
-          convertedValue = String(Number(value));
+        case 'text-long':
+          await this.setTextLongValue(fieldElement, value);
           break;
-        case 'boolean':
-          convertedValue = Boolean(value) ? 'true' : 'false';
+        case 'choice-single':
+          await this.setChoiceSingleValue(fieldElement, value);
           break;
-        case 'object':
-        case 'array':
-          convertedValue = JSON.stringify(value);
+        case 'choice-multiple':
+          await this.setChoiceMultipleValue(fieldElement, value);
+          break;
+        case 'currency':
+          await this.setCurrencyValue(fieldElement, value);
           break;
         case 'datetime':
-          convertedValue = value instanceof Date ? value.toISOString() : String(value);
+          await this.setDateTimeValue(fieldElement, value);
+          break;
+        case 'email':
+          await this.setEmailValue(fieldElement, value);
+          break;
+        case 'number':
+          await this.setNumberValue(fieldElement, value);
+          break;
+        case 'yes-no':
+          await this.setYesNoValue(fieldElement, value);
           break;
         default:
-          convertedValue = String(value);
+          console.warn('[neo-rs-filler] Unknown control type, defaulting to text-short:', controlType);
+          await this.setTextShortValue(fieldElement, value);
       }
     } catch (error) {
-      console.error('[neo-rs-filler] Error converting value:', error);
-      convertedValue = String(value);
+      console.error('[neo-rs-filler] Error setting field value:', error);
     }
+  }
 
-    console.log('[neo-rs-filler] Setting converted value:', convertedValue);
+  /**
+   * Set value for Text - Short control
+   */
+  private async setTextShortValue(fieldElement: HTMLElement, value: any) {
+    const input = fieldElement.querySelector('input[type="text"], input:not([type])') as HTMLInputElement;
+    if (input) {
+      const stringValue = String(value);
+      input.value = stringValue;
+      this.triggerInputEvents(input);
+      console.log('[neo-rs-filler] Set text-short value:', stringValue);
+    } else {
+      console.warn('[neo-rs-filler] Text input not found in text-short field');
+    }
+  }
 
-    // Set the value and trigger events
-    targetElement.value = convertedValue;
+  /**
+   * Set value for Text - Long control (textarea)
+   */
+  private async setTextLongValue(fieldElement: HTMLElement, value: any) {
+    const textarea = fieldElement.querySelector('textarea') as HTMLTextAreaElement;
+    if (textarea) {
+      const stringValue = String(value);
+      textarea.value = stringValue;
+      this.triggerInputEvents(textarea);
+      console.log('[neo-rs-filler] Set text-long value:', stringValue);
+    } else {
+      console.warn('[neo-rs-filler] Textarea not found in text-long field');
+    }
+  }
+
+  /**
+   * Set value for Choice - Single control (dropdown/select or radio buttons)
+   */
+  private async setChoiceSingleValue(fieldElement: HTMLElement, value: any) {
+    const stringValue = String(value);
+    console.log('[neo-rs-filler] Setting choice-single value:', stringValue);
     
-    // Trigger input events to notify the form system
-    targetElement.dispatchEvent(new Event('input', { bubbles: true }));
-    targetElement.dispatchEvent(new Event('change', { bubbles: true }));
-    targetElement.dispatchEvent(new Event('blur', { bubbles: true }));
+    // First, try to find a dropdown/select element
+    const select = fieldElement.querySelector('select') as HTMLSelectElement;
+    if (select) {
+      console.log('[neo-rs-filler] Found dropdown, attempting to select option');
+      await this.setSelectValue(select, stringValue);
+      return;
+    }
+    
+    // If no dropdown, look for radio buttons
+    const radioButtons = fieldElement.querySelectorAll('input[type="radio"]') as NodeListOf<HTMLInputElement>;
+    if (radioButtons.length > 0) {
+      console.log('[neo-rs-filler] Found radio buttons, attempting to select one');
+      await this.setRadioValue(radioButtons, stringValue);
+      return;
+    }
+    
+    console.warn('[neo-rs-filler] No dropdown or radio buttons found in choice-single field');
+  }
+
+  /**
+   * Set value for Choice - Multiple control (multi-select dropdown or checkboxes)
+   */
+  private async setChoiceMultipleValue(fieldElement: HTMLElement, value: any) {
+    // Handle array of values for multiple selection
+    let values: string[];
+    if (Array.isArray(value)) {
+      values = value.map(v => String(v));
+    } else {
+      // Try to parse as comma-separated values
+      values = String(value).split(',').map(v => v.trim());
+    }
+    
+    console.log('[neo-rs-filler] Setting choice-multiple values:', values);
+    
+    // First, try to find a multi-select dropdown
+    const multiSelect = fieldElement.querySelector('select[multiple]') as HTMLSelectElement;
+    if (multiSelect) {
+      console.log('[neo-rs-filler] Found multi-select dropdown');
+      await this.setMultiSelectValue(multiSelect, values);
+      return;
+    }
+    
+    // If no multi-select, look for checkboxes
+    const checkboxes = fieldElement.querySelectorAll('input[type="checkbox"]') as NodeListOf<HTMLInputElement>;
+    if (checkboxes.length > 0) {
+      console.log('[neo-rs-filler] Found checkboxes');
+      await this.setCheckboxValues(checkboxes, values, fieldElement);
+      return;
+    }
+    
+    console.warn('[neo-rs-filler] No multi-select or checkboxes found in choice-multiple field');
+  }
+
+  /**
+   * Set value for Yes/No control (checkbox, toggle, or radio buttons)
+   */
+  private async setYesNoValue(fieldElement: HTMLElement, value: any) {
+    console.log('[neo-rs-filler] Setting yes-no value:', value);
+    
+    // Convert value to boolean
+    let booleanValue: boolean;
+    if (typeof value === 'boolean') {
+      booleanValue = value;
+    } else if (typeof value === 'string') {
+      const lowerValue = value.toLowerCase().trim();
+      booleanValue = lowerValue === 'true' || lowerValue === 'yes' || lowerValue === '1' || lowerValue === 'on';
+    } else if (typeof value === 'number') {
+      booleanValue = value !== 0;
+    } else {
+      booleanValue = Boolean(value);
+    }
+    
+    console.log('[neo-rs-filler] Converted to boolean:', booleanValue);
+    
+    // Look for checkbox (single checkbox for yes/no)
+    const checkbox = fieldElement.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    if (checkbox) {
+      checkbox.checked = booleanValue;
+      this.triggerInputEvents(checkbox);
+      console.log('[neo-rs-filler] Set checkbox value:', booleanValue);
+      return;
+    }
+    
+    // Look for toggle switch (often implemented as checkbox with special styling)
+    const toggle = fieldElement.querySelector('input[role="switch"], input.toggle, .toggle input') as HTMLInputElement;
+    if (toggle) {
+      toggle.checked = booleanValue;
+      this.triggerInputEvents(toggle);
+      console.log('[neo-rs-filler] Set toggle value:', booleanValue);
+      return;
+    }
+    
+    // Look for radio buttons (Yes/No pair)
+    const radioButtons = fieldElement.querySelectorAll('input[type="radio"]') as NodeListOf<HTMLInputElement>;
+    if (radioButtons.length > 0) {
+      const targetValue = booleanValue ? 'yes' : 'no';
+      await this.setRadioValue(radioButtons, targetValue);
+      return;
+    }
+    
+    // Look for select dropdown with Yes/No options
+    const select = fieldElement.querySelector('select') as HTMLSelectElement;
+    if (select) {
+      const targetValue = booleanValue ? 'yes' : 'no';
+      await this.setSelectValue(select, targetValue);
+      return;
+    }
+    
+    console.warn('[neo-rs-filler] No checkbox, toggle, radio buttons, or select found in yes-no field');
+  }
+
+  /**
+   * Helper method to set dropdown/select value with multiple matching strategies
+   */
+  private async setSelectValue(select: HTMLSelectElement, targetValue: string) {
+    console.log('[neo-rs-filler] Looking for option with value:', targetValue);
+    
+    // Try to find exact value match first
+    let optionFound = false;
+    for (let i = 0; i < select.options.length; i++) {
+      const option = select.options[i];
+      if (option.value === targetValue || option.text === targetValue) {
+        select.selectedIndex = i;
+        optionFound = true;
+        console.log('[neo-rs-filler] Found exact match, selected option:', option.text, 'at index', i);
+        break;
+      }
+    }
+    
+    // If no exact match, try case-insensitive match
+    if (!optionFound) {
+      const lowerValue = targetValue.toLowerCase();
+      for (let i = 0; i < select.options.length; i++) {
+        const option = select.options[i];
+        if (option.value.toLowerCase() === lowerValue || option.text.toLowerCase() === lowerValue) {
+          select.selectedIndex = i;
+          optionFound = true;
+          console.log('[neo-rs-filler] Found case-insensitive match, selected option:', option.text, 'at index', i);
+          break;
+        }
+      }
+    }
+    
+    // If still no match, try partial match
+    if (!optionFound) {
+      const lowerValue = targetValue.toLowerCase();
+      for (let i = 0; i < select.options.length; i++) {
+        const option = select.options[i];
+        if (option.text.toLowerCase().includes(lowerValue) || option.value.toLowerCase().includes(lowerValue)) {
+          select.selectedIndex = i;
+          optionFound = true;
+          console.log('[neo-rs-filler] Found partial match, selected option:', option.text, 'at index', i);
+          break;
+        }
+      }
+    }
+    
+    if (optionFound) {
+      this.triggerInputEvents(select);
+    } else {
+      console.warn('[neo-rs-filler] No matching option found for value:', targetValue);
+      console.log('[neo-rs-filler] Available options:', Array.from(select.options).map(opt => ({ value: opt.value, text: opt.text })));
+    }
+  }
+
+  /**
+   * Helper method to set radio button value
+   */
+  private async setRadioValue(radioButtons: NodeListOf<HTMLInputElement>, targetValue: string) {
+    console.log('[neo-rs-filler] Looking for radio button with value:', targetValue);
+    
+    let radioFound = false;
+    const lowerTargetValue = targetValue.toLowerCase();
+    
+    radioButtons.forEach(radio => {
+      // Get label text for this radio button
+      const label = radio.closest('label') || document.querySelector(`label[for="${radio.id}"]`);
+      const labelText = label?.textContent?.trim() || '';
+      
+      // Check value, label text, and common boolean variations
+      const radioValue = radio.value.toLowerCase();
+      const radioLabel = labelText.toLowerCase();
+      
+      if (radioValue === lowerTargetValue || 
+          radioLabel === lowerTargetValue ||
+          (lowerTargetValue === 'yes' && (radioValue === 'true' || radioLabel === 'true')) ||
+          (lowerTargetValue === 'no' && (radioValue === 'false' || radioLabel === 'false'))) {
+        radio.checked = true;
+        this.triggerInputEvents(radio);
+        radioFound = true;
+        console.log('[neo-rs-filler] Selected radio button:', labelText || radio.value);
+      } else {
+        radio.checked = false; // Uncheck other radios in the group
+      }
+    });
+    
+    if (!radioFound) {
+      console.warn('[neo-rs-filler] No matching radio button found for value:', targetValue);
+      console.log('[neo-rs-filler] Available radio options:', Array.from(radioButtons).map(radio => {
+        const label = radio.closest('label') || document.querySelector(`label[for="${radio.id}"]`);
+        return { value: radio.value, text: label?.textContent?.trim() || '' };
+      }));
+    }
+  }
+
+  /**
+   * Helper method to set multi-select dropdown values
+   */
+  private async setMultiSelectValue(multiSelect: HTMLSelectElement, values: string[]) {
+    // Clear all selections first
+    for (let i = 0; i < multiSelect.options.length; i++) {
+      multiSelect.options[i].selected = false;
+    }
+    
+    // Select matching options
+    values.forEach(val => {
+      for (let i = 0; i < multiSelect.options.length; i++) {
+        const option = multiSelect.options[i];
+        if (option.value === val || option.text === val || 
+            option.value.toLowerCase() === val.toLowerCase() || 
+            option.text.toLowerCase() === val.toLowerCase()) {
+          option.selected = true;
+          console.log('[neo-rs-filler] Selected multi-select option:', option.text);
+        }
+      }
+    });
+    
+    this.triggerInputEvents(multiSelect);
+  }
+
+  /**
+   * Helper method to set checkbox values for multiple choice
+   */
+  private async setCheckboxValues(checkboxes: NodeListOf<HTMLInputElement>, values: string[], fieldElement: HTMLElement) {
+    // Uncheck all first
+    checkboxes.forEach(cb => cb.checked = false);
+    
+    // Check matching ones
+    values.forEach(val => {
+      const lowerVal = val.toLowerCase();
+      checkboxes.forEach(checkbox => {
+        const label = checkbox.closest('label') || fieldElement.querySelector(`label[for="${checkbox.id}"]`);
+        const labelText = label?.textContent?.trim() || '';
+        
+        if (checkbox.value === val || labelText === val ||
+            checkbox.value.toLowerCase() === lowerVal ||
+            labelText.toLowerCase() === lowerVal) {
+          checkbox.checked = true;
+          this.triggerInputEvents(checkbox);
+          console.log('[neo-rs-filler] Checked checkbox:', labelText || checkbox.value);
+        }
+      });
+    });
+  }
+
+  /**
+   * Set value for Currency control
+   */
+  private async setCurrencyValue(fieldElement: HTMLElement, value: any) {
+    const input = fieldElement.querySelector('input[type="number"], input[type="text"]') as HTMLInputElement;
+    if (input) {
+      // Convert to number and format appropriately
+      const numericValue = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.-]/g, ''));
+      const formattedValue = isNaN(numericValue) ? '0' : String(numericValue);
+      input.value = formattedValue;
+      this.triggerInputEvents(input);
+      console.log('[neo-rs-filler] Set currency value:', formattedValue);
+    } else {
+      console.warn('[neo-rs-filler] Input not found in currency field');
+    }
+  }
+
+  /**
+   * Set value for Date/Time control
+   */
+  private async setDateTimeValue(fieldElement: HTMLElement, value: any) {
+    const input = fieldElement.querySelector('input[type="date"], input[type="datetime-local"], input[type="time"], input[type="text"]') as HTMLInputElement;
+    if (input) {
+      let formattedValue: string;
+      
+      if (value instanceof Date) {
+        // Format based on input type
+        if (input.type === 'date') {
+          formattedValue = value.toISOString().split('T')[0];
+        } else if (input.type === 'datetime-local') {
+          formattedValue = value.toISOString().slice(0, 16);
+        } else if (input.type === 'time') {
+          formattedValue = value.toTimeString().slice(0, 5);
+        } else {
+          formattedValue = value.toISOString();
+        }
+      } else {
+        formattedValue = String(value);
+      }
+      
+      input.value = formattedValue;
+      this.triggerInputEvents(input);
+      console.log('[neo-rs-filler] Set datetime value:', formattedValue);
+    } else {
+      console.warn('[neo-rs-filler] Date input not found in datetime field');
+    }
+  }
+
+  /**
+   * Set value for Email control
+   */
+  private async setEmailValue(fieldElement: HTMLElement, value: any) {
+    const input = fieldElement.querySelector('input[type="email"], input[type="text"]') as HTMLInputElement;
+    if (input) {
+      const emailValue = String(value);
+      input.value = emailValue;
+      this.triggerInputEvents(input);
+      console.log('[neo-rs-filler] Set email value:', emailValue);
+    } else {
+      console.warn('[neo-rs-filler] Email input not found in email field');
+    }
+  }
+
+  /**
+   * Set value for Number control
+   */
+  private async setNumberValue(fieldElement: HTMLElement, value: any) {
+    const input = fieldElement.querySelector('input[type="number"], input[type="text"]') as HTMLInputElement;
+    if (input) {
+      const numericValue = typeof value === 'number' ? value : parseFloat(String(value));
+      const formattedValue = isNaN(numericValue) ? '0' : String(numericValue);
+      input.value = formattedValue;
+      this.triggerInputEvents(input);
+      console.log('[neo-rs-filler] Set number value:', formattedValue);
+    } else {
+      console.warn('[neo-rs-filler] Number input not found in number field');
+    }
+  }
+
+  /**
+   * Trigger input events to notify the form system of changes
+   */
+  private triggerInputEvents(element: HTMLElement) {
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+    element.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
   /**
