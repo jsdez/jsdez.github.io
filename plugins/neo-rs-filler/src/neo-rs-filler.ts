@@ -37,7 +37,7 @@ const rsElementContract: PluginContract = {
       type: 'boolean',
       title: 'Primary Filler',
       description: 'When true, this component manages row count (add/remove). When false, only fills data in existing rows.',
-      defaultValue: true,
+      defaultValue: false,
     },
   },
   standardProperties: {
@@ -52,7 +52,7 @@ class rsElement extends LitElement {
   @property({ type: String }) rstarget: string = '';
   @property({ type: String }) rsfieldtarget: string = '';
   @property({ type: String }) rsfieldtype: string = 'string';
-  @property({ type: Boolean }) primaryFiller: boolean = true;
+  @property({ type: Boolean }) primaryFiller: boolean = false;
 
   // internal guards
   private _isRunning = false;
@@ -64,6 +64,7 @@ class rsElement extends LitElement {
     this.rstarget = '';
     this.rsfieldtarget = '';
     this.rsfieldtype = 'string';
+    this.primaryFiller = false;
   }
 
   firstUpdated(changedProperties: PropertyValues) {
@@ -74,7 +75,7 @@ class rsElement extends LitElement {
   updated(changedProperties: PropertyValues) {
     super.updated(changedProperties);
 
-    if (changedProperties.has('rsvalues') || changedProperties.has('rstarget') || changedProperties.has('rsfieldtarget')) {
+    if (changedProperties.has('rsvalues') || changedProperties.has('rstarget') || changedProperties.has('rsfieldtarget') || changedProperties.has('primaryFiller')) {
       this.runActions();
     }
   }
