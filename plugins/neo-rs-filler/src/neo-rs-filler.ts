@@ -12,10 +12,9 @@ const rsElementContract: PluginContract = {
   groupName: 'Form Tools',
   properties: {
     rsvalues: {
-      type: 'string', // Changed from 'object' to 'string'
+      type: 'string',
       title: 'Control values',
-      description: 'String data to determine row count',
-      isValueField: true,
+      description: 'Array data stored as text to determine row count',
     },
     rstarget: {
       type: 'string',
@@ -24,7 +23,7 @@ const rsElementContract: PluginContract = {
     },
     rsinputtarget: {
       type: 'string',
-      title: 'CSS selector for input control',
+      title: 'CSS selector for input control (optional)',
       description: 'When specified, waits for this input control to lose focus before updating the repeating section. Useful for multi-choice controls to prevent dropdown collapse during selection.',
     },
     primaryFiller: {
@@ -42,7 +41,7 @@ const rsElementContract: PluginContract = {
 };
 
 class rsElement extends LitElement {
-  @property({ type: String }) rsvalues: string = ''; // Changed from any[] | string to string
+  @property({ type: String }) rsvalues: string = '';
   @property({ type: String }) rstarget: string = '';
   @property({ type: String }) rsinputtarget: string = '';
   @property({ type: Boolean }) primaryFiller: boolean = false;
@@ -211,16 +210,17 @@ class rsElement extends LitElement {
       rsvalues: this.rsvalues,
       primaryFiller: this.primaryFiller
     });
-
+    
     const targetClassName = (this.rstarget || '').trim();
-
-    if (!this.rsvalues.trim()) {
-      console.warn('[neo-rs-filler] No values specified');
-      return;
-    }
-
+    const valuesString = (this.rsvalues || '').trim();
+    
     if (!targetClassName) {
       console.warn('[neo-rs-filler] No target class specified');
+      return;
+    }
+    
+    if (!valuesString) {
+      console.warn('[neo-rs-filler] No values specified');
       return;
     }
 
@@ -239,30 +239,45 @@ class rsElement extends LitElement {
    */
   private async executeRepeatingUpdate() {
     console.log('[neo-rs-filler] executeRepeatingUpdate called');
-
+    
     const targetClassName = (this.rstarget || '').trim();
-
-    if (!this.rsvalues.trim() || !targetClassName) {
+    const valuesString = (this.rsvalues || '').trim();
+    
+    if (!targetClassName || !valuesString) {
       console.warn('[neo-rs-filler] Missing target class or values');
       return;
     }
-
+    
     if (this._isRunning) {
       console.log('[neo-rs-filler] Already running, skipping');
       return;
     }
 
-    console.log('[neo-rs-filler] Using values string:', this.rsvalues);
-
-    const desiredRowCount = this.rsvalues.split(',').length; // Assuming comma-separated values
-    console.log('[neo-rs-filler] Desired row count based on string length:', desiredRowCount);
+    // Parse the array values using smart format detection
+    let valuesArray: any[] = [];
+    try {
+      valuesArray = this.parseInputData(valuesString);
+      if (!Array.isArray(valuesArray)) {
+        console.error('[neo-rs-filler] Parsed data is not an array:', valuesArray);
+        return;
+      }
+      console.log('[neo-rs-filler] Successfully parsed input data:', valuesArray);
+    } catch (error) {
+      console.error('[neo-rs-filler] Failed to parse input data:', error, valuesString);
+      return;
+    }
+    
+    console.log('[neo-rs-filler] Parsed values array:', valuesArray);
+    
+    const desiredRowCount = valuesArray.length;
+    console.log('[neo-rs-filler] Desired row count based on array length:', desiredRowCount);
 
     const hasEscape = typeof (window as any).CSS !== 'undefined' && typeof (CSS as any).escape === 'function';
     const safeClass = hasEscape
       ? (CSS as any).escape(targetClassName)
       : targetClassName.replace(/([^a-zA-Z0-9_-])/g, '\\$1');
 
-    const key = `${safeClass}:${this.rsvalues}`;
+    const key = `${safeClass}:${valuesString}`;
     if (this._lastApplied === key) {
       console.log('[neo-rs-filler] Already applied this configuration, skipping');
       return;
@@ -287,11 +302,11 @@ class rsElement extends LitElement {
     // Only adjust row count if this is the primary filler
     if (this.primaryFiller) {
       console.log('[neo-rs-filler] This is the primary filler - managing row count');
-
+      
       // Ensure we have the right number of rows
       if (currentCount !== desiredRowCount) {
         console.log('[neo-rs-filler] Adjusting row count from', currentCount, 'to', desiredRowCount);
-
+        
         const addBtn = this.findAddButton(rsHost);
         if (!addBtn) {
           console.warn('[neo-rs-filler] Add button not found, cannot adjust rows');
@@ -303,12 +318,12 @@ class rsElement extends LitElement {
           // Add rows with DOM observation
           const toAdd = desiredRowCount - currentCount;
           console.log('[neo-rs-filler] Adding', toAdd, 'rows');
-
+          
           for (let i = 0; i < toAdd; i++) {
             try { 
               const targetRowIndex = currentCount + i;
               console.log(`[neo-rs-filler] Adding row ${targetRowIndex + 1}`);
-
+              
               // Click add button and wait for new row to appear
               addBtn.click();
               await this.waitForRowToExist(rsHost, targetRowIndex + 1);
@@ -325,7 +340,7 @@ class rsElement extends LitElement {
       }
     } else {
       console.log('[neo-rs-filler] This is a secondary filler - skipping row count management');
-      console.log('[neo-rs-filler] Current row count:', currentCount, 'String length:', this.rsvalues.split(',').length);
+      console.log('[neo-rs-filler] Current row count:', currentCount, 'Array length:', valuesArray.length);
     }
 
     // Row management complete - the form's rule engine will handle field values
@@ -497,15 +512,10 @@ class rsElement extends LitElement {
   render() {
     return html`<div style="display: none;"></div>`;
   }
-
-  // Include the contract information using @nintex/form-plugin-contract
-  static getMetaConfig(): PluginContract {
-    return rsElementContract;
-  }
 }
 
 // Register the element
 customElements.define('neo-rs-filler', rsElement);
 
-// Export the contract in the expected format
-export default rsElementContract;
+// Export for plugin contract
+export { rsElementContract as PluginContract };
