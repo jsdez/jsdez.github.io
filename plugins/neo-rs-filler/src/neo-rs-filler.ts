@@ -2,45 +2,46 @@ import { LitElement, html, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { PluginContract, PropType as PluginProperty } from '@nintex/form-plugin-contract';
 
-// Define the contract information using @nintex/form-plugin-contract
-const rsElementContract: PluginContract = {
-  version: '1.0',
-  fallbackDisableSubmit: false,
-  controlName: 'neo-rs-filler',
-  description: 'Simplified repeating section row manager',
-  iconUrl: 'repeating-section',
-  groupName: 'Form Tools',
-  properties: {
-    rsvalues: {
-      type: 'string',
-      title: 'Control values',
-      description: 'Array data stored as text to determine row count',
-    },
-    rstarget: {
-      type: 'string',
-      title: 'CSS class of the Repeating Section',
-      description: 'Class name used to target repeating section',
-    },
-    rsinputtarget: {
-      type: 'string',
-      title: 'CSS selector for input control (optional)',
-      description: 'When specified, waits for this input control to lose focus before updating the repeating section. Useful for multi-choice controls to prevent dropdown collapse during selection.',
-    },
-    primaryFiller: {
-      type: 'boolean',
-      title: 'Primary Filler',
-      description: 'When true, this component manages row count (add/remove). When false, only tracks data changes.',
-      defaultValue: false,
-    },
-  },
-  standardProperties: {
-    fieldLabel: false,
-    description: false,
-    visibility: true,
-  },
-};
-
 class rsElement extends LitElement {
+  static getMetaConfig(): PluginContract {
+    return {
+      version: '1.0',
+      fallbackDisableSubmit: false,
+      controlName: 'neo-rs-filler',
+      description: 'Simplified repeating section row manager',
+      iconUrl: 'repeating-section',
+      groupName: 'NEO',
+      properties: {
+        rsvalues: {
+          type: 'string',
+          title: 'Control values',
+          description: 'Array data stored as text to determine row count',
+        },
+        rstarget: {
+          type: 'string',
+          title: 'CSS class of the Repeating Section',
+          description: 'Class name used to target repeating section',
+        },
+        rsinputtarget: {
+          type: 'string',
+          title: 'CSS selector for input control (optional)',
+          description: 'When specified, waits for this input control to lose focus before updating the repeating section. Useful for multi-choice controls to prevent dropdown collapse during selection.',
+        },
+        primaryFiller: {
+          type: 'boolean',
+          title: 'Primary Filler',
+          description: 'When true, this component manages row count (add/remove). When false, only tracks data changes.',
+          defaultValue: false,
+        },
+      },
+      standardProperties: {
+        fieldLabel: false,
+        description: false,
+        visibility: true,
+      },
+    };
+  }
+
   @property({ type: String }) rsvalues: string = '';
   @property({ type: String }) rstarget: string = '';
   @property({ type: String }) rsinputtarget: string = '';
@@ -508,14 +509,6 @@ class rsElement extends LitElement {
       }, timeout);
     });
   }
-
-  render() {
-    return html`<div style="display: none;"></div>`;
-  }
 }
 
-// Register the element
-customElements.define('neo-rs-filler', rsElement);
-
-// Export the contract in the expected format
-export default rsElementContract;
+export { rsElement as default };
