@@ -517,5 +517,5 @@ class rsElement extends LitElement {
 // Register the element
 customElements.define('neo-rs-filler', rsElement);
 
-// Export for plugin contract
-export { rsElementContract as PluginContract };
+// Export the contract in the expected format
+export default rsElementContract;
