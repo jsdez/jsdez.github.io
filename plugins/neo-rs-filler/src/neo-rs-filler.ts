@@ -12,11 +12,11 @@ const rsElementContract: PluginContract = {
   groupName: 'Form Tools',
   properties: {
     rsvalues: {
-      type: 'object',
+      type: 'string', // Changed from 'object' to 'string'
       title: 'Control values',
-      description: 'Array data to determine row count',
+      description: 'String data to determine row count',
       isValueField: true,
-    } as any, // Cast to any to allow array schema
+    },
     rstarget: {
       type: 'string',
       title: 'CSS class of the Repeating Section',
@@ -42,7 +42,7 @@ const rsElementContract: PluginContract = {
 };
 
 class rsElement extends LitElement {
-  @property({ type: Array }) rsvalues: any[] | string = [];
+  @property({ type: String }) rsvalues: string = ''; // Changed from any[] | string to string
   @property({ type: String }) rstarget: string = '';
   @property({ type: String }) rsinputtarget: string = '';
   @property({ type: Boolean }) primaryFiller: boolean = false;
@@ -57,7 +57,7 @@ class rsElement extends LitElement {
 
   constructor() {
     super();
-    this.rsvalues = [];
+    this.rsvalues = '';
     this.rstarget = '';
     this.rsinputtarget = '';
     this.primaryFiller = false;
@@ -211,25 +211,16 @@ class rsElement extends LitElement {
       rsvalues: this.rsvalues,
       primaryFiller: this.primaryFiller
     });
-    
+
     const targetClassName = (this.rstarget || '').trim();
-    
-    // Convert input to array if it's not already
-    let valuesArray: any[] = [];
-    if (Array.isArray(this.rsvalues)) {
-      valuesArray = this.rsvalues;
-    } else if (typeof this.rsvalues === 'string' && this.rsvalues.trim()) {
-      // Parse string input using the existing parsing logic
-      valuesArray = this.parseInputData(this.rsvalues.trim());
-    }
-    
-    if (!targetClassName) {
-      console.warn('[neo-rs-filler] No target class specified');
+
+    if (!this.rsvalues.trim()) {
+      console.warn('[neo-rs-filler] No values specified');
       return;
     }
-    
-    if (!Array.isArray(valuesArray) || valuesArray.length === 0) {
-      console.warn('[neo-rs-filler] No values specified or values could not be parsed to array');
+
+    if (!targetClassName) {
+      console.warn('[neo-rs-filler] No target class specified');
       return;
     }
 
@@ -248,38 +239,30 @@ class rsElement extends LitElement {
    */
   private async executeRepeatingUpdate() {
     console.log('[neo-rs-filler] executeRepeatingUpdate called');
-    
+
     const targetClassName = (this.rstarget || '').trim();
-    
-    // Convert input to array if it's not already
-    let valuesArray: any[] = [];
-    if (Array.isArray(this.rsvalues)) {
-      valuesArray = this.rsvalues;
-    } else if (typeof this.rsvalues === 'string' && this.rsvalues.trim()) {
-      valuesArray = this.parseInputData(this.rsvalues.trim());
-    }
-    
-    if (!targetClassName || !Array.isArray(valuesArray) || valuesArray.length === 0) {
+
+    if (!this.rsvalues.trim() || !targetClassName) {
       console.warn('[neo-rs-filler] Missing target class or values');
       return;
     }
-    
+
     if (this._isRunning) {
       console.log('[neo-rs-filler] Already running, skipping');
       return;
     }
 
-    console.log('[neo-rs-filler] Using values array:', valuesArray);
-    
-    const desiredRowCount = valuesArray.length;
-    console.log('[neo-rs-filler] Desired row count based on array length:', desiredRowCount);
+    console.log('[neo-rs-filler] Using values string:', this.rsvalues);
+
+    const desiredRowCount = this.rsvalues.split(',').length; // Assuming comma-separated values
+    console.log('[neo-rs-filler] Desired row count based on string length:', desiredRowCount);
 
     const hasEscape = typeof (window as any).CSS !== 'undefined' && typeof (CSS as any).escape === 'function';
     const safeClass = hasEscape
       ? (CSS as any).escape(targetClassName)
       : targetClassName.replace(/([^a-zA-Z0-9_-])/g, '\\$1');
 
-    const key = `${safeClass}:${JSON.stringify(valuesArray)}`;
+    const key = `${safeClass}:${this.rsvalues}`;
     if (this._lastApplied === key) {
       console.log('[neo-rs-filler] Already applied this configuration, skipping');
       return;
@@ -304,11 +287,11 @@ class rsElement extends LitElement {
     // Only adjust row count if this is the primary filler
     if (this.primaryFiller) {
       console.log('[neo-rs-filler] This is the primary filler - managing row count');
-      
+
       // Ensure we have the right number of rows
       if (currentCount !== desiredRowCount) {
         console.log('[neo-rs-filler] Adjusting row count from', currentCount, 'to', desiredRowCount);
-        
+
         const addBtn = this.findAddButton(rsHost);
         if (!addBtn) {
           console.warn('[neo-rs-filler] Add button not found, cannot adjust rows');
@@ -320,12 +303,12 @@ class rsElement extends LitElement {
           // Add rows with DOM observation
           const toAdd = desiredRowCount - currentCount;
           console.log('[neo-rs-filler] Adding', toAdd, 'rows');
-          
+
           for (let i = 0; i < toAdd; i++) {
             try { 
               const targetRowIndex = currentCount + i;
               console.log(`[neo-rs-filler] Adding row ${targetRowIndex + 1}`);
-              
+
               // Click add button and wait for new row to appear
               addBtn.click();
               await this.waitForRowToExist(rsHost, targetRowIndex + 1);
@@ -342,7 +325,7 @@ class rsElement extends LitElement {
       }
     } else {
       console.log('[neo-rs-filler] This is a secondary filler - skipping row count management');
-      console.log('[neo-rs-filler] Current row count:', currentCount, 'Array length:', valuesArray.length);
+      console.log('[neo-rs-filler] Current row count:', currentCount, 'String length:', this.rsvalues.split(',').length);
     }
 
     // Row management complete - the form's rule engine will handle field values
