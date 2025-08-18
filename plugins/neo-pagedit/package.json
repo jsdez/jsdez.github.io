@@ -18,12 +18,7 @@
   },
   "homepage": "https://github.com/jsdez/jsdez.github.io#readme",
   "dependencies": {
-    "lit": "^2.6.1",
-    "three": "^0.151.2",
-    "webpack": "^5.75.0",
-    "webpack-cli": "^5.0.1"
+    "three": "^0.151.2"
   },
-  "devDependencies": {
-    "babel-loader": "^9.1.2"
-  }
+  "devDependencies": {}
 }

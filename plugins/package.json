@@ -1,0 +1,22 @@
+{
+  "name": "plugins-workspace",
+  "version": "1.0.0",
+  "description": "Centralized workspace for all plugin projects",
+  "private": true,
+  "scripts": {
+    "build:all": "pnpm -r build",
+    "install:all": "pnpm install",
+    "clean": "pnpm -r exec rm -rf dist"
+  },
+  "devDependencies": {
+    "babel-loader": "^9.1.2",
+    "css-loader": "^6.8.1",
+    "style-loader": "^3.3.3",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
+  },
+  "dependencies": {
+    "lit": "^2.6.1",
+    "fuse.js": "^7.0.0"
+  }
+}

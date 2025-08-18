@@ -135,19 +135,23 @@ class rsElement extends LitElement {
     };
   }
 
-  // Function to parse input data based on detected format
+  // Enhanced logging in parseInputData
   private parseInputData(input: string): any[] {
     const detection = this.detectInputFormat(input);
     const trimmed = input.trim();
 
+    console.log('[neo-rs-filler] Detected input format:', detection);
+
     switch (detection.format) {
       case 'empty':
+        console.log('[neo-rs-filler] Input is empty');
         return [];
 
       case 'json-array':
         try {
           const parsed = JSON.parse(trimmed);
           if (Array.isArray(parsed)) {
+            console.log('[neo-rs-filler] Parsed JSON array:', parsed);
             return parsed;
           }
         } catch (e) {
@@ -156,9 +160,12 @@ class rsElement extends LitElement {
         return [];
 
       case 'csv':
-        return trimmed.split(',').map(item => item.trim());
+        const csvArray = trimmed.split(',').map(item => item.trim());
+        console.log('[neo-rs-filler] Parsed CSV array:', csvArray);
+        return csvArray;
 
       case 'single-value':
+        console.log('[neo-rs-filler] Single value detected:', trimmed);
         return [trimmed];
 
       default:
@@ -211,7 +218,12 @@ class rsElement extends LitElement {
       console.log('[neo-rs-filler] Found RS host:', rsHost);
 
       const valuesArray = this.parseInputData(valuesString);
-      console.log('[neo-rs-filler] Parsed values array:', valuesArray);
+      console.log('[neo-rs-filler] Final parsed values array:', valuesArray);
+
+      if (!Array.isArray(valuesArray) || valuesArray.length === 0) {
+        console.error('[neo-rs-filler] Parsed values are not a valid array or are empty:', valuesArray);
+        return;
+      }
 
       const currentRows = rsHost.querySelectorAll('.ntx-repeating-section-repeated-section');
       const rowsToFill = Math.min(valuesArray.length, currentRows.length);
@@ -220,9 +232,12 @@ class rsElement extends LitElement {
         const row = currentRows[i];
         const inputField = row.querySelector(`.${fieldTargetClassName}`);
         if (inputField) {
+          console.log(`[neo-rs-filler] Filling row ${i + 1} with value:`, valuesArray[i]);
           (inputField as HTMLInputElement).value = valuesArray[i];
           inputField.dispatchEvent(new Event('input', { bubbles: true }));
           inputField.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+          console.warn(`[neo-rs-filler] Input field not found in row ${i + 1}`);
         }
       }
     } catch (error) {

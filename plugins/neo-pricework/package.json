@@ -1,0 +1,22 @@
+{
+  "name": "neo-pricework",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./src/neo-pricework.js",
+  "browser": "./src/index.html",
+  "scripts": {
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jsdez/jsdez.github.io.git"
+  },
+  "author": "Jake Dennison",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/jsdez/jsdez.github.io/issues"
+  },
+  "homepage": "https://github.com/jsdez/jsdez.github.io#readme",
+  "dependencies": {},
+  "devDependencies": {}
+}

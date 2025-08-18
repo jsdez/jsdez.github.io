@@ -23,8 +23,7 @@
   },
   "homepage": "https://github.com/jsdez/jsdez.github.io#readme",
   "dependencies": {
-    "@google-cloud/translate": "^7.0.5",
-    "lit-flatpickr": "^0.4.0"
+    "@google-cloud/translate": "^7.0.5"
   },
   "devDependencies": {
     "@babel/cli": "^7.20.7",
