@@ -2,9 +2,8 @@ import { LitElement, html, PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 import { PluginContract, PropType as PluginProperty } from '@nintex/form-plugin-contract';
 
-class rsElement extends LitElement {
-  static getMetaConfig(): PluginContract {
-    return {
+// Define the contract information using @nintex/form-plugin-contract
+const rsElementContract: PluginContract = {
       version: '1.0',
       fallbackDisableSubmit: false,
       controlName: 'neo-rs-filler',
@@ -40,8 +39,7 @@ class rsElement extends LitElement {
         visibility: true,
       },
     };
-  }
-
+class rsElement extends LitElement {
   @property({ type: String }) rsvalues: string = '';
   @property({ type: String }) rstarget: string = '';
   @property({ type: String }) rsinputtarget: string = '';
