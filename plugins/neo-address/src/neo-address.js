@@ -127,6 +127,7 @@ class AddressControl extends LitElement {
     this.loaded = false;
     this.isUserInput = false;
     this.previousValue = '';
+    this.lastResolvedValue = ''; // Track the last value we resolved to avoid re-resolving
   }
 
   connectedCallback() {
@@ -209,6 +210,7 @@ class AddressControl extends LitElement {
         this.isUserInput = true;
         this.value = place.formatted_address;
         this.previousValue = this.value;
+        this.lastResolvedValue = this.value; // Mark this as already resolved
         this.dispatchNintexValueChange();
       });
 
@@ -237,6 +239,7 @@ class AddressControl extends LitElement {
           if (place.formatted_address !== this.value) {
             this.value = place.formatted_address;
             this.previousValue = this.value;
+            this.lastResolvedValue = this.value; // Mark as resolved
             console.log('Resolved address programmatically:', place.formatted_address);
             this.dispatchNintexValueChange();
             this.requestUpdate(); // Force re-render to update input field
@@ -277,9 +280,53 @@ class AddressControl extends LitElement {
       errorElement.classList.remove('visible');
     }
     
+    // Attempt to resolve the address if user typed something and moved away
+    if (this.value && this.value.trim() && this.isUserInput) {
+      this.resolveUserTypedAddress(this.value);
+    }
+    
     // Trigger the Nintex value change event when focus leaves the field
     this.dispatchNintexValueChange();
     return true;
+  }
+
+  resolveUserTypedAddress(addressText) {
+    // Only attempt resolution if Google Maps is loaded and we have a PlacesService
+    if (!this.loaded || !window.google || !window.google.maps || !this.placesService) {
+      console.log('Google Maps not ready, keeping user typed address as text:', addressText);
+      return;
+    }
+
+    // Don't resolve if we already resolved this exact text
+    if (addressText === this.lastResolvedValue) {
+      console.log('Address already resolved, skipping:', addressText);
+      return;
+    }
+
+    const request = {
+      query: addressText,
+      fields: ['formatted_address', 'geometry', 'name']
+    };
+
+    this.placesService.findPlaceFromQuery(request, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+        const place = results[0];
+        if (place.formatted_address) {
+          // Update to the formatted address from Google
+          this.value = place.formatted_address;
+          this.previousValue = this.value;
+          this.lastResolvedValue = this.value; // Mark as resolved
+          console.log('Resolved user typed address:', place.formatted_address);
+          this.dispatchNintexValueChange();
+          this.requestUpdate(); // Force re-render to update input field
+        }
+      } else {
+        // If we can't resolve the address, keep the user's input as-is
+        console.log('Could not resolve user typed address via API, keeping as text:', addressText);
+        // Mark the current text as "attempted to resolve" to avoid repeated attempts
+        this.lastResolvedValue = addressText;
+      }
+    });
   }
 
   render() {
