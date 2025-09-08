@@ -77,6 +77,11 @@ class AddressControl extends LitElement {
         height: var(--ntx-form-theme-control-height, auto);
       }
       
+      .address-input:disabled {
+        background-color: var(--ntx-form-theme-color-input-background-readonly);
+        cursor: not-allowed;
+      }
+      
       .address-input:focus {
         border-color: var(--ntx-form-theme-color-primary, #4285f4);
         outline: none;
@@ -128,6 +133,7 @@ class AddressControl extends LitElement {
     this.isUserInput = false;
     this.previousValue = '';
     this.lastResolvedValue = ''; // Track the last value we resolved to avoid re-resolving
+    this.hasInitialized = false; // Track if component has finished initial setup
   }
 
   connectedCallback() {
@@ -140,13 +146,18 @@ class AddressControl extends LitElement {
     
     // Store initial value to track changes
     this.previousValue = this.value;
+    
+    // Mark as initialized after a brief delay to allow all initial properties to be set
+    setTimeout(() => {
+      this.hasInitialized = true;
+    }, 100);
   }
 
   updated(changedProperties) {
     super.updated(changedProperties);
     
-    // Check if value was changed programmatically (not by user input)
-    if (changedProperties.has('value') && !this.isUserInput) {
+    // Check if value was changed programmatically (not by user input) after initialization
+    if (changedProperties.has('value') && !this.isUserInput && this.hasInitialized) {
       const newValue = this.value;
       const oldValue = this.previousValue;
       
@@ -246,9 +257,9 @@ class AddressControl extends LitElement {
           }
         }
       } else {
-        // If we can't resolve the address, keep it as text
-        console.log('Could not resolve address via API, keeping as text:', addressText);
-        // No need to update anything, the value stays as provided
+        // If we can't resolve the address, keep it as the original text
+        console.log('Could not resolve address via API, keeping original text:', addressText);
+        // No need to update anything, the value stays as originally provided
       }
     });
   }
