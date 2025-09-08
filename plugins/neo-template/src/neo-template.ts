@@ -1,7 +1,16 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, TemplateResult } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { PluginContract } from '@nintex/form-plugin-contract';
 
-class templateElement extends LitElement {
-  static getMetaConfig() {
+@customElement('neo-template')
+export class TemplateElement extends LitElement {
+  @property({ type: String })
+  value: string = '';
+
+  @property({ type: String })
+  inputValue: string = '';
+
+  static getMetaConfig(): PluginContract {
     // plugin contract information
     return {
       version: '1.0.5',
@@ -29,11 +38,6 @@ class templateElement extends LitElement {
       }
     };
   }
-
-  static properties = {
-    value: '',
-    inputValue: '',
-  };
 
   static get styles() {
     return css`
@@ -79,11 +83,9 @@ class templateElement extends LitElement {
   
   constructor() {
     super();
-    this.value = '';
-    this.inputValue = '';
   }
 
-  render() {
+  render(): TemplateResult {
     return html`
       <div>
         <label for="input">Enter text:</label>
@@ -101,8 +103,9 @@ class templateElement extends LitElement {
     `;
   }
 
-  _onInput(event) {
-    this.inputValue = event.target.value;
+  private _onInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.inputValue = target.value;
     
     // Process the input value (example: convert to uppercase)
     const processedValue = this.inputValue.toUpperCase();
@@ -111,7 +114,7 @@ class templateElement extends LitElement {
     this._updateValue(processedValue);
   }
 
-  _updateValue(newValue) {
+  private _updateValue(newValue: string): void {
     this.value = newValue;
     
     // Emit the ntx-value-change event to notify the form
@@ -126,4 +129,8 @@ class templateElement extends LitElement {
   }
 }
 
-customElements.define('neo-template', templateElement);
+declare global {
+  interface HTMLElementTagNameMap {
+    'neo-template': TemplateElement;
+  }
+}

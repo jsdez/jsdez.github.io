@@ -50,6 +50,7 @@ class AddressControl extends LitElement {
     loaded: { type: Boolean, state: true },
     placesService: { type: Object, state: true },
     autocomplete: { type: Object, state: true },
+    isUserInput: { type: Boolean, state: true },
   };
 
   static get styles() {
@@ -124,6 +125,8 @@ class AddressControl extends LitElement {
     this.fieldLabel = 'Address';
     this.description = '';
     this.loaded = false;
+    this.isUserInput = false;
+    this.previousValue = '';
   }
 
   connectedCallback() {
@@ -133,6 +136,29 @@ class AddressControl extends LitElement {
     if (this.defaultAddress) {
       this.value = this.defaultAddress;
     }
+    
+    // Store initial value to track changes
+    this.previousValue = this.value;
+  }
+
+  updated(changedProperties) {
+    super.updated(changedProperties);
+    
+    // Check if value was changed programmatically (not by user input)
+    if (changedProperties.has('value') && !this.isUserInput) {
+      const newValue = this.value;
+      const oldValue = this.previousValue;
+      
+      // Only attempt resolution if value actually changed and it's not empty
+      if (newValue !== oldValue && newValue && newValue.trim()) {
+        this.resolveAddressProgrammatically(newValue);
+      }
+      
+      this.previousValue = newValue;
+    }
+    
+    // Reset user input flag after processing
+    this.isUserInput = false;
   }
   
   loadGoogleMapsAPI() {
@@ -180,10 +206,48 @@ class AddressControl extends LitElement {
           return;
         }
         
+        this.isUserInput = true;
         this.value = place.formatted_address;
+        this.previousValue = this.value;
         this.dispatchNintexValueChange();
       });
+
+      // Initialize Places Service for programmatic address resolution
+      this.placesService = new google.maps.places.PlacesService(document.createElement('div'));
     }, 100);
+  }
+
+  resolveAddressProgrammatically(addressText) {
+    // Only attempt resolution if Google Maps is loaded and we have a PlacesService
+    if (!this.loaded || !window.google || !window.google.maps || !this.placesService) {
+      console.log('Google Maps not ready, keeping address as text:', addressText);
+      return;
+    }
+
+    const request = {
+      query: addressText,
+      fields: ['formatted_address', 'geometry', 'name']
+    };
+
+    this.placesService.findPlaceFromQuery(request, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+        const place = results[0];
+        if (place.formatted_address) {
+          // Only update if the formatted address is different from what we have
+          if (place.formatted_address !== this.value) {
+            this.value = place.formatted_address;
+            this.previousValue = this.value;
+            console.log('Resolved address programmatically:', place.formatted_address);
+            this.dispatchNintexValueChange();
+            this.requestUpdate(); // Force re-render to update input field
+          }
+        }
+      } else {
+        // If we can't resolve the address, keep it as text
+        console.log('Could not resolve address via API, keeping as text:', addressText);
+        // No need to update anything, the value stays as provided
+      }
+    });
   }
   
   dispatchNintexValueChange() {
@@ -198,8 +262,10 @@ class AddressControl extends LitElement {
   }
   
   handleInput(e) {
-    // Just update the internal value without triggering the event
+    // Mark this as user input and update the internal value
+    this.isUserInput = true;
     this.value = e.target.value;
+    this.previousValue = this.value;
   }
   
   validateInput() {
@@ -209,11 +275,11 @@ class AddressControl extends LitElement {
       return false;
     } else {
       errorElement.classList.remove('visible');
-      return true;
     }
     
     // Trigger the Nintex value change event when focus leaves the field
     this.dispatchNintexValueChange();
+    return true;
   }
 
   render() {

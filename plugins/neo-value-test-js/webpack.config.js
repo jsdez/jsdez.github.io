@@ -1,10 +1,10 @@
 const path = require('path');
 
 module.exports = {
-  entry: './src/neo-template.js',
+  entry: './src/neo-value-test-js.js',
   mode: 'production',
   output: {
-    filename: 'neo-template.js',
+    filename: 'neo-value-test-js.js',
     path: path.resolve(__dirname, 'dist'),
     library: {
       type: 'window',

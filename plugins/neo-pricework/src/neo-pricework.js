@@ -8,7 +8,7 @@ class templateElement extends LitElement {
       fallbackDisableSubmit: false,
       description: '',
       iconUrl: "",
-      groupName: 'Visual Data',
+      groupName: 'NEO',
       version: '1.0',
       properties: {
         src: {

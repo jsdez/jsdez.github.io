@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-  entry: './src/neo-template.js',
+  entry: './src/neo-template.ts',
   mode: 'production',
   output: {
     filename: 'neo-template.js',
@@ -11,10 +11,15 @@ module.exports = {
     },
   },
   resolve: {
-    extensions: ['.js'],
+    extensions: ['.ts', '.js'],
   },
   module: {
     rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: 'ts-loader',
+      },
       {
         test: /\.js$/,
         exclude: /node_modules/,

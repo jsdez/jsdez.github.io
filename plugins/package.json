@@ -6,17 +6,23 @@
   "scripts": {
     "build:all": "pnpm -r build",
     "install:all": "pnpm install",
-    "clean": "pnpm -r exec rm -rf dist"
+    "clean": "pnpm -r exec rm -rf dist",
+    "generate": "node generate-plugin.js",
+    "new": "node generate-plugin-simple.js"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "babel-loader": "^9.1.2",
     "css-loader": "^6.8.1",
     "style-loader": "^3.3.3",
+    "ts-loader": "^9.4.0",
+    "typescript": "^5.0.0",
     "webpack": "^5.75.0",
     "webpack-cli": "^5.0.1"
   },
   "dependencies": {
-    "lit": "^2.6.1",
-    "fuse.js": "^7.0.0"
+    "@nintex/form-plugin-contract": "^1.0.5",
+    "fuse.js": "^7.0.0",
+    "lit": "^2.6.1"
   }
 }

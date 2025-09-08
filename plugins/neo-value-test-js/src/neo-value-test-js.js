@@ -1,11 +1,11 @@
 import { LitElement, html, css } from 'lit';
 
-class templateElement extends LitElement {
+class NeoValueTestJsElement extends LitElement {
   static getMetaConfig() {
     // plugin contract information
     return {
       version: '1.0.5',
-      controlName: 'neo-template',
+      controlName: 'neo-value-test-js',
       fallbackDisableSubmit: false,
       description: '',
       iconUrl: "",
@@ -126,4 +126,4 @@ class templateElement extends LitElement {
   }
 }
 
-customElements.define('neo-template', templateElement);
+customElements.define('neo-value-test-js', NeoValueTestJsElement);
