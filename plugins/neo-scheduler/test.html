@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEO Scheduler - Test Page</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        
+        .test-section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        
+        .form-field {
+            margin-bottom: 20px;
+        }
+        
+        .form-field label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #444;
+        }
+        
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .debug-info h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        .event-log {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NEO Scheduler Component Test</h1>
+        
+        <div class="test-section">
+            <h2>Basic Scheduler Test</h2>
+            <div class="form-field">
+                <label>Schedule Viewer Control:</label>
+                <neo-scheduler id="scheduler1"></neo-scheduler>
+            </div>
+            
+            <div class="debug-info">
+                <h3>Component Value:</h3>
+                <div id="value-display">No value set</div>
+            </div>
+            
+            <div class="debug-info">
+                <h3>Event Log:</h3>
+                <div id="event-log" class="event-log">
+                    Waiting for events...
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Component Configuration</h2>
+            <div class="debug-info">
+                <h3>Plugin Metadata:</h3>
+                <pre id="metadata-display">Loading...</pre>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Manual Test Controls</h2>
+            <button onclick="testGetValue()">Get Current Value</button>
+            <button onclick="testSetTestData()">Load Test Schedule Data</button>
+            <button onclick="clearEventLog()">Clear Event Log</button>
+        </div>
+    </div>
+
+    <!-- Load the compiled component -->
+    <script src="./dist/neo-scheduler.js"></script>
+    
+    <script>
+        // Wait for component to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const scheduler = document.getElementById('scheduler1');
+            const valueDisplay = document.getElementById('value-display');
+            const eventLog = document.getElementById('event-log');
+            const metadataDisplay = document.getElementById('metadata-display');
+            
+            let eventCount = 0;
+            
+            // Log all events from the scheduler
+            scheduler.addEventListener('ntx-value-change', function(event) {
+                eventCount++;
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = `[${timestamp}] ntx-value-change: ${JSON.stringify(event.detail)}`;
+                
+                eventLog.innerHTML += `<div>${eventCount}. ${logEntry}</div>`;
+                eventLog.scrollTop = eventLog.scrollHeight;
+                
+                // Update value display
+                valueDisplay.textContent = event.detail || 'Empty value';
+            });
+            
+            // Display plugin metadata
+            if (scheduler.constructor.getMetaConfig) {
+                const metadata = scheduler.constructor.getMetaConfig();
+                metadataDisplay.textContent = JSON.stringify(metadata, null, 2);
+            }
+            
+            // Test functions
+            window.testGetValue = function() {
+                const currentValue = scheduler.value;
+                alert(`Current value: ${currentValue || 'No value set'}`);
+            };
+            
+            window.testSetTestData = function() {
+                // Simulate setting some test data
+                const testData = {
+                    week: '2025-09-08', // Current week
+                    items: [
+                        { id: 1, title: 'Project Review', day: 'Monday', time: '09:00', duration: 60 },
+                        { id: 2, title: 'Client Meeting', day: 'Tuesday', time: '14:00', duration: 90 },
+                        { id: 3, title: 'Code Review', day: 'Wednesday', time: '10:30', duration: 45 },
+                        { id: 4, title: 'Sprint Planning', day: 'Thursday', time: '15:00', duration: 120 },
+                        { id: 5, title: 'Documentation', day: 'Friday', time: '11:00', duration: 180 }
+                    ]
+                };
+                
+                // Set test data on the scheduler
+                scheduler.setAttribute('test-data', JSON.stringify(testData));
+                
+                eventLog.innerHTML += `<div style="color: blue;">[Test] Test schedule data loaded</div>`;
+                eventLog.scrollTop = eventLog.scrollHeight;
+            };
+            
+            window.clearEventLog = function() {
+                eventLog.innerHTML = 'Event log cleared...';
+                eventCount = 0;
+            };
+            
+            // Initial value display
+            if (scheduler.value) {
+                valueDisplay.textContent = scheduler.value;
+            }
+        });
+        
+        // Error handling
+        window.addEventListener('error', function(e) {
+            const eventLog = document.getElementById('event-log');
+            if (eventLog) {
+                eventLog.innerHTML += `<div style="color: red;">[ERROR] ${e.message}</div>`;
+                eventLog.scrollTop = eventLog.scrollHeight;
+            }
+            console.error('Test page error:', e);
+        });
+    </script>
+</body>
+</html>

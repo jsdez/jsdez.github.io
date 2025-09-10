@@ -1,0 +1,350 @@
+/* 
+ * Nintex Forms Custom Styles Reference
+ * Collection of styles for Nintex Forms components and custom enhancements
+ */
+
+/* ==================================================
+   FONTS AND TYPOGRAPHY
+   ================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600;700;800;900&display=swap');
+
+:root {
+    /* Typography */
+    --ntx-form-theme-font-family: "Montserrat", "Open Sans", "Helvetica", "Arial", sans-serif;
+    
+    /* Brand Colors */
+    --ntx-brand-primary: #1c75c2;
+    --ntx-brand-success: #26bf4a;
+    --ntx-text-primary: #2f2e2e;
+    --ntx-text-secondary: #6c757d;
+    --ntx-border-color: #3b3b3b;
+    --ntx-bg-white: #ffffff;
+    
+    /* Choice Button Colors */
+    --choice-btn-bg: #f8f9fa;
+    --choice-btn-border: #dee2e6;
+    --choice-btn-text: #495057;
+    --choice-btn-hover-bg: #e9ecef;
+    --choice-btn-hover-border: #adb5bd;
+    --choice-btn-active-bg: var(--ntx-brand-primary);
+    --choice-btn-active-border: var(--ntx-brand-primary);
+    --choice-btn-active-text: #ffffff;
+    --choice-btn-border-radius: 0.375rem;
+    --choice-btn-padding: 0.75rem 1rem;
+    --choice-btn-gap: 0.5rem;
+}
+
+/* Apply font family to all text inside ntx-form-runtime */
+ntx-form-runtime {
+    font-family: var(--ntx-form-theme-font-family);
+}
+
+/* ==================================================
+   HEADING STYLES
+   ================================================== */
+
+/* Odd headings use success color */
+ntx-form-runtime h1,
+ntx-form-runtime h3,
+ntx-form-runtime h5 {
+    color: var(--ntx-brand-success) !important;
+}
+
+/* Even headings use primary color */
+ntx-form-runtime h2,
+ntx-form-runtime h4,
+ntx-form-runtime h6 {
+    color: var(--ntx-brand-primary) !important;
+}
+
+/* ==================================================
+   FORM LABELS AND ELEMENTS
+   ================================================== */
+
+/* Form label styling */
+[dir] .nx-theme-styles .nx-theme-label-1 {
+    font-weight: bold;
+    font-size: 0.92em;
+    color: var(--ntx-text-primary);
+}
+
+/* Required field indicators */
+[dir] .nx-theme-styles .nx-theme-label-1 .nx-required-star,
+.nx-form-label .nx-help-link,
+.nx-form-label .nx-required-star {
+    color: var(--ntx-brand-primary);
+    margin-left: 5px;
+}
+
+/* Default radio button styling */
+[dir] .nx-theme-styles .nx-theme-radio-1 .nx-radio input[type=radio]:not(:disabled) + .nx-radio-container .nx-radio-faux {
+    background-color: var(--ntx-bg-white);
+    border-color: var(--ntx-border-color) !important;
+}
+
+/* ==================================================
+   CHOICE BUTTONS COMPONENT
+   Transform standard Nintex radio controls into responsive button groups
+   ================================================== */
+
+/* Main button group container */
+.choice-buttons .nx-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--choice-btn-gap);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Individual radio button containers */
+.choice-buttons .nx-radio {
+    flex: 1;
+    min-width: 0; /* Allow flex items to shrink below content size */
+    margin: 0;
+}
+
+/* Hide the default radio input */
+.choice-buttons .nx-radio input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+}
+
+/* Hide the default radio faux element */
+.choice-buttons .nx-radio-faux {
+    display: none !important;
+}
+
+/* Style the radio container as a button */
+.choice-buttons .nx-radio-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 2.5rem; /* Ensures consistent button height */
+    margin: 0;
+    padding: var(--choice-btn-padding);
+    background-color: var(--choice-btn-bg);
+    border: 2px solid var(--choice-btn-border);
+    border-radius: var(--choice-btn-border-radius);
+    font-weight: 500;
+    color: var(--choice-btn-text);
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    text-decoration: none;
+    user-select: none;
+    transform: translateZ(0); /* Enable hardware acceleration */
+    box-sizing: border-box;
+}
+
+.choice-buttons .nx-radio-inline {
+    padding: 0!important;
+}
+
+/* Style the radio label */
+.choice-buttons .nx-radio label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-weight: inherit;
+    text-align: center;
+}
+
+.choice-buttons .nx-radio-label {
+    display: block;
+    width: 100%;
+    text-align: center;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Button hover state */
+.choice-buttons .nx-radio-container:hover {
+    background-color: var(--choice-btn-hover-bg);
+    border-color: var(--choice-btn-hover-border);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Selected state - Fixed to properly target the container */
+.choice-buttons .nx-radio input[type="radio"]:checked + .nx-radio-container,
+.choice-buttons .nx-radio input[type="radio"][aria-checked="true"] + .nx-radio-container {
+    background-color: var(--choice-btn-active-bg);
+    border-color: var(--choice-btn-active-border);
+    color: var(--choice-btn-active-text);
+    box-shadow: 0 2px 6px rgba(28, 117, 194, 0.25);
+    font-weight: 600;
+}
+
+/* Selected state text color */
+.choice-buttons .nx-radio input[type="radio"]:checked + .nx-radio-container .nx-radio-label,
+.choice-buttons .nx-radio input[type="radio"][aria-checked="true"] + .nx-radio-container .nx-radio-label {
+    color: var(--choice-btn-active-text);
+}
+
+/* Focus state for accessibility */
+.choice-buttons .nx-radio input[type="radio"]:focus + .nx-radio-container {
+    outline: 2px solid #80bdff;
+    outline-offset: 2px;
+}
+
+/* Disabled state */
+.choice-buttons .nx-radio input[type="radio"]:disabled + .nx-radio-container,
+.choice-buttons .nx-radio input[type="radio"][readonly="true"] + .nx-radio-container {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+    color: var(--ntx-text-secondary);
+}
+
+.choice-buttons .nx-radio input[type="radio"]:disabled + .nx-radio-container:hover,
+.choice-buttons .nx-radio input[type="radio"][readonly="true"] + .nx-radio-container:hover {
+    transform: none;
+    box-shadow: none;
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+}
+
+/* ==================================================
+   RESPONSIVE BREAKPOINTS
+   ================================================== */
+
+@media (max-width: 576px) {
+    /* Stack buttons on extra small screens if needed */
+    .choice-buttons.stack-sm .nx-radio-group {
+        flex-direction: column;
+    }
+    
+    .choice-buttons.stack-sm .nx-radio {
+        flex: none;
+    }
+    
+    /* Reduce padding on small screens */
+    .choice-buttons .nx-radio-container {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        min-height: 2.25rem; /* Adjusted for mobile */
+    }
+    
+    .choice-buttons .nx-radio-label {
+        line-height: 1.1;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Stack buttons on small screens if there are many options */
+    .choice-buttons.stack-md .nx-radio-group {
+        flex-direction: column;
+    }
+    
+    .choice-buttons.stack-md .nx-radio {
+        flex: none;
+    }
+}
+
+/* ==================================================
+   CHOICE BUTTON VARIANTS
+   ================================================== */
+
+/* Primary color scheme */
+.choice-buttons.btn-primary {
+    --choice-btn-bg: #ffffff;
+    --choice-btn-border: var(--ntx-brand-primary);
+    --choice-btn-text: var(--ntx-brand-primary);
+    --choice-btn-hover-bg: #f8f9ff;
+    --choice-btn-hover-border: #0056b3;
+}
+
+/* Success color scheme */
+.choice-buttons.btn-success {
+    --choice-btn-bg: #ffffff;
+    --choice-btn-border: var(--ntx-brand-success);
+    --choice-btn-text: var(--ntx-brand-success);
+    --choice-btn-hover-bg: #f8fff9;
+    --choice-btn-hover-border: #1e7e34;
+    --choice-btn-active-bg: var(--ntx-brand-success);
+    --choice-btn-active-border: var(--ntx-brand-success);
+}
+
+/* Danger color scheme */
+.choice-buttons.btn-danger {
+    --choice-btn-bg: #ffffff;
+    --choice-btn-border: #dc3545;
+    --choice-btn-text: #dc3545;
+    --choice-btn-hover-bg: #fff8f8;
+    --choice-btn-hover-border: #c82333;
+    --choice-btn-active-bg: #dc3545;
+    --choice-btn-active-border: #dc3545;
+}
+
+/* Large buttons */
+.choice-buttons.btn-lg {
+    --choice-btn-padding: 1rem 1.5rem;
+    --choice-btn-border-radius: 0.5rem;
+}
+
+.choice-buttons.btn-lg .nx-radio-container {
+    font-size: 1.125rem;
+    min-height: 3rem; /* Larger minimum height for large buttons */
+}
+
+.choice-buttons.btn-lg .nx-radio-label {
+    line-height: 1.3; /* More comfortable line height for large buttons */
+}
+
+/* Small buttons */
+.choice-buttons.btn-sm {
+    --choice-btn-padding: 0.375rem 0.75rem;
+    --choice-btn-border-radius: 0.25rem;
+}
+
+.choice-buttons.btn-sm .nx-radio-container {
+    font-size: 0.875rem;
+    min-height: 2rem; /* Smaller minimum height for small buttons */
+}
+
+.choice-buttons.btn-sm .nx-radio-label {
+    line-height: 1.1; /* Tighter line height for small buttons */
+}
+
+/* Rounded buttons */
+.choice-buttons.btn-rounded {
+    --choice-btn-border-radius: 2rem;
+}
+
+/* Outline style */
+.choice-buttons.btn-outline {
+    --choice-btn-bg: transparent;
+}
+
+.choice-buttons.btn-outline .nx-radio-container:hover {
+    background-color: rgba(28, 117, 194, 0.1);
+}
+
+/* ==================================================
+   USAGE EXAMPLES
+   
+   Basic usage:
+   <ntx-simple-choice class="choice-buttons">
+   
+   With variants:
+   <ntx-simple-choice class="choice-buttons btn-primary btn-lg">
+   <ntx-simple-choice class="choice-buttons btn-success btn-rounded">
+   <ntx-simple-choice class="choice-buttons btn-outline stack-md">
+   
+   ================================================== */

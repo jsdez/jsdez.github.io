@@ -20,7 +20,7 @@ class NeoPageHoldElement extends LitElement {
       version: '1.0',
       properties: {
         allownavProp: {
-          title: 'Allow Navigation?',
+          title: 'Allow Navigation',
           type: 'boolean',
           default: true,
         },

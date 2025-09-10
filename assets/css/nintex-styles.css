@@ -1,0 +1,177 @@
+/* 
+ * Nintex Forms Theme Variables Reference
+ * Comprehensive collection of official Nintex form CSS custom properties
+ * Organized by category for easy reference and maintenance
+ */
+
+:root {
+    /* ==================================================
+       CORE BRAND COLORS
+       ================================================== */
+    
+    /* Primary brand color (blue) */
+    --ntx-form-theme-color-primary: #006bd6;
+    --ntx-form-theme-color-primary-hover: color-mix(in srgb, var(--ntx-form-theme-color-primary), #fff 19%);
+    --ntx-form-theme-color-primary-readonly: color-mix(in srgb, var(--ntx-form-theme-color-primary), #fff 50%);
+    --ntx-form-theme-color-primary-box-shadow: color-mix(in srgb, var(--ntx-form-theme-color-primary), #fff 25%);
+    --ntx-form-theme-color-primary-light90: color-mix(in srgb, var(--ntx-form-theme-color-primary), #fff 90%);
+    
+    /* Secondary brand color (gray) */
+    --ntx-form-theme-color-secondary: #575c61;
+    --ntx-form-theme-color-secondary-readonly: color-mix(in srgb, var(--ntx-form-theme-color-secondary), #000 10%);
+    --ntx-form-theme-color-secondary-light71: color-mix(in srgb, var(--ntx-form-theme-color-secondary), #fff 71%);
+    --ntx-form-theme-color-secondary-light85: color-mix(in srgb, var(--ntx-form-theme-color-secondary), #fff 85%);
+    --ntx-form-theme-color-secondary-shadow-contrast: 2px 2px 4px 0 #0000001a;
+    
+    /* Error color */
+    --ntx-form-color-error: #e60000;
+    
+    /* ==================================================
+       BACKGROUND COLORS
+       ================================================== */
+    
+    /* Page and form backgrounds */
+    --ntx-form-theme-color-page-background: #eff0f0;
+    --ntx-form-theme-color-form-background: #fff;
+    --ntx-form-theme-color-form-background-dark5: color-mix(in srgb, var(--ntx-form-theme-color-form-background), #000 5%);
+    --ntx-form-theme-color-form-background-alternate-contrast: #0000000d;
+    
+    /* Input backgrounds */
+    --ntx-form-theme-color-input-background: #fff;
+    --ntx-form-theme-color-input-background-readonly: color-mix(in srgb, var(--ntx-form-theme-color-input-background), #000 10%);
+    --ntx-form-theme-color-input-background-readonly-text: color-mix(in srgb, var(--ntx-form-theme-color-input-background), #000 15%);
+    
+    /* ==================================================
+       TEXT COLORS
+       ================================================== */
+    
+    /* Input text colors */
+    --ntx-form-theme-color-input-text: #161718;
+    --ntx-form-theme-color-input-text-placeholder: color-mix(in srgb, var(--ntx-form-theme-color-input-text), #000 50%);
+    --ntx-form-theme-color-input-text-light50: color-mix(in srgb, var(--ntx-form-theme-color-input-text), #fff 50%);
+    --ntx-form-theme-color-input-text-readonly: color-mix(in srgb, var(--ntx-form-theme-color-input-text), #000 15%);
+    
+    /* ==================================================
+       BORDERS
+       ================================================== */
+    
+    /* Border colors and radius */
+    --ntx-form-theme-color-border: #898f94;
+    --ntx-form-theme-color-border-read-only: color-mix(in srgb, var(--ntx-form-theme-color-border), #000 20%);
+    --ntx-form-theme-border-radius: 4px;
+    
+    /* ==================================================
+       TYPOGRAPHY
+       ================================================== */
+    
+    /* Font families */
+    --ntx-form-theme-font-family: "Open Sans", "Helvetica", "Arial", sans-serif;
+    
+    /* Font sizes */
+    --ntx-form-theme-text-label-size: 14px;
+    --ntx-form-theme-text-input-size: 14px;
+    
+    /* Line height */
+    --ntx-form-control-line-height: 1.25;
+    
+    /* ==================================================
+       BUTTON STYLES
+       ================================================== */
+    
+    /* Primary buttons */
+    --ntx-form-theme-color-primary-button-background: var(--ntx-form-theme-color-primary, #006bd6);
+    --ntx-form-theme-color-primary-button-font: var(--ntx-form-theme-color-form-background, #fff);
+    --ntx-form-theme-color-primary-button-hover: color-mix(in srgb, var(--ntx-form-theme-color-primary-button-background), #fff 20%);
+    --ntx-form-theme-color-primary-button-disabled: color-mix(in srgb, var(--ntx-form-theme-color-primary-button-background), #fff 19%);
+    --ntx-form-theme-color-primary-button-box-shadow: var(--ntx-form-theme-color-primary-button-disabled);
+    
+    /* Secondary buttons */
+    --ntx-form-theme-color-secondary-button-background: var(--ntx-form-theme-color-form-background, #fff);
+    --ntx-form-theme-color-secondary-button-font: var(--ntx-form-theme-color-primary, #006bd6);
+    --ntx-form-theme-color-secondary-button-hover: color-mix(in srgb, var(--ntx-form-theme-color-secondary-button-font), var(--ntx-form-theme-color-secondary-button-background) 30%);
+    --ntx-form-theme-color-secondary-button-box-shadow: color-mix(in srgb, var(--ntx-form-theme-color-secondary-button-font), #fff 19%);
+    
+    /* ==================================================
+       POPOVER STYLES
+       ================================================== */
+    
+    /* Popover styling */
+    --ntx-form-theme-popover-box-shadow: none;
+    --ntx-form-theme-popover-border: 1px solid #e2e3e4;
+    --ntx-form-theme-color-popover-background: #fff;
+    --ntx-form-theme-color-popover-border-pseudo-before: transparent transparent #e2e3e4 transparent;
+    --ntx-form-theme-color-popover-border-pseudo-after: transparent transparent #fff transparent;
+    --ntx-form-theme-color-popover-label-text: #161718;
+    
+    /* ==================================================
+       LAYOUT AND POSITIONING
+       ================================================== */
+    
+    /* Stepper and form layout */
+    --ntx-form-horizontal-stepper-header-height: 60px;
+    --ntx-form-horizontal-radio-faux-top-position: 0;
+}
+
+/* ==================================================
+   LEGACY VARIABLE DEFINITIONS
+   These may be used by older forms or plugins
+   ================================================== */
+
+:root {
+    /* Legacy color definitions - kept for backward compatibility */
+    --ntx-form-theme-color-primary-legacy: #1c75c2;
+    --ntx-form-theme-color-secondary-legacy: #2f2e2e;
+    --ntx-form-theme-color-primary-hover-legacy: #478fce;
+    --ntx-form-theme-color-primary-box-shadow-legacy: #5598d1;
+    --ntx-form-theme-color-primary-light90-legacy: #e8f1f9;
+    --ntx-form-theme-color-primary-readonly-legacy: #8ebae1;
+    
+    /* Legacy button colors */
+    --ntx-form-theme-color-primary-button-box-shadow-legacy: #478fce;
+    --ntx-form-theme-color-primary-button-disabled-legacy: #478fce;
+    --ntx-form-theme-color-primary-button-hover-legacy: #4991ce;
+    --ntx-form-theme-color-secondary-button-box-shadow-legacy: #478fce;
+    --ntx-form-theme-color-secondary-button-hover-legacy: #609ed4;
+    
+    /* Legacy text and background colors */
+    --ntx-form-theme-color-input-text-placeholder-legacy: #393a3b;
+    --ntx-form-theme-color-input-text-light50-legacy: #0b0c0c;
+    --ntx-form-theme-color-input-text-readonly-legacy: #222324;
+    --ntx-form-theme-color-input-background-readonly-legacy: #e6e6e6;
+    --ntx-form-theme-color-input-background-readonly-text-legacy: #d9d9d9;
+    --ntx-form-theme-color-secondary-readonly-legacy: #6d6d6d;
+    --ntx-form-theme-color-secondary-light71-legacy: #c3c2c2;
+    --ntx-form-theme-color-secondary-light85-legacy: #e0e0e0;
+    --ntx-form-theme-color-border-read-only-legacy: #b4b4b4;
+    --ntx-form-theme-color-form-background-dark5-legacy: #f2f2f2;
+    --ntx-form-theme-color-form-background-alternate-contrast-legacy: rgba(0, 0, 0, 0.05);
+    
+    /* Legacy typography */
+    --ntx-form-theme-font-family-legacy: "Montserrat", "Open Sans", "Helvetica", "Arial", sans-serif;
+    
+    /* Legacy layout */
+    --ntx-form-theme-border-radius-legacy: 0;
+    --ntx-form-horizontal-radio-faux-top-position-legacy: 0px;
+}
+
+/* ==================================================
+   USAGE NOTES
+   
+   Modern Variables (Recommended):
+   - Use variables without '-legacy' suffix for new projects
+   - These use modern CSS color-mix() functions for better color relationships
+   - Primary color: #006bd6 (blue)
+   - Secondary color: #575c61 (gray)
+   
+   Legacy Variables (Backward Compatibility):
+   - Variables with '-legacy' suffix maintain old color values
+   - Use these only if maintaining existing forms that depend on specific colors
+   - Primary legacy color: #1c75c2 (lighter blue)
+   - Secondary legacy color: #2f2e2e (darker gray)
+   
+   Color Functions:
+   - color-mix() creates consistent color relationships
+   - Automatically generates hover, disabled, and variant states
+   - Ensures accessibility and visual consistency
+   
+   ================================================== */

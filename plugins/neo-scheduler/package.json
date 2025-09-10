@@ -1,0 +1,35 @@
+{
+  "name": "neo-scheduler",
+  "version": "1.0.0",
+  "description": "Schedule viewer control",
+  "main": "./src/neo-scheduler.js",
+  "browser": "./src/index.html",
+  "scripts": {
+    "build": "webpack",
+    "serve": "node server.js",
+    "dev": "pnpm build && pnpm serve"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jsdez/jsdez.github.io.git"
+  },
+  "author": "Jake Dennison",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/jsdez/jsdez.github.io/issues"
+  },
+  "homepage": "https://github.com/jsdez/jsdez.github.io#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "babel-loader": "^9.1.2",
+    "css-loader": "^6.8.1",
+    "style-loader": "^3.3.3",
+    "ts-loader": "^9.4.0",
+    "typescript": "^5.0.0",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1",
+    "@nintex/form-plugin-contract": "^1.0.5",
+    "lit": "^2.6.1"
+  }
+}
