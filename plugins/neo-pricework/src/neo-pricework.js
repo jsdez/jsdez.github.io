@@ -193,6 +193,7 @@ class NeoPriceworkElement extends LitElement {
         .cell-numbers { display: contents; }
         .cell-remove { justify-self: end; }
         .cell-label { display: none; }
+        .list-head .center { text-align: center; }
       }
 
       /* Small screens: two-line layout, inline labels for numeric cells */
@@ -201,11 +202,10 @@ class NeoPriceworkElement extends LitElement {
         .list-row { display:grid; grid-template-columns: 1fr var(--neo-col-remove); grid-template-rows: auto auto; row-gap:.25rem; }
         .cell-name { grid-column: 1 / 2; grid-row: 1; }
         .cell-remove { grid-column: 2 / 3; grid-row: 1; justify-self:end; display:flex; }
-        .cell-numbers { grid-column: 1 / -1; grid-row: 2; display:flex; justify-content:flex-end; align-items:center; gap:.75rem; }
-        .cell-unit { width: var(--neo-col-unit); }
-        .cell-qty { width: var(--neo-col-qty); }
-        .cell-cost { width: var(--neo-col-cost); }
-        .qty-input { max-width: var(--neo-col-qty); }
+        .cell-numbers { grid-column: 1 / -1; grid-row: 2; display:flex; justify-content: space-evenly; align-items:center; gap:.75rem; }
+        .cell-unit, .cell-qty, .cell-cost { width: auto; text-align:center; }
+        .cell-qty { display:flex; align-items:center; gap:.25rem; }
+        .qty-input { width: auto; max-width: 56px; }
         .cell-label { display: inline; }
       }
     `;
@@ -488,9 +488,9 @@ class NeoPriceworkElement extends LitElement {
                   <div class="list-table">
                     <div class="list-head sm">
                       <div>Selected Work Item</div>
-                      <div class="right">Price</div>
-                      <div class="right">Qty</div>
-                      <div class="right">Cost</div>
+                      <div class="center">Price</div>
+                      <div class="center">Qty</div>
+                      <div class="center">Cost</div>
                       <div></div>
                     </div>
                     ${this.formData.items.map((it, idx)=> html`
