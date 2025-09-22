@@ -20,7 +20,7 @@ class NeoPriceworkElement extends LitElement {
           description: 'Preload jobs array and meta',
           properties: {
             jobs: {
-              type: 'array',
+              type: 'object',
               items: {
                 type: 'object',
                 properties: {
@@ -47,7 +47,7 @@ class NeoPriceworkElement extends LitElement {
         },
         outputobj: {
           type: 'object',
-          title: 'Output object - Do not use',
+          title: 'Output object',
           isValueField: true,
           properties: {
             jobs: { type: 'array' },
