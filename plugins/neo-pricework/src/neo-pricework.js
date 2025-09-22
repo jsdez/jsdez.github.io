@@ -125,7 +125,8 @@ class NeoPriceworkElement extends LitElement {
   static get styles() {
     // Bootstrap-like with Nintex variables
     return css`
-      :host { display:block; font-family: var(--ntx-form-theme-font-family, 'Open Sans', 'Helvetica', 'Arial', sans-serif); }
+  :host { display:block; font-family: var(--ntx-form-theme-font-family, 'Open Sans', 'Helvetica', 'Arial', sans-serif); }
+  :host, :host *, :host *::before, :host *::after { box-sizing: border-box; }
 
       .card { background: var(--ntx-form-theme-color-form-background, #fff); border: 1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); box-shadow: var(--ntx-form-theme-popover-box-shadow, none); }
       .card + .card { margin-top: .75rem; }
@@ -167,7 +168,7 @@ class NeoPriceworkElement extends LitElement {
       @media (min-width: 600px) { .form-grid { grid-template-columns: 1fr 1fr; } }
       .form-group { display:flex; flex-direction:column; gap:.25rem; }
       label { font-size: var(--ntx-form-theme-text-label-size, 14px); color: var(--ntx-form-theme-color-input-text, #161718); }
-  input, textarea, select { width: 100%; font-size: var(--ntx-form-theme-text-input-size, 14px); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.45rem .6rem; background: var(--ntx-form-theme-color-input-background, #fff); color: var(--ntx-form-theme-color-input-text, #161718); }
+  input, textarea, select { display:block; width: 100%; max-width: 100%; font-size: var(--ntx-form-theme-text-input-size, 14px); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.45rem .6rem; background: var(--ntx-form-theme-color-input-background, #fff); color: var(--ntx-form-theme-color-input-text, #161718); }
       textarea { min-height: 72px; resize: vertical; }
       .right { text-align:right; }
       .pill { border-radius:999px; padding:.15rem .5rem; background: var(--ntx-form-theme-color-primary-light90, #e8f1f9); color: var(--ntx-form-theme-color-primary, #006bd6); font-weight:600; }
@@ -442,7 +443,7 @@ class NeoPriceworkElement extends LitElement {
                 <input type="text" placeholder="Filter work items" .value=${this.workItemQuery}
                   @input=${(e)=>{ this.workItemQuery = e.target.value; }} />
                 <select multiple size="5" @change=${this.addSelectedWorkItems}>
-                  ${this.getAvailableWorkItems().map(w => html`<option value="${w.name}">${w.itemCode ? w.itemCode + ' — ' : ''}${w.name} — ${this.currency}${Number(w.price).toFixed(2)}</option>`)}
+                  ${this.getAvailableWorkItems().map(w => html`<option value="${w.name}">${w.name} — ${this.currency}${Number(w.price).toFixed(2)}</option>`)}
                 </select>
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
