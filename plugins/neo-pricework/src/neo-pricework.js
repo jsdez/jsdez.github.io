@@ -38,6 +38,7 @@ class NeoPriceworkElement extends LitElement {
                     items: {
                       type: 'object',
                       properties: {
+                        itemCode: { type: 'string' },
                         name: { type: 'string' },
                         price: { type: 'number' },
                         quantity: { type: 'number' },
@@ -67,6 +68,7 @@ class NeoPriceworkElement extends LitElement {
                 properties: {
                   name: { type: 'string', title: 'Display Name' },
                   contract: { type: 'string', title: 'Contract key' },
+                  itemCode: { type: 'string', title: 'Item code' },
                   price: { type: 'number', title: 'Unit price' },
                 }
               }
@@ -208,7 +210,7 @@ class NeoPriceworkElement extends LitElement {
         address: j.address || '',
         contract: j.contract || '',
         notes: j.notes || '',
-        items: Array.isArray(j.items) ? j.items.map(it => ({ name: it.name, price: Number(it.price) || 0, quantity: Number(it.quantity) || 0 })) : []
+  items: Array.isArray(j.items) ? j.items.map(it => ({ itemCode: it.itemCode || '', name: it.name, price: Number(it.price) || 0, quantity: Number(it.quantity) || 0 })) : []
       }));
       this.recomputeAndDispatch();
     }
@@ -253,8 +255,8 @@ class NeoPriceworkElement extends LitElement {
 
   onContractChange = (e) => {
     const contract = e.target.value;
-    // Reset selected items when contract changes, preserve address and notes
-    this.formData = { ...this.formData, contract, items: [] };
+  // Preserve selected items and filter when contract changes
+  this.formData = { ...this.formData, contract };
   }
 
   getContractOptions() {
@@ -302,15 +304,25 @@ class NeoPriceworkElement extends LitElement {
     const all = Array.isArray(this.workItems?.items) ? this.workItems.items : [];
     // Contract filter
     let pool = all.filter(w => (!this.formData.contract || w.contract === this.formData.contract) && !selectedNames.has(w.name));
-    // Query fuzzy filter
+    // Query filter: prefer itemCode containment; fallback to fuzzy name
     const q = (this.workItemQuery || '').trim().toLowerCase();
     if (!q) return pool;
     const words = q.split(/\s+/).filter(Boolean);
-    // Simple fuzzy: all words must appear in name (any order); allow partials
-    pool = pool.filter(w => {
+    const itemCodeMatches = [];
+    const others = [];
+    for (const w of pool) {
+      const code = (w.itemCode || '').toLowerCase();
+      if (code && code.includes(q)) {
+        itemCodeMatches.push(w);
+        continue;
+      }
+      others.push(w);
+    }
+    if (itemCodeMatches.length > 0) return itemCodeMatches;
+    // Fallback fuzzy by name
+    const fuzzy = others.filter(w => {
       const hay = (w.name || '').toLowerCase();
       return words.every(word => {
-        // Permit loose matching by characters in order if substring not found
         if (hay.includes(word)) return true;
         let i = 0;
         for (const ch of word) {
@@ -321,7 +333,7 @@ class NeoPriceworkElement extends LitElement {
         return true;
       });
     });
-    return pool;
+    return fuzzy;
   }
 
   addSelectedWorkItems = (e) => {
@@ -332,7 +344,7 @@ class NeoPriceworkElement extends LitElement {
     const toAddNames = new Set(options.map(o => o.value));
     const adds = available
       .filter(w => toAddNames.has(w.name))
-      .map(w => ({ name: w.name, price: Number(w.price) || 0, quantity: 1 }));
+      .map(w => ({ itemCode: w.itemCode || '', name: w.name, price: Number(w.price) || 0, quantity: 1 }));
     const next = [ ...(this.formData.items || []), ...adds ];
     this.formData = { ...this.formData, items: next };
     // Clear selection for better UX
@@ -425,12 +437,12 @@ class NeoPriceworkElement extends LitElement {
                   ${this.getContractOptions().map(c => html`<option value="${c}">${c}</option>`)}
                 </select>
               </div>
-              <div class="form-group">
+              <div class="form-group" style="grid-column: 1 / -1;">
                 <label>Work Items</label>
                 <input type="text" placeholder="Filter work items" .value=${this.workItemQuery}
                   @input=${(e)=>{ this.workItemQuery = e.target.value; }} />
                 <select multiple size="5" @change=${this.addSelectedWorkItems}>
-                  ${this.getAvailableWorkItems().map(w => html`<option value="${w.name}">${w.name} — ${this.currency}${Number(w.price).toFixed(2)}</option>`)}
+                  ${this.getAvailableWorkItems().map(w => html`<option value="${w.name}">${w.itemCode ? w.itemCode + ' — ' : ''}${w.name} — ${this.currency}${Number(w.price).toFixed(2)}</option>`)}
                 </select>
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
@@ -443,7 +455,8 @@ class NeoPriceworkElement extends LitElement {
                           <div class="row" style="grid-template-columns: 1fr auto auto auto; align-items:center; gap:.75rem;">
                             <div>
                               <div class="title">${it.name}</div>
-                              <div class="muted" style="display:flex; gap:.5rem; align-items:center;">
+                              <div class="muted" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+                                ${it.itemCode ? html`<span>Code: <strong>${it.itemCode}</strong></span>` : ''}
                                 <span>Unit: <strong>${this.currency}${Number(it.price).toFixed(2)}</strong></span>
                               </div>
                             </div>
