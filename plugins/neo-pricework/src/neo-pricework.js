@@ -146,6 +146,8 @@ class NeoPriceworkElement extends LitElement {
       .btn-danger { background: var(--ntx-form-theme-color-error, #e60000); color:#fff; }
   .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); background: var(--ntx-form-theme-color-form-background, #fff); color: var(--ntx-form-theme-color-error, #e60000); }
   .icon-btn:hover { background: color-mix(in srgb, var(--ntx-form-theme-color-error, #e60000), #fff 90%); }
+  .icon-btn.success { color: var(--ntx-form-theme-color-success, #2e7d32); }
+  .icon-btn.success:hover { background: color-mix(in srgb, var(--ntx-form-theme-color-success, #2e7d32), #fff 90%); }
       .btn-light { background: var(--ntx-form-theme-color-form-background, #fff); border:1px solid var(--ntx-form-theme-color-border, #898f94); color: var(--ntx-form-theme-color-input-text, #161718); }
 
       .rows { display:flex; flex-direction:column; gap:.5rem; }
@@ -174,7 +176,7 @@ class NeoPriceworkElement extends LitElement {
   .pill { border-radius:999px; padding:.15rem .5rem; background: var(--ntx-form-theme-color-primary-light90, #e8f1f9); color: var(--ntx-form-theme-color-primary, #006bd6); font-weight:600; }
 
   /* Available work items (touch-friendly) */
-  .avail-list { display:flex; flex-direction:column; gap:.5rem; max-height: 260px; overflow:auto; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.5rem; background: var(--ntx-form-theme-color-form-background, #fff); }
+  .avail-list { display:flex; flex-direction:column; gap:.5rem; max-height: 260px; font-size: 14px; overflow:auto; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.5rem; background: var(--ntx-form-theme-color-form-background, #fff); }
   .avail-row { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .6rem; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); min-height:44px; }
   .avail-main { display:flex; align-items:center; gap:.5rem; min-width:0; flex:1 1 auto; }
   .avail-title { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -502,7 +504,11 @@ class NeoPriceworkElement extends LitElement {
                         <div class="avail-price">${this.currency}${Number(w.price).toFixed(2)}</div>
                       </div>
                       <div class="avail-actions">
-                        <button class="btn btn-primary" @click=${()=>this.addWorkItem(w)} aria-label=${`Add ${w.name}`}>Add</button>
+                        <button class="icon-btn success" @click=${()=>this.addWorkItem(w)} aria-label=${`Add ${w.name}`} title="Add">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
                   `)}
