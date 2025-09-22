@@ -175,12 +175,17 @@ class NeoPriceworkElement extends LitElement {
 
       /* Selected items list styling */
       .list-table { display:flex; flex-direction:column; gap:.5rem; }
-      .list-row { display:grid; grid-template-columns: 1fr auto auto auto auto; gap:.75rem; align-items:center; padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); }
+      /* Fixed column widths for numeric columns */
+      :host { --neo-col-unit: 84px; --neo-col-qty: 84px; --neo-col-cost: 110px; --neo-col-remove: 40px; }
+      .list-head { display:grid; grid-template-columns: 1fr var(--neo-col-unit) var(--neo-col-qty) var(--neo-col-cost) var(--neo-col-remove); gap:.75rem; align-items:center; padding: 0 .25rem; }
+      .list-row { display:grid; grid-template-columns: 1fr var(--neo-col-unit) var(--neo-col-qty) var(--neo-col-cost) var(--neo-col-remove); gap:.75rem; align-items:center; padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); }
       .cell-name { min-width: 0; }
       .cell-name .title { font-weight:600; }
       .sm { font-size: 12px; color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); }
+      .cell-unit { text-align: right; }
       .qty-input { width: 56px; }
       @media (max-width: 520px) {
+        .list-head { display: none; }
         .list-row { grid-template-columns: 1fr auto auto; }
         .cell-cost { justify-self: end; }
       }
@@ -462,18 +467,23 @@ class NeoPriceworkElement extends LitElement {
                 <label>Selected Work Items</label>
                 ${Array.isArray(this.formData.items) && this.formData.items.length>0 ? html`
                   <div class="list-table">
+                    <div class="list-head sm">
+                      <div>Selected Work Item</div>
+                      <div class="right">Price</div>
+                      <div class="right">Qty</div>
+                      <div class="right">Cost</div>
+                      <div></div>
+                    </div>
                     ${this.formData.items.map((it, idx)=> html`
                       <div class="list-row">
                         <div class="cell-name">
                           <div class="title">${it.name}</div>
                         </div>
                         <div class="cell-unit sm">${this.currency}${Number(it.price).toFixed(2)}</div>
-                        <div class="cell-qty">
-                          <label class="sm" style="display:block;">Qty</label>
+                        <div class="cell-qty right">
                           <input class="qty-input" type="number" min="0" step="1" .value=${String(it.quantity ?? 0)} @input=${(e)=>this.updateItemQty(idx, e)} />
                         </div>
                         <div class="cell-cost right">
-                          <div class="sm">Cost</div>
                           <div class="total">${this.currency}${this.itemTotal(it).toFixed(2)}</div>
                         </div>
                         <div class="cell-remove">
