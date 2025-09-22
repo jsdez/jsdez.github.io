@@ -172,6 +172,18 @@ class NeoPriceworkElement extends LitElement {
       textarea { min-height: 72px; resize: vertical; }
       .right { text-align:right; }
       .pill { border-radius:999px; padding:.15rem .5rem; background: var(--ntx-form-theme-color-primary-light90, #e8f1f9); color: var(--ntx-form-theme-color-primary, #006bd6); font-weight:600; }
+
+      /* Selected items list styling */
+      .list-table { display:flex; flex-direction:column; gap:.5rem; }
+      .list-row { display:grid; grid-template-columns: 1fr auto auto auto auto; gap:.75rem; align-items:center; padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); }
+      .cell-name { min-width: 0; }
+      .cell-name .title { font-weight:600; }
+      .sm { font-size: 12px; color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); }
+      .qty-input { width: 56px; }
+      @media (max-width: 520px) {
+        .list-row { grid-template-columns: 1fr auto auto; }
+        .cell-cost { justify-self: end; }
+      }
     `;
   }
 
@@ -431,7 +443,7 @@ class NeoPriceworkElement extends LitElement {
                   @change=${this.onAddressBlur}
                   placeholder="Search for an address" />
               </div>
-              <div class="form-group">
+              <div class="form-group" style="grid-column: 1 / -1;">
                 <label>Contract</label>
                 <select .value=${this.formData.contract} @change=${this.onContractChange}>
                   <option value="">Select contract</option>
@@ -449,40 +461,33 @@ class NeoPriceworkElement extends LitElement {
               <div class="form-group" style="grid-column: 1 / -1;">
                 <label>Selected Work Items</label>
                 ${Array.isArray(this.formData.items) && this.formData.items.length>0 ? html`
-                  <div class="card">
-                    <div class="card-body">
-                      <div class="rows">
-                        ${this.formData.items.map((it, idx)=> html`
-                          <div class="row" style="grid-template-columns: 1fr auto auto auto; align-items:center; gap:.75rem;">
-                            <div>
-                              <div class="title">${it.name}</div>
-                              <div class="muted" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
-                                ${it.itemCode ? html`<span>Code: <strong>${it.itemCode}</strong></span>` : ''}
-                                <span>Unit: <strong>${this.currency}${Number(it.price).toFixed(2)}</strong></span>
-                              </div>
-                            </div>
-                            <div>
-                              <label class="muted" style="display:block;">Qty</label>
-                              <input type="number" min="0" step="1" style="width:96px;" .value=${String(it.quantity ?? 0)} @input=${(e)=>this.updateItemQty(idx, e)} />
-                            </div>
-                            <div class="right">
-                              <div class="muted">Line</div>
-                              <div class="total">${this.currency}${this.itemTotal(it).toFixed(2)}</div>
-                            </div>
-                            <div>
-                              <button class="icon-btn" title="Remove" aria-label="Remove" @click=${()=>this.removeSelectedItem(idx)}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
-                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" stroke-width="2"/>
-                                  <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                        `)}
+                  <div class="list-table">
+                    ${this.formData.items.map((it, idx)=> html`
+                      <div class="list-row">
+                        <div class="cell-name">
+                          <div class="title">${it.name}</div>
+                        </div>
+                        <div class="cell-unit sm">${this.currency}${Number(it.price).toFixed(2)}</div>
+                        <div class="cell-qty">
+                          <label class="sm" style="display:block;">Qty</label>
+                          <input class="qty-input" type="number" min="0" step="1" .value=${String(it.quantity ?? 0)} @input=${(e)=>this.updateItemQty(idx, e)} />
+                        </div>
+                        <div class="cell-cost right">
+                          <div class="sm">Cost</div>
+                          <div class="total">${this.currency}${this.itemTotal(it).toFixed(2)}</div>
+                        </div>
+                        <div class="cell-remove">
+                          <button class="icon-btn" title="Remove" aria-label="Remove" @click=${()=>this.removeSelectedItem(idx)}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" stroke-width="2"/>
+                              <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    `)}
                   </div>
                 ` : html`<div class="muted">No items selected yet.</div>`}
               </div>
