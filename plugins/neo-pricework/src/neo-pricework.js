@@ -50,7 +50,7 @@ class NeoPriceworkElement extends LitElement {
           title: 'Output object',
           isValueField: true,
           properties: {
-            jobs: { type: 'array' },
+            jobs: { type: 'object' },
             subtotal: { type: 'number' },
             count: { type: 'number' }
           }
