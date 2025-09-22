@@ -117,6 +117,7 @@ class NeoPriceworkElement extends LitElement {
     showModal: { type: Boolean },
     editingIndex: { type: Number },
     formData: { type: Object },
+  workItemQuery: { type: String },
   };
 
   static get styles() {
@@ -140,6 +141,8 @@ class NeoPriceworkElement extends LitElement {
       .btn-outline { background: transparent; color: var(--ntx-form-theme-color-primary, #006bd6); border-color: var(--ntx-form-theme-color-primary, #006bd6); }
       .btn-outline:hover { background: color-mix(in srgb, var(--ntx-form-theme-color-primary, #006bd6), #fff 85%); }
       .btn-danger { background: var(--ntx-form-theme-color-error, #e60000); color:#fff; }
+  .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); background: var(--ntx-form-theme-color-form-background, #fff); color: var(--ntx-form-theme-color-error, #e60000); }
+  .icon-btn:hover { background: color-mix(in srgb, var(--ntx-form-theme-color-error, #e60000), #fff 90%); }
       .btn-light { background: var(--ntx-form-theme-color-form-background, #fff); border:1px solid var(--ntx-form-theme-color-border, #898f94); color: var(--ntx-form-theme-color-input-text, #161718); }
 
       .rows { display:flex; flex-direction:column; gap:.5rem; }
@@ -154,15 +157,15 @@ class NeoPriceworkElement extends LitElement {
 
       /* Modal */
       .backdrop { position:fixed; inset:0; background: rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding: 1rem; z-index:10000; }
-      .modal { width:min(720px, 100%); background: var(--ntx-form-theme-color-form-background, #fff); border: 1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
-      .modal-header, .modal-footer { padding:.75rem 1rem; border-bottom:1px solid var(--ntx-form-theme-color-border, #898f94); display:flex; align-items:center; justify-content:space-between; }
+  .modal { width:min(720px, 100%); max-height: 90vh; display:flex; flex-direction:column; background: var(--ntx-form-theme-color-form-background, #fff); border: 1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+  .modal-header, .modal-footer { flex: 0 0 auto; padding:.75rem 1rem; border-bottom:1px solid var(--ntx-form-theme-color-border, #898f94); display:flex; align-items:center; justify-content:space-between; }
       .modal-footer { border-bottom:0; border-top:1px solid var(--ntx-form-theme-color-border, #898f94); }
-      .modal-body { padding:1rem; }
+  .modal-body { flex: 1 1 auto; overflow:auto; padding:1rem; }
       .form-grid { display:grid; grid-template-columns: 1fr; gap:.75rem; }
       @media (min-width: 600px) { .form-grid { grid-template-columns: 1fr 1fr; } }
       .form-group { display:flex; flex-direction:column; gap:.25rem; }
       label { font-size: var(--ntx-form-theme-text-label-size, 14px); color: var(--ntx-form-theme-color-input-text, #161718); }
-      input, textarea { font-size: var(--ntx-form-theme-text-input-size, 14px); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.45rem .6rem; background: var(--ntx-form-theme-color-input-background, #fff); color: var(--ntx-form-theme-color-input-text, #161718); }
+  input, textarea, select { width: 100%; font-size: var(--ntx-form-theme-text-input-size, 14px); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.45rem .6rem; background: var(--ntx-form-theme-color-input-background, #fff); color: var(--ntx-form-theme-color-input-text, #161718); }
       textarea { min-height: 72px; resize: vertical; }
       .right { text-align:right; }
       .pill { border-radius:999px; padding:.15rem .5rem; background: var(--ntx-form-theme-color-primary-light90, #e8f1f9); color: var(--ntx-form-theme-color-primary, #006bd6); font-weight:600; }
@@ -182,6 +185,7 @@ class NeoPriceworkElement extends LitElement {
     this.showModal = false;
     this.editingIndex = -1;
     this.formData = this.getEmptyForm();
+  this.workItemQuery = '';
 
   // Address autocomplete state
   this._gmapsLoaded = false;
@@ -254,16 +258,70 @@ class NeoPriceworkElement extends LitElement {
   }
 
   getContractOptions() {
-    return (this.contracts || '')
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean);
+    const raw = this.contracts;
+    let list = [];
+    if (!raw) return list;
+    // If already an array (designer might bind array), normalize
+    if (Array.isArray(raw)) {
+      list = raw;
+    } else if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      // Try JSON parse when it looks like JSON
+      if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) list = parsed;
+          else if (parsed && typeof parsed === 'object') list = [parsed];
+          else list = [];
+        } catch {
+          // Fallback to CSV
+          list = trimmed.split(',');
+        }
+      } else {
+        // CSV or single value
+        list = trimmed.split(',');
+      }
+    } else if (typeof raw === 'object' && raw) {
+      list = [raw];
+    }
+
+    // Normalize to string values (handle objects like {contract:"X"})
+    const values = list.map(v => {
+      if (typeof v === 'string') return v.trim();
+      if (v && typeof v === 'object') return String(v.contract ?? v.name ?? v.value ?? '').trim();
+      return '';
+    }).filter(Boolean);
+
+    // Deduplicate while preserving order
+    const seen = new Set();
+    return values.filter(v => (seen.has(v) ? false : (seen.add(v), true)));
   }
 
   getAvailableWorkItems() {
     const selectedNames = new Set((this.formData.items || []).map(i => i.name));
     const all = Array.isArray(this.workItems?.items) ? this.workItems.items : [];
-    return all.filter(w => (!this.formData.contract || w.contract === this.formData.contract) && !selectedNames.has(w.name));
+    // Contract filter
+    let pool = all.filter(w => (!this.formData.contract || w.contract === this.formData.contract) && !selectedNames.has(w.name));
+    // Query fuzzy filter
+    const q = (this.workItemQuery || '').trim().toLowerCase();
+    if (!q) return pool;
+    const words = q.split(/\s+/).filter(Boolean);
+    // Simple fuzzy: all words must appear in name (any order); allow partials
+    pool = pool.filter(w => {
+      const hay = (w.name || '').toLowerCase();
+      return words.every(word => {
+        // Permit loose matching by characters in order if substring not found
+        if (hay.includes(word)) return true;
+        let i = 0;
+        for (const ch of word) {
+          i = hay.indexOf(ch, i);
+          if (i === -1) return false;
+          i++;
+        }
+        return true;
+      });
+    });
+    return pool;
   }
 
   addSelectedWorkItems = (e) => {
@@ -296,8 +354,7 @@ class NeoPriceworkElement extends LitElement {
 
   save = () => {
     const data = { ...this.formData };
-    // Minimal validation: require address and at least one item
-    if (!data.address?.trim()) return;
+    // Minimal validation: require at least one item; address optional
     if (!Array.isArray(data.items) || data.items.length === 0) return;
     if (this.editingIndex === -1) {
       this.jobs = [...this.jobs, data];
@@ -370,6 +427,8 @@ class NeoPriceworkElement extends LitElement {
               </div>
               <div class="form-group">
                 <label>Work Items</label>
+                <input type="text" placeholder="Filter work items" .value=${this.workItemQuery}
+                  @input=${(e)=>{ this.workItemQuery = e.target.value; }} />
                 <select multiple size="5" @change=${this.addSelectedWorkItems}>
                   ${this.getAvailableWorkItems().map(w => html`<option value="${w.name}">${w.name} — ${this.currency}${Number(w.price).toFixed(2)}</option>`)}
                 </select>
@@ -384,7 +443,9 @@ class NeoPriceworkElement extends LitElement {
                           <div class="row" style="grid-template-columns: 1fr auto auto auto; align-items:center; gap:.75rem;">
                             <div>
                               <div class="title">${it.name}</div>
-                              <div class="muted">Unit: ${this.currency}${Number(it.price).toFixed(2)}</div>
+                              <div class="muted" style="display:flex; gap:.5rem; align-items:center;">
+                                <span>Unit: <strong>${this.currency}${Number(it.price).toFixed(2)}</strong></span>
+                              </div>
                             </div>
                             <div>
                               <label class="muted" style="display:block;">Qty</label>
@@ -395,7 +456,14 @@ class NeoPriceworkElement extends LitElement {
                               <div class="total">${this.currency}${this.itemTotal(it).toFixed(2)}</div>
                             </div>
                             <div>
-                              <button class="btn btn-light" @click=${()=>this.removeSelectedItem(idx)}>Remove</button>
+                              <button class="icon-btn" title="Remove" aria-label="Remove" @click=${()=>this.removeSelectedItem(idx)}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
+                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" stroke-width="2"/>
+                                  <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                              </button>
                             </div>
                           </div>
                         `)}
@@ -415,7 +483,7 @@ class NeoPriceworkElement extends LitElement {
             <div class="actions">
               ${editing ? html`<button class="btn btn-danger" @click=${()=>this.remove(this.editingIndex)}>Delete</button>` : ''}
               <button class="btn btn-outline" @click=${this.closeModal}>Cancel</button>
-              <button class="btn btn-primary" @click=${this.save} ?disabled=${!this.formData.address?.trim() || !(this.formData.items?.length>0)}>Save</button>
+              <button class="btn btn-primary" @click=${this.save} ?disabled=${!(this.formData.items?.length>0)}>Save</button>
             </div>
           </div>
         </div>
