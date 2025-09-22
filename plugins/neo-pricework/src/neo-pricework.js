@@ -22,7 +22,7 @@ class NeoPriceworkElement extends LitElement {
             jobs: {
               type: 'object',
               items: {
-                type: 'object',
+                type: 'array',
                 properties: {
                   id: { type: 'string' },
                   title: { type: 'string', title: 'Title' },
@@ -50,7 +50,7 @@ class NeoPriceworkElement extends LitElement {
           title: 'Output object',
           isValueField: true,
           properties: {
-            jobs: { type: 'object' },
+            jobs: { type: 'array' },
             subtotal: { type: 'number' },
             count: { type: 'number' }
           }
