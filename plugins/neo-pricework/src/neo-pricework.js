@@ -177,19 +177,36 @@ class NeoPriceworkElement extends LitElement {
       .list-table { display:flex; flex-direction:column; gap:.5rem; }
       /* Requested fixed column widths */
       :host { --neo-col-unit: 50px; --neo-col-qty: 50px; --neo-col-cost: 50px; --neo-col-remove: 30px; }
-      .list-head { display: none; }
       .list-row { padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); }
-      .row-top { display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
       .cell-name { min-width: 0; }
       .cell-name .title { font-weight:600; word-break: break-word; }
-      .cell-remove { flex: 0 0 var(--neo-col-remove); display:flex; justify-content:flex-end; }
-      .row-bottom { margin-top:.5rem; display:flex; justify-content:flex-end; align-items:center; gap:.75rem; }
-      .cell-unit { width: var(--neo-col-unit); text-align: right; white-space: nowrap; }
-      .cell-qty { width: var(--neo-col-qty); text-align:right; }
+      .cell-unit { text-align: right; white-space: nowrap; }
+      .cell-qty { text-align:right; }
+      .cell-cost { white-space: nowrap; text-align:right; }
       .qty-input { width: 100%; max-width: var(--neo-col-qty); }
-      .cell-cost { width: var(--neo-col-cost); white-space: nowrap; text-align:right; }
-      @media (max-width: 576px) {
-        .qty-input { max-width: 44px; }
+      .cell-label { display: none; margin-right: .25rem; color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); font-size: 12px; }
+
+      /* Large screens: one-line grid with header */
+      @media (min-width: 576px) {
+        .list-head { display:grid; grid-template-columns: 1fr var(--neo-col-unit) var(--neo-col-qty) var(--neo-col-cost) var(--neo-col-remove); gap:.75rem; align-items:center; padding:.25rem .75rem; }
+        .list-row { display:grid; grid-template-columns: 1fr var(--neo-col-unit) var(--neo-col-qty) var(--neo-col-cost) var(--neo-col-remove); gap:.75rem; align-items:center; }
+        .cell-numbers { display: contents; }
+        .cell-remove { justify-self: end; }
+        .cell-label { display: none; }
+      }
+
+      /* Small screens: two-line layout, inline labels for numeric cells */
+      @media (max-width: 575.98px) {
+        .list-head { display:none; }
+        .list-row { display:grid; grid-template-columns: 1fr var(--neo-col-remove); grid-template-rows: auto auto; row-gap:.25rem; }
+        .cell-name { grid-column: 1 / 2; grid-row: 1; }
+        .cell-remove { grid-column: 2 / 3; grid-row: 1; justify-self:end; display:flex; }
+        .cell-numbers { grid-column: 1 / -1; grid-row: 2; display:flex; justify-content:flex-end; align-items:center; gap:.75rem; }
+        .cell-unit { width: var(--neo-col-unit); }
+        .cell-qty { width: var(--neo-col-qty); }
+        .cell-cost { width: var(--neo-col-cost); }
+        .qty-input { max-width: var(--neo-col-qty); }
+        .cell-label { display: inline; }
       }
     `;
   }
@@ -469,31 +486,32 @@ class NeoPriceworkElement extends LitElement {
                 ${Array.isArray(this.formData.items) && this.formData.items.length>0 ? html`
                   <label>Selected Work Items</label>
                   <div class="list-table">
+                    <div class="list-head sm">
+                      <div>Selected Work Item</div>
+                      <div class="right">Price</div>
+                      <div class="right">Qty</div>
+                      <div class="right">Cost</div>
+                      <div></div>
+                    </div>
                     ${this.formData.items.map((it, idx)=> html`
                       <div class="list-row">
-                        <div class="row-top">
-                          <div class="cell-name">
-                            <div class="title">${it.name}</div>
-                          </div>
-                          <div class="cell-remove">
-                            <button class="icon-btn" title="Remove" aria-label="Remove" @click=${()=>this.removeSelectedItem(idx)}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
-                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" stroke-width="2"/>
-                                <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                              </svg>
-                            </button>
-                          </div>
+                        <div class="cell-name">
+                          <div class="title">${it.name}</div>
                         </div>
-                        <div class="row-bottom">
-                          <div class="cell-unit sm">${this.currency}${Number(it.price).toFixed(2)}</div>
-                          <div class="cell-qty">
-                            <input class="qty-input" type="number" min="0" step="1" .value=${String(it.quantity ?? 0)} @input=${(e)=>this.updateItemQty(idx, e)} />
-                          </div>
-                          <div class="cell-cost">
-                            <div class="total">${this.currency}${this.itemTotal(it).toFixed(2)}</div>
-                          </div>
+                        <div class="cell-numbers">
+                          <div class="cell-unit"><span class="cell-label">Price </span><span class="sm">${this.currency}${Number(it.price).toFixed(2)}</span></div>
+                          <div class="cell-qty"><span class="cell-label">Qty </span><input class="qty-input" type="number" min="0" step="1" .value=${String(it.quantity ?? 0)} @input=${(e)=>this.updateItemQty(idx, e)} /></div>
+                          <div class="cell-cost"><span class="cell-label">Cost </span><span class="total">${this.currency}${this.itemTotal(it).toFixed(2)}</span></div>
+                        </div>
+                        <div class="cell-remove">
+                          <button class="icon-btn" title="Remove" aria-label="Remove" @click=${()=>this.removeSelectedItem(idx)}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" stroke-width="2"/>
+                              <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                          </button>
                         </div>
                       </div>
                     `)}
