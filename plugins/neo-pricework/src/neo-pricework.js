@@ -174,7 +174,7 @@ class NeoPriceworkElement extends LitElement {
       .pill { border-radius:999px; padding:.15rem .5rem; background: var(--ntx-form-theme-color-primary-light90, #e8f1f9); color: var(--ntx-form-theme-color-primary, #006bd6); font-weight:600; }
 
       /* Selected items list styling */
-      .list-table { display:flex; flex-direction:column; gap:.5rem; }
+      .list-table { display:flex; flex-direction:column; gap:.5rem; font-size:14px; }
       /* Requested fixed column widths */
       :host { --neo-col-unit: 50px; --neo-col-qty: 50px; --neo-col-cost: 50px; --neo-col-remove: 30px; }
       .list-row { padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); }
@@ -484,7 +484,6 @@ class NeoPriceworkElement extends LitElement {
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
                 ${Array.isArray(this.formData.items) && this.formData.items.length>0 ? html`
-                  <label>Selected Work Items</label>
                   <div class="list-table">
                     <div class="list-head sm">
                       <div>Selected Work Item</div>
