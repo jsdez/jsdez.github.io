@@ -171,7 +171,15 @@ class NeoPriceworkElement extends LitElement {
   input, textarea, select { display:block; width: 100%; max-width: 100%; font-size: var(--ntx-form-theme-text-input-size, 14px); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.45rem .6rem; background: var(--ntx-form-theme-color-input-background, #fff); color: var(--ntx-form-theme-color-input-text, #161718); }
       textarea { min-height: 72px; resize: vertical; }
       .right { text-align:right; }
-      .pill { border-radius:999px; padding:.15rem .5rem; background: var(--ntx-form-theme-color-primary-light90, #e8f1f9); color: var(--ntx-form-theme-color-primary, #006bd6); font-weight:600; }
+  .pill { border-radius:999px; padding:.15rem .5rem; background: var(--ntx-form-theme-color-primary-light90, #e8f1f9); color: var(--ntx-form-theme-color-primary, #006bd6); font-weight:600; }
+
+  /* Available work items (touch-friendly) */
+  .avail-list { display:flex; flex-direction:column; gap:.5rem; max-height: 260px; overflow:auto; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.5rem; background: var(--ntx-form-theme-color-form-background, #fff); }
+  .avail-row { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .6rem; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); min-height:44px; }
+  .avail-main { display:flex; align-items:center; gap:.5rem; min-width:0; flex:1 1 auto; }
+  .avail-title { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .avail-price { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); white-space:nowrap; }
+  .avail-actions { flex:0 0 auto; }
 
       /* Selected items list styling */
       .list-table { display:flex; flex-direction:column; gap:.5rem; font-size:14px; }
@@ -388,6 +396,14 @@ class NeoPriceworkElement extends LitElement {
     select.selectedIndex = -1;
   }
 
+  addWorkItem = (w) => {
+    if (!w) return;
+    const exists = (this.formData.items || []).some(i => i.name === w.name);
+    if (exists) return;
+    const next = [ ...(this.formData.items || []), { itemCode: w.itemCode || '', name: w.name, price: Number(w.price) || 0, quantity: 1 } ];
+    this.formData = { ...this.formData, items: next };
+  }
+
   updateItemQty = (index, e) => {
     const qty = Math.max(0, Number(e.target.value || 0));
     const items = [...(this.formData.items || [])];
@@ -476,11 +492,21 @@ class NeoPriceworkElement extends LitElement {
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
                 <label>Work Items</label>
-                <input type="text" placeholder="Filter work items" .value=${this.workItemQuery}
+                <input type="text" placeholder="Search work items" .value=${this.workItemQuery}
                   @input=${(e)=>{ this.workItemQuery = e.target.value; }} />
-                <select multiple size="5" @change=${this.addSelectedWorkItems}>
-                  ${this.getAvailableWorkItems().map(w => html`<option value="${w.name}">${w.name} — ${this.currency}${Number(w.price).toFixed(2)}</option>`)}
-                </select>
+                <div class="avail-list" role="list">
+                  ${this.getAvailableWorkItems().map(w => html`
+                    <div class="avail-row" role="listitem">
+                      <div class="avail-main">
+                        <div class="avail-title">${w.name}</div>
+                        <div class="avail-price">${this.currency}${Number(w.price).toFixed(2)}</div>
+                      </div>
+                      <div class="avail-actions">
+                        <button class="btn btn-primary" @click=${()=>this.addWorkItem(w)} aria-label=${`Add ${w.name}`}>Add</button>
+                      </div>
+                    </div>
+                  `)}
+                </div>
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
                 ${Array.isArray(this.formData.items) && this.formData.items.length>0 ? html`
