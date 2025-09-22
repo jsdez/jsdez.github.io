@@ -177,17 +177,23 @@ class NeoPriceworkElement extends LitElement {
       .list-table { display:flex; flex-direction:column; gap:.5rem; }
       /* Fixed column widths for numeric columns */
       :host { --neo-col-unit: 84px; --neo-col-qty: 84px; --neo-col-cost: 110px; --neo-col-remove: 40px; }
-      .list-head { display:grid; grid-template-columns: 1fr var(--neo-col-unit) var(--neo-col-qty) var(--neo-col-cost) var(--neo-col-remove); gap:.75rem; align-items:center; padding: 0 .25rem; }
+  .list-head { display:grid; grid-template-columns: 1fr var(--neo-col-unit) var(--neo-col-qty) var(--neo-col-cost) var(--neo-col-remove); gap:.75rem; align-items:center; padding:.5rem .75rem; }
       .list-row { display:grid; grid-template-columns: 1fr var(--neo-col-unit) var(--neo-col-qty) var(--neo-col-cost) var(--neo-col-remove); gap:.75rem; align-items:center; padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); }
       .cell-name { min-width: 0; }
       .cell-name .title { font-weight:600; }
       .sm { font-size: 12px; color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); }
-      .cell-unit { text-align: right; }
+      .cell-unit { text-align: right; white-space: nowrap; }
       .qty-input { width: 56px; }
-      @media (max-width: 520px) {
+      .cell-qty { text-align: right; }
+      .cell-qty .qty-input { margin-left: auto; }
+      .cell-cost { white-space: nowrap; }
+      @media (max-width: 768px) {
         .list-head { display: none; }
-        .list-row { grid-template-columns: 1fr auto auto; }
-        .cell-cost { justify-self: end; }
+        :host { --neo-col-unit: 70px; --neo-col-qty: 70px; --neo-col-cost: 90px; --neo-col-remove: 36px; }
+      }
+      @media (max-width: 520px) {
+        :host { --neo-col-unit: 64px; --neo-col-qty: 56px; --neo-col-cost: 84px; --neo-col-remove: 34px; }
+        .qty-input { width: 48px; }
       }
     `;
   }
@@ -464,7 +470,6 @@ class NeoPriceworkElement extends LitElement {
                 </select>
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
-                <label>Selected Work Items</label>
                 ${Array.isArray(this.formData.items) && this.formData.items.length>0 ? html`
                   <div class="list-table">
                     <div class="list-head sm">
