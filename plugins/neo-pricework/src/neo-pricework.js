@@ -14,21 +14,60 @@ class NeoPriceworkElement extends LitElement {
       groupName: 'NEO',
       version: '1.0',
       properties: {
+        apiKey: {
+          type: 'string',
+          title: 'Google Maps API key',
+          description: 'API key used for address autocomplete'
+        },
         inputobj: {
           type: 'object',
           title: 'Input object',
           description: 'Preload jobs array and meta',
           properties: {
             jobs: {
-              type: 'object',
+              type: 'array',
               items: {
-                type: 'array',
+                type: 'object',
                 properties: {
                   id: { type: 'string' },
-                  title: { type: 'string', title: 'Title' },
-                  description: { type: 'string', title: 'Description' },
-                  quantity: { type: 'number', title: 'Qty' },
-                  rate: { type: 'number', title: 'Rate' },
+                  address: { type: 'string', title: 'Address' },
+                  contract: { type: 'string', title: 'Contract' },
+                  notes: { type: 'string', title: 'Job Notes' },
+                  items: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        name: { type: 'string' },
+                        price: { type: 'number' },
+                        quantity: { type: 'number' },
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        contracts: {
+          type: 'string',
+          title: 'Contracts (comma-separated)',
+          description: 'Provide the list of available contracts separated by commas',
+          defaultValue: ''
+        },
+        workItems: {
+          type: 'object',
+          title: 'Work Items Catalog',
+          description: 'Provide work items to choose from grouped by contract',
+          properties: {
+            items: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string', title: 'Display Name' },
+                  contract: { type: 'string', title: 'Contract key' },
+                  price: { type: 'number', title: 'Unit price' },
                 }
               }
             }
@@ -67,8 +106,11 @@ class NeoPriceworkElement extends LitElement {
   }
 
   static properties = {
+  apiKey: { type: String },
     inputobj: { type: Object },
     outputobj: { type: Object },
+  contracts: { type: String },
+  workItems: { type: Object },
     currency: { type: String },
     readOnly: { type: Boolean, reflect: true },
     jobs: { type: Array },
@@ -129,31 +171,49 @@ class NeoPriceworkElement extends LitElement {
 
   constructor() {
     super();
+  this.apiKey = '';
     this.inputobj = null;
     this.outputobj = { jobs: [], subtotal: 0, count: 0 };
+    this.contracts = '';
+    this.workItems = { items: [] };
     this.currency = '£';
     this.readOnly = false;
     this.jobs = [];
     this.showModal = false;
     this.editingIndex = -1;
     this.formData = this.getEmptyForm();
+
+  // Address autocomplete state
+  this._gmapsLoaded = false;
+  this._autocomplete = null;
+  this._placesService = null;
+  this._addressIsUserInput = false;
+  this._addressPreviousValue = '';
+  this._addressLastResolved = '';
   }
 
   getEmptyForm() {
-    return { id: '', title: '', description: '', quantity: 1, rate: 0 };
+    return { id: '', address: '', contract: '', notes: '', items: [] };
   }
 
   updated(changed) {
     if (changed.has('inputobj') && this.inputobj && Array.isArray(this.inputobj.jobs)) {
       // Load initial jobs from input
-      this.jobs = [...this.inputobj.jobs].map(j => ({ id: j.id || uid(), title: j.title || '', description: j.description || '', quantity: Number(j.quantity) || 0, rate: Number(j.rate) || 0 }));
+      this.jobs = [...this.inputobj.jobs].map(j => ({
+        id: j.id || uid(),
+        address: j.address || '',
+        contract: j.contract || '',
+        notes: j.notes || '',
+        items: Array.isArray(j.items) ? j.items.map(it => ({ name: it.name, price: Number(it.price) || 0, quantity: Number(it.quantity) || 0 })) : []
+      }));
       this.recomputeAndDispatch();
     }
   }
 
   // Computed helpers
-  lineTotal(job) { return (Number(job.quantity) || 0) * (Number(job.rate) || 0); }
-  subtotal() { return this.jobs.reduce((sum, j) => sum + this.lineTotal(j), 0); }
+  itemTotal(item) { return (Number(item.quantity) || 0) * (Number(item.price) || 0); }
+  jobTotal(job) { return (Array.isArray(job.items) ? job.items : []).reduce((s, it) => s + this.itemTotal(it), 0); }
+  subtotal() { return this.jobs.reduce((sum, j) => sum + this.jobTotal(j), 0); }
 
   // Event dispatch to Nintex
   recomputeAndDispatch() {
@@ -167,6 +227,7 @@ class NeoPriceworkElement extends LitElement {
     this.formData = { ...this.getEmptyForm(), id: uid() };
     this.editingIndex = -1;
     this.showModal = true;
+  this.updateComplete.then(()=>this.ensureGoogleMapsLoadedAndInit());
   }
 
   openEdit = (index) => {
@@ -176,21 +237,68 @@ class NeoPriceworkElement extends LitElement {
     this.formData = { ...j };
     this.editingIndex = index;
     this.showModal = true;
+  this.updateComplete.then(()=>this.ensureGoogleMapsLoadedAndInit());
   }
 
   closeModal = () => { this.showModal = false; }
 
   onInput = (e, field) => {
-    const value = field === 'quantity' || field === 'rate' ? Number(e.target.value) : e.target.value;
+    const value = e.target?.value;
     this.formData = { ...this.formData, [field]: value };
+  }
+
+  onContractChange = (e) => {
+    const contract = e.target.value;
+    // Reset selected items when contract changes, preserve address and notes
+    this.formData = { ...this.formData, contract, items: [] };
+  }
+
+  getContractOptions() {
+    return (this.contracts || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+
+  getAvailableWorkItems() {
+    const selectedNames = new Set((this.formData.items || []).map(i => i.name));
+    const all = Array.isArray(this.workItems?.items) ? this.workItems.items : [];
+    return all.filter(w => (!this.formData.contract || w.contract === this.formData.contract) && !selectedNames.has(w.name));
+  }
+
+  addSelectedWorkItems = (e) => {
+    const select = e.target;
+    const options = Array.from(select.selectedOptions || []);
+    if (options.length === 0) return;
+    const available = this.getAvailableWorkItems();
+    const toAddNames = new Set(options.map(o => o.value));
+    const adds = available
+      .filter(w => toAddNames.has(w.name))
+      .map(w => ({ name: w.name, price: Number(w.price) || 0, quantity: 1 }));
+    const next = [ ...(this.formData.items || []), ...adds ];
+    this.formData = { ...this.formData, items: next };
+    // Clear selection for better UX
+    select.selectedIndex = -1;
+  }
+
+  updateItemQty = (index, e) => {
+    const qty = Math.max(0, Number(e.target.value || 0));
+    const items = [...(this.formData.items || [])];
+    if (!items[index]) return;
+    items[index] = { ...items[index], quantity: qty };
+    this.formData = { ...this.formData, items };
+  }
+
+  removeSelectedItem = (index) => {
+    const items = (this.formData.items || []).filter((_, i) => i !== index);
+    this.formData = { ...this.formData, items };
   }
 
   save = () => {
     const data = { ...this.formData };
-    if (!data.title?.trim()) {
-      // Basic guard for required title
-      return;
-    }
+    // Minimal validation: require address and at least one item
+    if (!data.address?.trim()) return;
+    if (!Array.isArray(data.items) || data.items.length === 0) return;
     if (this.editingIndex === -1) {
       this.jobs = [...this.jobs, data];
     } else {
@@ -215,12 +323,12 @@ class NeoPriceworkElement extends LitElement {
         <div class="card-body">
           <div class="row">
             <div>
-              <div class="title">${job.title || 'Untitled job'}</div>
-              ${job.description ? html`<div class="muted">${job.description}</div>` : ''}
-              <div class="muted">Qty: <span class="pill">${job.quantity}</span> · Rate: <span class="pill">${this.currency}${Number(job.rate).toFixed(2)}</span></div>
+              <div class="title">${job.address || 'Untitled job'}</div>
+              ${job.contract ? html`<div class="muted">Contract: <span class="pill">${job.contract}</span></div>` : ''}
+              <div class="muted">${(job.items?.length||0)} work item${(job.items?.length||0)===1?'':'s'}</div>
             </div>
             <div class="right">
-              <div class="total">${this.currency}${this.lineTotal(job).toFixed(2)}</div>
+              <div class="total">${this.currency}${this.jobTotal(job).toFixed(2)}</div>
               ${!this.readOnly ? html`
                 <div class="actions">
                   <button class="btn btn-light" @click=${() => this.openEdit(index)}>Edit</button>
@@ -246,34 +354,168 @@ class NeoPriceworkElement extends LitElement {
           <div class="modal-body">
             <div class="form-grid">
               <div class="form-group" style="grid-column: 1 / -1;">
-                <label>Title</label>
-                <input type="text" .value=${this.formData.title} @input=${(e)=>this.onInput(e,'title')} placeholder="e.g. Install unit" />
+                <label>Address</label>
+                <input id="addressInput" type="text" .value=${this.formData.address}
+                  @input=${this.onAddressTyping}
+                  @blur=${this.onAddressBlur}
+                  @change=${this.onAddressBlur}
+                  placeholder="Search for an address" />
+              </div>
+              <div class="form-group">
+                <label>Contract</label>
+                <select .value=${this.formData.contract} @change=${this.onContractChange}>
+                  <option value="">Select contract</option>
+                  ${this.getContractOptions().map(c => html`<option value="${c}">${c}</option>`)}
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Work Items</label>
+                <select multiple size="5" @change=${this.addSelectedWorkItems}>
+                  ${this.getAvailableWorkItems().map(w => html`<option value="${w.name}">${w.name} — ${this.currency}${Number(w.price).toFixed(2)}</option>`)}
+                </select>
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
-                <label>Description</label>
-                <textarea .value=${this.formData.description} @input=${(e)=>this.onInput(e,'description')} placeholder="Notes or details"></textarea>
+                <label>Selected Work Items</label>
+                ${Array.isArray(this.formData.items) && this.formData.items.length>0 ? html`
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="rows">
+                        ${this.formData.items.map((it, idx)=> html`
+                          <div class="row" style="grid-template-columns: 1fr auto auto auto; align-items:center; gap:.75rem;">
+                            <div>
+                              <div class="title">${it.name}</div>
+                              <div class="muted">Unit: ${this.currency}${Number(it.price).toFixed(2)}</div>
+                            </div>
+                            <div>
+                              <label class="muted" style="display:block;">Qty</label>
+                              <input type="number" min="0" step="1" style="width:96px;" .value=${String(it.quantity ?? 0)} @input=${(e)=>this.updateItemQty(idx, e)} />
+                            </div>
+                            <div class="right">
+                              <div class="muted">Line</div>
+                              <div class="total">${this.currency}${this.itemTotal(it).toFixed(2)}</div>
+                            </div>
+                            <div>
+                              <button class="btn btn-light" @click=${()=>this.removeSelectedItem(idx)}>Remove</button>
+                            </div>
+                          </div>
+                        `)}
+                      </div>
+                    </div>
+                  </div>
+                ` : html`<div class="muted">No items selected yet.</div>`}
               </div>
-              <div class="form-group">
-                <label>Quantity</label>
-                <input type="number" min="0" step="1" .value=${String(this.formData.quantity ?? 0)} @input=${(e)=>this.onInput(e,'quantity')} />
-              </div>
-              <div class="form-group">
-                <label>Rate</label>
-                <input type="number" min="0" step="0.01" .value=${String(this.formData.rate ?? 0)} @input=${(e)=>this.onInput(e,'rate')} />
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Job Notes</label>
+                <textarea .value=${this.formData.notes} @input=${(e)=>this.onInput(e,'notes')} placeholder="Add any notes about this job"></textarea>
               </div>
             </div>
           </div>
           <div class="modal-footer">
-            <div class="muted">Line total: <strong>${this.currency}${this.lineTotal(this.formData).toFixed(2)}</strong></div>
+            <div class="muted">Job total: <strong>${this.currency}${this.jobTotal(this.formData).toFixed(2)}</strong></div>
             <div class="actions">
               ${editing ? html`<button class="btn btn-danger" @click=${()=>this.remove(this.editingIndex)}>Delete</button>` : ''}
               <button class="btn btn-outline" @click=${this.closeModal}>Cancel</button>
-              <button class="btn btn-primary" @click=${this.save} ?disabled=${!this.formData.title?.trim()}>Save</button>
+              <button class="btn btn-primary" @click=${this.save} ?disabled=${!this.formData.address?.trim() || !(this.formData.items?.length>0)}>Save</button>
             </div>
           </div>
         </div>
       </div>
     `;
+  }
+
+  // ======== Embedded neo-address capabilities (lite) ========
+  ensureGoogleMapsLoadedAndInit() {
+    // If field isn't in DOM yet, bail; updateComplete callers handle sequencing.
+    const input = this.shadowRoot?.getElementById('addressInput');
+    if (!input) return;
+
+    if (this._gmapsLoaded && window.google && window.google.maps) {
+      this.initAutocomplete(input);
+      return;
+    }
+
+    if (!this.apiKey) {
+      // API key missing; fallback to plain text input behavior
+      return;
+    }
+
+    // If already loading/loaded script exists, hook into onload
+    if (window.google && window.google.maps) {
+      this._gmapsLoaded = true;
+      this.initAutocomplete(input);
+      return;
+    }
+
+    const existing = document.querySelector('script[data-neo-pricework-gmaps]');
+    if (existing) {
+      existing.addEventListener('load', () => {
+        this._gmapsLoaded = true;
+        this.initAutocomplete(input);
+      }, { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    script.dataset.neoPriceworkGmaps = '1';
+    script.addEventListener('load', () => {
+      this._gmapsLoaded = true;
+      this.initAutocomplete(input);
+    }, { once: true });
+    script.addEventListener('error', () => {
+      // Swallow errors; input remains plain text
+      // eslint-disable-next-line no-console
+      console.error('Failed to load Google Maps API');
+    }, { once: true });
+    document.head.appendChild(script);
+  }
+
+  initAutocomplete(inputEl) {
+    if (!window.google || !window.google.maps) return;
+    if (!inputEl) return;
+    // Create once per modal lifecycle
+    this._autocomplete = new google.maps.places.Autocomplete(inputEl, { types: ['address'] });
+    this._autocomplete.addListener('place_changed', () => {
+      const place = this._autocomplete.getPlace();
+      if (!place || !place.formatted_address) return;
+      this._addressIsUserInput = true;
+      this.formData = { ...this.formData, address: place.formatted_address };
+      this._addressPreviousValue = this.formData.address;
+      this._addressLastResolved = this.formData.address;
+    });
+    // Prepare Places Service for programmatic resolution
+    this._placesService = new google.maps.places.PlacesService(document.createElement('div'));
+  }
+
+  onAddressTyping = (e) => {
+    this._addressIsUserInput = true;
+    const value = e.target.value;
+    this.formData = { ...this.formData, address: value };
+    this._addressPreviousValue = value;
+  }
+
+  onAddressBlur = () => {
+    // Resolve only if gmaps ready and user typed text different from last resolved
+    const text = this.formData.address || '';
+    if (!text.trim()) return;
+    if (!this._gmapsLoaded || !this._placesService || !window.google || !window.google.maps) return;
+    if (text === this._addressLastResolved) return;
+
+    const request = { query: text, fields: ['formatted_address', 'geometry', 'name'] };
+    this._placesService.findPlaceFromQuery(request, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+        const place = results[0];
+        if (place.formatted_address && place.formatted_address !== this.formData.address) {
+          this.formData = { ...this.formData, address: place.formatted_address };
+        }
+        this._addressLastResolved = this.formData.address;
+      } else {
+        // Keep user text; mark as attempted
+        this._addressLastResolved = text;
+      }
+    });
   }
 
   render() {
