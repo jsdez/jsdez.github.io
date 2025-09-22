@@ -161,8 +161,8 @@ class NeoPriceworkElement extends LitElement {
       .empty { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); text-align:center; padding: .75rem; border: 1px dashed var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); }
 
       /* Modal */
-      .backdrop { position:fixed; inset:0; background: rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding: 1rem; z-index:10000; }
-  .modal { width:min(720px, 100%); max-height: 90vh; display:flex; flex-direction:column; background: var(--ntx-form-theme-color-form-background, #fff); border: 1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+      .backdrop { position:fixed; inset:0; background: rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding: 10px; z-index:10000; }
+  .modal { width: min(720px, calc(100vw - 20px)); max-width: 100%; max-height: 90vh; display:flex; flex-direction:column; background: var(--ntx-form-theme-color-form-background, #fff); border: 1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); box-shadow: 0 10px 30px rgba(0,0,0,.25); box-sizing: border-box; }
   .modal-header, .modal-footer { flex: 0 0 auto; padding:.75rem 1rem; border-bottom:1px solid var(--ntx-form-theme-color-border, #898f94); display:flex; align-items:center; justify-content:space-between; }
       .modal-footer { border-bottom:0; border-top:1px solid var(--ntx-form-theme-color-border, #898f94); }
   .modal-body { flex: 1 1 auto; overflow:auto; padding:1rem; }
@@ -176,8 +176,8 @@ class NeoPriceworkElement extends LitElement {
   .pill { border-radius:999px; padding:.15rem .5rem; background: var(--ntx-form-theme-color-primary-light90, #e8f1f9); color: var(--ntx-form-theme-color-primary, #006bd6); font-weight:600; }
 
   /* Available work items (touch-friendly) */
-  .avail-list { display:flex; flex-direction:column; gap:.5rem; max-height: 260px; font-size: 14px; overflow:auto; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.5rem; background: var(--ntx-form-theme-color-form-background, #fff); }
-  .avail-row { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .6rem; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); min-height:44px; }
+  .avail-list { display:flex; flex-direction:column; gap:.5rem; max-height: 260px; font-size: 14px; overflow:auto; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.5rem; background: var(--ntx-form-theme-color-form-background, #fff); width: 100%; max-width: 100%; }
+  .avail-row { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .6rem; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); min-height:44px; width: 100%; box-sizing: border-box; }
   .avail-main { display:flex; align-items:center; gap:.5rem; min-width:0; flex:1 1 auto; }
   .avail-title { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .avail-price { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); white-space:nowrap; }
@@ -185,15 +185,15 @@ class NeoPriceworkElement extends LitElement {
 
       /* Selected items list styling */
       .list-table { display:flex; flex-direction:column; gap:.5rem; font-size:14px; }
-      /* Requested fixed column widths */
-      :host { --neo-col-unit: 50px; --neo-col-qty: 50px; --neo-col-cost: 50px; --neo-col-remove: 30px; }
+  /* Requested fixed column widths */
+  :host { --neo-col-unit: 50px; --neo-col-qty: 75px; --neo-col-cost: 50px; --neo-col-remove: 30px; }
       .list-row { padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); }
       .cell-name { min-width: 0; }
       .cell-name .title { font-weight:600; word-break: break-word; }
       .cell-unit { text-align: right; white-space: nowrap; }
       .cell-qty { text-align:right; }
       .cell-cost { white-space: nowrap; text-align:right; }
-      .qty-input { width: 100%; max-width: var(--neo-col-qty); }
+  .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
       .cell-label { display: none; margin-right: .25rem; color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); font-size: 12px; }
 
       /* Large screens: one-line grid with header */
@@ -203,7 +203,8 @@ class NeoPriceworkElement extends LitElement {
         .cell-numbers { display: contents; }
         .cell-remove { justify-self: end; }
         .cell-label { display: none; }
-        .list-head .center { text-align: center; }
+  .list-head .center { text-align: center; }
+  .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
       }
 
       /* Small screens: two-line layout, inline labels for numeric cells */
@@ -215,8 +216,10 @@ class NeoPriceworkElement extends LitElement {
         .cell-numbers { grid-column: 1 / -1; grid-row: 2; display:flex; justify-content: space-evenly; align-items:center; gap:.75rem; }
         .cell-unit, .cell-qty, .cell-cost { width: auto; text-align:center; }
         .cell-qty { display:flex; align-items:center; gap:.25rem; }
-        .qty-input { width: auto; max-width: 56px; }
+  :host { --neo-col-qty: 100px; }
+  .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
         .cell-label { display: inline; }
+  .avail-title { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
       }
     `;
   }

@@ -36,8 +36,8 @@
       .empty { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); text-align:center; padding: .75rem; border: 1px dashed var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); }
 
       /* Modal */
-      .backdrop { position:fixed; inset:0; background: rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding: 1rem; z-index:10000; }
-  .modal { width:min(720px, 100%); max-height: 90vh; display:flex; flex-direction:column; background: var(--ntx-form-theme-color-form-background, #fff); border: 1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+      .backdrop { position:fixed; inset:0; background: rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding: 10px; z-index:10000; }
+  .modal { width: min(720px, calc(100vw - 20px)); max-width: 100%; max-height: 90vh; display:flex; flex-direction:column; background: var(--ntx-form-theme-color-form-background, #fff); border: 1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); box-shadow: 0 10px 30px rgba(0,0,0,.25); box-sizing: border-box; }
   .modal-header, .modal-footer { flex: 0 0 auto; padding:.75rem 1rem; border-bottom:1px solid var(--ntx-form-theme-color-border, #898f94); display:flex; align-items:center; justify-content:space-between; }
       .modal-footer { border-bottom:0; border-top:1px solid var(--ntx-form-theme-color-border, #898f94); }
   .modal-body { flex: 1 1 auto; overflow:auto; padding:1rem; }
@@ -51,8 +51,8 @@
   .pill { border-radius:999px; padding:.15rem .5rem; background: var(--ntx-form-theme-color-primary-light90, #e8f1f9); color: var(--ntx-form-theme-color-primary, #006bd6); font-weight:600; }
 
   /* Available work items (touch-friendly) */
-  .avail-list { display:flex; flex-direction:column; gap:.5rem; max-height: 260px; font-size: 14px; overflow:auto; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.5rem; background: var(--ntx-form-theme-color-form-background, #fff); }
-  .avail-row { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .6rem; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); min-height:44px; }
+  .avail-list { display:flex; flex-direction:column; gap:.5rem; max-height: 260px; font-size: 14px; overflow:auto; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.5rem; background: var(--ntx-form-theme-color-form-background, #fff); width: 100%; max-width: 100%; }
+  .avail-row { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .6rem; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); min-height:44px; width: 100%; box-sizing: border-box; }
   .avail-main { display:flex; align-items:center; gap:.5rem; min-width:0; flex:1 1 auto; }
   .avail-title { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .avail-price { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); white-space:nowrap; }
@@ -60,15 +60,15 @@
 
       /* Selected items list styling */
       .list-table { display:flex; flex-direction:column; gap:.5rem; font-size:14px; }
-      /* Requested fixed column widths */
-      :host { --neo-col-unit: 50px; --neo-col-qty: 50px; --neo-col-cost: 50px; --neo-col-remove: 30px; }
+  /* Requested fixed column widths */
+  :host { --neo-col-unit: 50px; --neo-col-qty: 75px; --neo-col-cost: 50px; --neo-col-remove: 30px; }
       .list-row { padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); }
       .cell-name { min-width: 0; }
       .cell-name .title { font-weight:600; word-break: break-word; }
       .cell-unit { text-align: right; white-space: nowrap; }
       .cell-qty { text-align:right; }
       .cell-cost { white-space: nowrap; text-align:right; }
-      .qty-input { width: 100%; max-width: var(--neo-col-qty); }
+  .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
       .cell-label { display: none; margin-right: .25rem; color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); font-size: 12px; }
 
       /* Large screens: one-line grid with header */
@@ -78,7 +78,8 @@
         .cell-numbers { display: contents; }
         .cell-remove { justify-self: end; }
         .cell-label { display: none; }
-        .list-head .center { text-align: center; }
+  .list-head .center { text-align: center; }
+  .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
       }
 
       /* Small screens: two-line layout, inline labels for numeric cells */
@@ -90,8 +91,10 @@
         .cell-numbers { grid-column: 1 / -1; grid-row: 2; display:flex; justify-content: space-evenly; align-items:center; gap:.75rem; }
         .cell-unit, .cell-qty, .cell-cost { width: auto; text-align:center; }
         .cell-qty { display:flex; align-items:center; gap:.25rem; }
-        .qty-input { width: auto; max-width: 56px; }
+  :host { --neo-col-qty: 100px; }
+  .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
         .cell-label { display: inline; }
+  .avail-title { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
       }
     `}constructor(){super(),this.apiKey="",this.inputobj=null,this.outputobj={jobs:[],subtotal:0,count:0},this.contracts="",this.workItems={items:[]},this.currency="£",this.readOnly=!1,this.jobs=[],this.showModal=!1,this.editingIndex=-1,this.formData=this.getEmptyForm(),this.workItemQuery="",this._gmapsLoaded=!1,this._autocomplete=null,this._placesService=null,this._addressIsUserInput=!1,this._addressPreviousValue="",this._addressLastResolved=""}getEmptyForm(){return{id:"",address:"",contract:"",notes:"",items:[]}}updated(t){t.has("inputobj")&&this.inputobj&&Array.isArray(this.inputobj.jobs)&&(this.jobs=[...this.inputobj.jobs].map(t=>({id:t.id||nt(),address:t.address||"",contract:t.contract||"",notes:t.notes||"",items:Array.isArray(t.items)?t.items.map(t=>({itemCode:t.itemCode||"",name:t.name,price:Number(t.price)||0,quantity:Number(t.quantity)||0})):[]})),this.recomputeAndDispatch())}itemTotal(t){return(Number(t.quantity)||0)*(Number(t.price)||0)}jobTotal(t){return(Array.isArray(t.items)?t.items:[]).reduce((t,e)=>t+this.itemTotal(e),0)}subtotal(){return this.jobs.reduce((t,e)=>t+this.jobTotal(e),0)}recomputeAndDispatch(){this.outputobj={jobs:this.jobs,subtotal:this.subtotal(),count:this.jobs.length},this.dispatchEvent(new CustomEvent("ntx-value-change",{detail:this.outputobj,bubbles:!0,composed:!0}))}openAdd=()=>{this.readOnly||(this.formData={...this.getEmptyForm(),id:nt()},this.editingIndex=-1,this.showModal=!0,this.updateComplete.then(()=>this.ensureGoogleMapsLoadedAndInit()))};openEdit=t=>{if(this.readOnly)return;const e=this.jobs[t];e&&(this.formData={...e},this.editingIndex=t,this.showModal=!0,this.updateComplete.then(()=>this.ensureGoogleMapsLoadedAndInit()))};closeModal=()=>{this.showModal=!1};onInput=(t,e)=>{const i=t.target?.value;this.formData={...this.formData,[e]:i}};onContractChange=t=>{const e=t.target.value;this.formData={...this.formData,contract:e}};getContractOptions(){const t=this.contracts;let e=[];if(!t)return e;if(Array.isArray(t))e=t;else if("string"==typeof t){const i=t.trim();if(i.startsWith("[")&&i.endsWith("]")||i.startsWith("{")&&i.endsWith("}"))try{const t=JSON.parse(i);e=Array.isArray(t)?t:t&&"object"==typeof t?[t]:[]}catch{e=i.split(",")}else e=i.split(",")}else"object"==typeof t&&t&&(e=[t]);const i=e.map(t=>"string"==typeof t?t.trim():t&&"object"==typeof t?String(t.contract??t.name??t.value??"").trim():"").filter(Boolean),r=new Set;return i.filter(t=>!r.has(t)&&(r.add(t),!0))}getAvailableWorkItems(){const t=new Set((this.formData.items||[]).map(t=>t.name));let e=(Array.isArray(this.workItems?.items)?this.workItems.items:[]).filter(e=>!(this.formData.contract&&e.contract!==this.formData.contract||t.has(e.name)));const i=(this.workItemQuery||"").trim().toLowerCase();if(!i)return e;const r=i.split(/\s+/).filter(Boolean),s=[],o=[];for(const t of e){const e=(t.itemCode||"").toLowerCase();e&&e.includes(i)?s.push(t):o.push(t)}if(s.length>0)return s;const n=o.filter(t=>{const e=(t.name||"").toLowerCase();return r.every(t=>{if(e.includes(t))return!0;let i=0;for(const r of t){if(i=e.indexOf(r,i),-1===i)return!1;i++}return!0})});return n}addSelectedWorkItems=t=>{const e=t.target,i=Array.from(e.selectedOptions||[]);if(0===i.length)return;const r=this.getAvailableWorkItems(),s=new Set(i.map(t=>t.value)),o=r.filter(t=>s.has(t.name)).map(t=>({itemCode:t.itemCode||"",name:t.name,price:Number(t.price)||0,quantity:1})),n=[...this.formData.items||[],...o];this.formData={...this.formData,items:n},e.selectedIndex=-1};addWorkItem=t=>{if(!t)return;const e=(this.formData.items||[]).some(e=>e.name===t.name);if(e)return;const i=[...this.formData.items||[],{itemCode:t.itemCode||"",name:t.name,price:Number(t.price)||0,quantity:1}];this.formData={...this.formData,items:i}};updateItemQty=(t,e)=>{const i=Math.max(0,Number(e.target.value||0)),r=[...this.formData.items||[]];r[t]&&(r[t]={...r[t],quantity:i},this.formData={...this.formData,items:r})};removeSelectedItem=t=>{const e=(this.formData.items||[]).filter((e,i)=>i!==t);this.formData={...this.formData,items:e}};save=()=>{const t={...this.formData};if(Array.isArray(t.items)&&0!==t.items.length){if(-1===this.editingIndex)this.jobs=[...this.jobs,t];else{const e=[...this.jobs];e[this.editingIndex]=t,this.jobs=e}this.showModal=!1,this.recomputeAndDispatch()}};remove=t=>{const e=this.jobs.filter((e,i)=>i!==t);this.jobs=e,this.showModal=!1,this.recomputeAndDispatch()};renderRow(t,e){return T`
       <div class="card">
