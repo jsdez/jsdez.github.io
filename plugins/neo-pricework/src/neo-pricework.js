@@ -90,10 +90,73 @@ class NeoPriceworkElement extends LitElement {
           type: 'object',
           title: 'Output object',
           isValueField: true,
+          description: 'Complete job pricing data with summary totals',
           properties: {
-            jobs: { type: 'array' },
-            subtotal: { type: 'number' },
-            count: { type: 'number' }
+            jobs: {
+              type: 'array',
+              description: 'Array of all jobs with complete details',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', description: 'Unique job identifier' },
+                  address: { type: 'string', description: 'Job address' },
+                  contract: { type: 'string', description: 'Contract identifier' },
+                  contracts: { type: 'array', description: 'Array of all contracts for this job', items: { type: 'string' } },
+                  notes: { type: 'string', description: 'Job notes' },
+                  items: {
+                    type: 'array',
+                    description: 'Work items for this job',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        name: { type: 'string', description: 'Work item name' },
+                        itemCode: { type: 'string', description: 'Work item code' },
+                        price: { type: 'number', description: 'Unit price' },
+                        quantity: { type: 'number', description: 'Quantity selected' },
+                        cost: { type: 'number', description: 'Total cost (price × quantity)' },
+                        contract: { type: 'string', description: 'Associated contract' }
+                      }
+                    }
+                  },
+                  totalCost: { type: 'number', description: 'Total cost for this job' },
+                  totalItems: { type: 'number', description: 'Total number of work items in this job' }
+                }
+              }
+            },
+            summary: {
+              type: 'object',
+              description: 'Summary totals and counts',
+              properties: {
+                totalJobs: { type: 'number', description: 'Total number of jobs' },
+                totalWorkItems: { type: 'number', description: 'Total work items across all jobs' },
+                totalPrice: { type: 'number', description: 'Total price of all work across all jobs' },
+                currency: { type: 'string', description: 'Currency symbol used' },
+                averageJobValue: { type: 'number', description: 'Average value per job' }
+              }
+            },
+            mostExpensiveJob: {
+              type: 'object',
+              description: 'Details of the highest value job',
+              properties: {
+                id: { type: 'string' },
+                address: { type: 'string' },
+                totalCost: { type: 'number' },
+                totalItems: { type: 'number' }
+              }
+            },
+            contractBreakdown: {
+              type: 'array',
+              description: 'Cost breakdown by contract',
+              items: {
+                type: 'object',
+                properties: {
+                  contract: { type: 'string', description: 'Contract name' },
+                  totalCost: { type: 'number', description: 'Total cost for this contract' },
+                  jobCount: { type: 'number', description: 'Number of jobs using this contract' },
+                  itemCount: { type: 'number', description: 'Number of work items under this contract' }
+                }
+              }
+            }
           }
         }
       },
@@ -287,7 +350,59 @@ class NeoPriceworkElement extends LitElement {
 
   // Event dispatch to Nintex
   recomputeAndDispatch() {
-    this.outputobj = { jobs: this.jobs, subtotal: this.subtotal(), count: this.jobs.length };
+    const enrichedJobs = this.jobs.map(job => ({
+      ...job,
+      contracts: this.getJobContracts(job),
+      items: (job.items || []).map(item => ({
+        ...item,
+        cost: this.itemTotal(item)
+      })),
+      totalCost: this.jobTotal(job),
+      totalItems: (job.items || []).length
+    }));
+
+    const totalPrice = this.subtotal();
+    const totalJobs = this.jobs.length;
+    const totalWorkItems = this.jobs.reduce((sum, job) => sum + (job.items?.length || 0), 0);
+
+    // Find most expensive job
+    const mostExpensiveJob = enrichedJobs.reduce((max, job) => 
+      job.totalCost > (max?.totalCost || 0) ? {
+        id: job.id,
+        address: job.address,
+        totalCost: job.totalCost,
+        totalItems: job.totalItems
+      } : max, null);
+
+    // Contract breakdown
+    const contractMap = new Map();
+    enrichedJobs.forEach(job => {
+      job.contracts.forEach(contract => {
+        if (!contractMap.has(contract)) {
+          contractMap.set(contract, { contract, totalCost: 0, jobCount: 0, itemCount: 0 });
+        }
+        const breakdown = contractMap.get(contract);
+        breakdown.jobCount += 1;
+        breakdown.itemCount += job.items.filter(item => item.contract === contract).length;
+        breakdown.totalCost += job.items
+          .filter(item => item.contract === contract)
+          .reduce((sum, item) => sum + item.cost, 0);
+      });
+    });
+
+    this.outputobj = {
+      jobs: enrichedJobs,
+      summary: {
+        totalJobs,
+        totalWorkItems,
+        totalPrice,
+        currency: this.currency || '£',
+        averageJobValue: totalJobs > 0 ? totalPrice / totalJobs : 0
+      },
+      mostExpensiveJob,
+      contractBreakdown: Array.from(contractMap.values())
+    };
+
     this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: this.outputobj, bubbles: true, composed: true }));
   }
 
