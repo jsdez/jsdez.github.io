@@ -489,28 +489,34 @@ class NeoPriceworkElement extends LitElement {
                 <span class="title">${job.address || 'Untitled job'}</span>
               </div>
               ${contracts.length ? html`
-                <div class="field-line" style="margin-top:.25rem;">
-                  <span class="inline-label">Contracts:</span>
-                  <span class="pill-group">
-                    ${contracts.map(c => html`<span class="pill">${c}</span>`)}
-                  </span>
+                <div class="field-line" style="margin-top:.25rem; display:flex; align-items:center; justify-content:space-between;">
+                  <div style="display:flex; align-items:center; gap:.5rem;">
+                    <span class="inline-label">Contracts:</span>
+                    <span class="pill-group">
+                      ${contracts.map(c => html`<span class="pill">${c}</span>`)}
+                    </span>
+                  </div>
+                  <div class="summary">${(job.items?.length||0)} work item${(job.items?.length||0)===1?'':'s'} - <strong>${this.currency}${this.jobTotal(job).toFixed(2)}</strong></div>
                 </div>
-              `: ''}
+              `: html`
+                <div class="field-line" style="margin-top:.25rem;">
+                  <div class="summary">${(job.items?.length||0)} work item${(job.items?.length||0)===1?'':'s'} - <strong>${this.currency}${this.jobTotal(job).toFixed(2)}</strong></div>
+                </div>
+              `}
             </div>
             <div class="right">
-              <div class="summary">${(job.items?.length||0)} work item${(job.items?.length||0)===1?'':'s'} - <strong>${this.currency}${this.jobTotal(job).toFixed(2)}</strong></div>
               <div class="right-actions">
                 ${!this.readOnly ? html`
-                  <button class="btn btn-light btn-compact" title="Edit" aria-label="Edit" @click=${() => this.openEdit(index)}>
+                  <button class="btn btn-light btn-compact" title="Edit" aria-label="Edit" @click=${() => this.openEdit(index)} style="min-width: 90px; display:flex; justify-content:space-between; align-items:center;">
                     <span>Edit</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M4 21h4l11-11-4-4L4 17v4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                      <path d="M13 5l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </button>
                 `: ''}
                 ${hasNotes ? html`
-                  <button class="btn btn-light btn-compact" title="${open?'Hide':'Show'} notes" aria-label="${open?'Hide':'Show'} notes" @click=${() => this.toggleNotes(job.id)}>
+                  <button class="btn btn-light btn-compact" title="${open?'Hide':'Show'} notes" aria-label="${open?'Hide':'Show'} notes" @click=${() => this.toggleNotes(job.id)} style="min-width: 90px; display:flex; justify-content:space-between; align-items:center;">
                     <span>Notes</span>
                     ${open ? html`
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 15l6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
