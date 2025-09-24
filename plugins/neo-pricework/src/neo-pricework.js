@@ -94,66 +94,71 @@ class NeoPriceworkElement extends LitElement {
           properties: {
             jobs: {
               type: 'array',
+              title: 'Jobs',
               description: 'Array of all jobs with complete details',
               items: {
                 type: 'object',
                 properties: {
-                  id: { type: 'string', description: 'Unique job identifier' },
-                  address: { type: 'string', description: 'Job address' },
-                  contract: { type: 'string', description: 'Contract identifier' },
-                  contracts: { type: 'array', description: 'Array of all contracts for this job', items: { type: 'string' } },
-                  notes: { type: 'string', description: 'Job notes' },
+                  id: { type: 'string', title: 'Job ID', description: 'Unique job identifier' },
+                  address: { type: 'string', title: 'Address', description: 'Job address' },
+                  contract: { type: 'string', title: 'Contract', description: 'Contract identifier' },
+                  contracts: { type: 'array', title: 'Contracts', description: 'Array of all contracts for this job', items: { type: 'string' } },
+                  notes: { type: 'string', title: 'Notes', description: 'Job notes' },
                   items: {
                     type: 'array',
+                    title: 'Work Items',
                     description: 'Work items for this job',
                     items: {
                       type: 'object',
                       properties: {
-                        name: { type: 'string', description: 'Work item name' },
-                        itemCode: { type: 'string', description: 'Work item code' },
-                        price: { type: 'number', description: 'Unit price' },
-                        quantity: { type: 'number', description: 'Quantity selected' },
-                        cost: { type: 'number', description: 'Total cost (price × quantity)' },
-                        contract: { type: 'string', description: 'Associated contract' }
+                        name: { type: 'string', title: 'Item Name', description: 'Work item name' },
+                        itemCode: { type: 'string', title: 'Item Code', description: 'Work item code' },
+                        price: { type: 'number', title: 'Unit Price', description: 'Unit price' },
+                        quantity: { type: 'number', title: 'Quantity', description: 'Quantity selected' },
+                        cost: { type: 'number', title: 'Total Cost', description: 'Total cost (price × quantity)' },
+                        contract: { type: 'string', title: 'Contract', description: 'Associated contract' }
                       }
                     }
                   },
-                  totalCost: { type: 'number', description: 'Total cost for this job' },
-                  totalItems: { type: 'number', description: 'Total number of work items in this job' }
+                  totalCost: { type: 'number', title: 'Job Total Cost', description: 'Total cost for this job' },
+                  totalItems: { type: 'number', title: 'Total Items', description: 'Total number of work items in this job' }
                 }
               }
             },
             summary: {
               type: 'object',
+              title: 'Summary',
               description: 'Summary totals and counts',
               properties: {
-                totalJobs: { type: 'number', description: 'Total number of jobs' },
-                totalWorkItems: { type: 'number', description: 'Total work items across all jobs' },
-                totalPrice: { type: 'number', description: 'Total price of all work across all jobs' },
-                currency: { type: 'string', description: 'Currency symbol used' },
-                averageJobValue: { type: 'number', description: 'Average value per job' }
+                totalJobs: { type: 'number', title: 'Total Jobs', description: 'Total number of jobs' },
+                totalWorkItems: { type: 'number', title: 'Total Work Items', description: 'Total work items across all jobs' },
+                totalPrice: { type: 'number', title: 'Total Price', description: 'Total price of all work across all jobs' },
+                currency: { type: 'string', title: 'Currency', description: 'Currency symbol used' },
+                averageJobValue: { type: 'number', title: 'Average Job Value', description: 'Average value per job' }
               }
             },
             mostExpensiveJob: {
               type: 'object',
+              title: 'Most Expensive Job',
               description: 'Details of the highest value job',
               properties: {
-                id: { type: 'string' },
-                address: { type: 'string' },
-                totalCost: { type: 'number' },
-                totalItems: { type: 'number' }
+                id: { type: 'string', title: 'Job ID' },
+                address: { type: 'string', title: 'Address' },
+                totalCost: { type: 'number', title: 'Total Cost' },
+                totalItems: { type: 'number', title: 'Total Items' }
               }
             },
             contractBreakdown: {
               type: 'array',
+              title: 'Contract Breakdown',
               description: 'Cost breakdown by contract',
               items: {
                 type: 'object',
                 properties: {
-                  contract: { type: 'string', description: 'Contract name' },
-                  totalCost: { type: 'number', description: 'Total cost for this contract' },
-                  jobCount: { type: 'number', description: 'Number of jobs using this contract' },
-                  itemCount: { type: 'number', description: 'Number of work items under this contract' }
+                  contract: { type: 'string', title: 'Contract', description: 'Contract name' },
+                  totalCost: { type: 'number', title: 'Total Cost', description: 'Total cost for this contract' },
+                  jobCount: { type: 'number', title: 'Job Count', description: 'Number of jobs using this contract' },
+                  itemCount: { type: 'number', title: 'Item Count', description: 'Number of work items under this contract' }
                 }
               }
             }
