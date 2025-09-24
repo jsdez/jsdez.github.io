@@ -297,14 +297,23 @@ class NeoPriceworkElement extends LitElement {
 
       /* Print-specific styles for complex view */
       @media print {
-        .complex-view { font-size: 10px; }
-        .complex-view .card { margin-bottom: .25rem; box-shadow: none; border: 1px solid #000; }
+        :host { font-family: 'Arial', sans-serif !important; }
+        .complex-view { font-size: 10px; color: #000 !important; }
+        .complex-view .card { margin-bottom: .25rem; box-shadow: none; border: 1px solid #000; background: #fff !important; }
         .complex-view .card-body { padding: .25rem .5rem; }
         .complex-view .job-header { margin-bottom: .25rem; }
+        .complex-view .job-address { color: #000 !important; }
+        .complex-view .job-summary { color: #000 !important; }
+        .complex-view .items-table { border: 1px solid #000; }
+        .complex-view .items-table th { background: #f0f0f0 !important; color: #000 !important; border: 1px solid #000; }
+        .complex-view .items-table td { border: 1px solid #000; color: #000 !important; }
         .complex-view .items-table th, .complex-view .items-table td { padding: .15rem .25rem; font-size: 9px; }
-        .complex-view .job-notes { font-size: 9px; padding: .15rem .25rem; }
-        .complex-view .pill { font-size: 8px; }
-        .complex-view .total-summary { font-size: 12px; margin-top: .5rem; }
+        .complex-view .job-notes { font-size: 9px; padding: .15rem .25rem; background: #f8f8f8 !important; color: #000 !important; border-left: 2px solid #000 !important; }
+        .complex-view .pill { font-size: 8px; background: #e8e8e8 !important; color: #000 !important; border: 1px solid #000; }
+        .complex-view .total-summary { font-size: 12px; margin-top: .5rem; color: #000 !important; border-top: 2px solid #000; padding-top: .5rem; }
+        .complex-view .list-header { border-bottom: 2px solid #000; padding-bottom: .25rem; margin-bottom: .5rem; }
+        .complex-view .card-title { color: #000 !important; }
+        .complex-view .badge { background: #f0f0f0 !important; color: #000 !important; border: 1px solid #000; }
         
         /* Hide interactive elements in print */
         .btn, .icon-btn, .modal, .backdrop { display: none !important; }
@@ -312,6 +321,10 @@ class NeoPriceworkElement extends LitElement {
         /* Ensure good page breaks */
         .complex-view .card { page-break-inside: avoid; }
         .complex-view .items-table { page-break-inside: avoid; }
+        .complex-view .total-summary { page-break-inside: avoid; }
+        
+        /* Force black text for all elements */
+        .complex-view * { color: #000 !important; }
       }
     `;
   }
