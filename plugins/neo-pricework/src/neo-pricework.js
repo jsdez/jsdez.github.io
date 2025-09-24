@@ -161,6 +161,13 @@ class NeoPriceworkElement extends LitElement {
   .icon-btn.neutral { color: var(--ntx-form-theme-color-input-text, #161718); }
   .icon-btn.primary { color: var(--ntx-form-theme-color-primary, #006bd6); }
 
+  /* Field lines and labels in list rows */
+  .field-line { display:flex; align-items:center; flex-wrap:wrap; gap:.5rem; }
+  .inline-label { font-weight:600; color: var(--ntx-form-theme-color-input-text, #161718); }
+  .right .summary { text-align:right; margin-bottom:.35rem; color: var(--ntx-form-theme-color-input-text, #161718); }
+  .right-actions { display:flex; flex-direction:column; gap:.35rem; align-items:flex-end; }
+  .btn-compact { padding:.3rem .5rem; line-height:1.1; }
+
       .footer { margin-top:.75rem; display:flex; justify-content:space-between; align-items:center; }
       .total { font-weight:700; }
 
@@ -477,32 +484,39 @@ class NeoPriceworkElement extends LitElement {
         <div class="card-body">
           <div class="row">
             <div>
-              <div class="title">${job.address || 'Untitled job'}</div>
+              <div class="field-line">
+                <span class="inline-label">Address:</span>
+                <span class="title">${job.address || 'Untitled job'}</span>
+              </div>
               ${contracts.length ? html`
-                <div class="pill-group">
-                  ${contracts.map(c => html`<span class="pill">${c}</span>`)}
+                <div class="field-line" style="margin-top:.25rem;">
+                  <span class="inline-label">Contracts:</span>
+                  <span class="pill-group">
+                    ${contracts.map(c => html`<span class="pill">${c}</span>`)}
+                  </span>
                 </div>
               `: ''}
-              <div class="muted">${(job.items?.length||0)} work item${(job.items?.length||0)===1?'':'s'}</div>
             </div>
             <div class="right">
-              <div class="actions-inline">
-                <div class="total">${this.currency}${this.jobTotal(job).toFixed(2)}</div>
+              <div class="summary">${(job.items?.length||0)} work item${(job.items?.length||0)===1?'':'s'} - <strong>${this.currency}${this.jobTotal(job).toFixed(2)}</strong></div>
+              <div class="right-actions">
+                ${!this.readOnly ? html`
+                  <button class="btn btn-light btn-compact" title="Edit" aria-label="Edit" @click=${() => this.openEdit(index)}>
+                    <span>Edit</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M4 21h4l11-11-4-4L4 17v4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                      <path d="M13 5l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                  </button>
+                `: ''}
                 ${hasNotes ? html`
-                  <button class="icon-btn neutral" title="${open?'Hide':'Show'} notes" aria-label="${open?'Hide':'Show'} notes" @click=${() => this.toggleNotes(job.id)}>
+                  <button class="btn btn-light btn-compact" title="${open?'Hide':'Show'} notes" aria-label="${open?'Hide':'Show'} notes" @click=${() => this.toggleNotes(job.id)}>
+                    <span>Notes</span>
                     ${open ? html`
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 15l6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     ` : html`
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     `}
-                  </button>
-                `: ''}
-                ${!this.readOnly ? html`
-                  <button class="icon-btn primary" title="Edit" aria-label="Edit" @click=${() => this.openEdit(index)}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M4 21h4l11-11-4-4L4 17v4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                      <path d="M13 5l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
                   </button>
                 `: ''}
               </div>
