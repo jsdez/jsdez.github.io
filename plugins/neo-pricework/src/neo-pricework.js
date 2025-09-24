@@ -75,12 +75,7 @@ class NeoPriceworkElement extends LitElement {
             }
           }
         },
-        currency: {
-          type: 'string',
-          title: 'Currency symbol',
-          description: 'Displayed before amounts',
-          defaultValue: '£'
-        },
+
         readOnly: {
           type: 'boolean',
           title: 'Read only',
@@ -116,7 +111,8 @@ class NeoPriceworkElement extends LitElement {
                         price: { type: 'number', title: 'Unit Price', description: 'Unit price' },
                         quantity: { type: 'number', title: 'Quantity', description: 'Quantity selected' },
                         cost: { type: 'number', title: 'Total Cost', description: 'Total cost (price × quantity)' },
-                        contract: { type: 'string', title: 'Contract', description: 'Associated contract' }
+                        contract: { type: 'string', title: 'Contract', description: 'Associated contract' },
+                        spid: { type: 'integer', title: 'SharePoint ID', description: 'SharePoint list item ID for traceability' }
                       }
                     }
                   },
@@ -125,43 +121,9 @@ class NeoPriceworkElement extends LitElement {
                 }
               }
             },
-            summary: {
-              type: 'object',
-              title: 'Summary',
-              description: 'Summary totals and counts',
-              properties: {
-                totalJobs: { type: 'number', title: 'Total Jobs', description: 'Total number of jobs' },
-                totalWorkItems: { type: 'number', title: 'Total Work Items', description: 'Total work items across all jobs' },
-                totalPrice: { type: 'number', title: 'Total Price', description: 'Total price of all work across all jobs' },
-                currency: { type: 'string', title: 'Currency', description: 'Currency symbol used' },
-                averageJobValue: { type: 'number', title: 'Average Job Value', description: 'Average value per job' }
-              }
-            },
-            mostExpensiveJob: {
-              type: 'object',
-              title: 'Most Expensive Job',
-              description: 'Details of the highest value job',
-              properties: {
-                id: { type: 'string', title: 'Job ID' },
-                address: { type: 'string', title: 'Address' },
-                totalCost: { type: 'number', title: 'Total Cost' },
-                totalItems: { type: 'number', title: 'Total Items' }
-              }
-            },
-            contractBreakdown: {
-              type: 'array',
-              title: 'Contract Breakdown',
-              description: 'Cost breakdown by contract',
-              items: {
-                type: 'object',
-                properties: {
-                  contract: { type: 'string', title: 'Contract', description: 'Contract name' },
-                  totalCost: { type: 'number', title: 'Total Cost', description: 'Total cost for this contract' },
-                  jobCount: { type: 'number', title: 'Job Count', description: 'Number of jobs using this contract' },
-                  itemCount: { type: 'number', title: 'Item Count', description: 'Number of work items under this contract' }
-                }
-              }
-            }
+            totalJobs: { type: 'number', title: 'Total Jobs', description: 'Total number of jobs' },
+            totalWorkItems: { type: 'number', title: 'Total Work Items', description: 'Total work items across all jobs' },
+            totalPrice: { type: 'number', title: 'Total Price', description: 'Total price of all work across all jobs' }
           }
         }
       },
@@ -181,7 +143,6 @@ class NeoPriceworkElement extends LitElement {
     outputobj: { type: Object },
   contracts: { type: String },
   workItems: { type: Object },
-    currency: { type: String },
     readOnly: { type: Boolean, reflect: true },
     jobs: { type: Array },
     showModal: { type: Boolean },
@@ -342,7 +303,7 @@ class NeoPriceworkElement extends LitElement {
         address: j.address || '',
         contract: j.contract || '',
         notes: j.notes || '',
-  items: Array.isArray(j.items) ? j.items.map(it => ({ itemCode: it.itemCode || '', name: it.name, price: Number(it.price) || 0, quantity: Number(it.quantity) || 0, contract: it.contract || '' })) : []
+  items: Array.isArray(j.items) ? j.items.map(it => ({ itemCode: it.itemCode || '', name: it.name, price: Number(it.price) || 0, quantity: Number(it.quantity) || 0, contract: it.contract || '', spid: it.spid || null })) : []
       }));
       this.recomputeAndDispatch();
     }
@@ -370,42 +331,11 @@ class NeoPriceworkElement extends LitElement {
     const totalJobs = this.jobs.length;
     const totalWorkItems = this.jobs.reduce((sum, job) => sum + (job.items?.length || 0), 0);
 
-    // Find most expensive job
-    const mostExpensiveJob = enrichedJobs.reduce((max, job) => 
-      job.totalCost > (max?.totalCost || 0) ? {
-        id: job.id,
-        address: job.address,
-        totalCost: job.totalCost,
-        totalItems: job.totalItems
-      } : max, null);
-
-    // Contract breakdown
-    const contractMap = new Map();
-    enrichedJobs.forEach(job => {
-      job.contracts.forEach(contract => {
-        if (!contractMap.has(contract)) {
-          contractMap.set(contract, { contract, totalCost: 0, jobCount: 0, itemCount: 0 });
-        }
-        const breakdown = contractMap.get(contract);
-        breakdown.jobCount += 1;
-        breakdown.itemCount += job.items.filter(item => item.contract === contract).length;
-        breakdown.totalCost += job.items
-          .filter(item => item.contract === contract)
-          .reduce((sum, item) => sum + item.cost, 0);
-      });
-    });
-
     this.outputobj = {
       jobs: enrichedJobs,
-      summary: {
-        totalJobs,
-        totalWorkItems,
-        totalPrice,
-        currency: this.currency || '£',
-        averageJobValue: totalJobs > 0 ? totalPrice / totalJobs : 0
-      },
-      mostExpensiveJob,
-      contractBreakdown: Array.from(contractMap.values())
+      totalJobs,
+      totalWorkItems,
+      totalPrice
     };
 
     this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: this.outputobj, bubbles: true, composed: true }));
@@ -539,7 +469,7 @@ class NeoPriceworkElement extends LitElement {
     if (!w) return;
     const exists = (this.formData.items || []).some(i => i.name === w.name);
     if (exists) return;
-    const next = [ ...(this.formData.items || []), { itemCode: w.itemCode || '', name: w.name, price: Number(w.price) || 0, quantity: 1, contract: w.contract || this.formData.contract || '' } ];
+    const next = [ ...(this.formData.items || []), { itemCode: w.itemCode || '', name: w.name, price: Number(w.price) || 0, quantity: 1, contract: w.contract || this.formData.contract || '', spid: w.spid || null } ];
     this.formData = { ...this.formData, items: next };
   }
 
