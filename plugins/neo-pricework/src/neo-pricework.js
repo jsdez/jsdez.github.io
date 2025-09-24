@@ -786,10 +786,17 @@ class NeoPriceworkElement extends LitElement {
     this._autocomplete.addListener('place_changed', () => {
       const place = this._autocomplete.getPlace();
       if (!place || !place.formatted_address) return;
-      this._addressIsUserInput = true;
+      
+      // Mark as NOT user input since this is an autocomplete selection
+      this._addressIsUserInput = false;
       this.formData = { ...this.formData, address: place.formatted_address };
-      this._addressPreviousValue = this.formData.address;
-      this._addressLastResolved = this.formData.address;
+      this._addressPreviousValue = place.formatted_address;
+      this._addressLastResolved = place.formatted_address;
+      
+      // Reset the flag after a brief delay to handle future user input
+      setTimeout(() => {
+        this._addressIsUserInput = true;
+      }, 100);
     });
     // Prepare Places Service for programmatic resolution
     this._placesService = new google.maps.places.PlacesService(document.createElement('div'));
@@ -800,21 +807,35 @@ class NeoPriceworkElement extends LitElement {
     const value = e.target.value;
     this.formData = { ...this.formData, address: value };
     this._addressPreviousValue = value;
+    // Reset the resolved flag when user types - they're changing the selection
+    this._addressLastResolved = '';
   }
 
   onAddressBlur = () => {
-    // Resolve only if gmaps ready and user typed text different from last resolved
+    // Skip resolution if address was just set by autocomplete selection
+    if (!this._addressIsUserInput) return;
+    
     const text = this.formData.address || '';
     if (!text.trim()) return;
+    
+    // Don't resolve if we don't have Google Maps or if this address was already resolved
     if (!this._gmapsLoaded || !this._placesService || !window.google || !window.google.maps) return;
     if (text === this._addressLastResolved) return;
+    
+    // Don't resolve if the text hasn't changed since the last input event
+    if (text === this._addressPreviousValue && this._addressLastResolved) return;
 
     const request = { query: text, fields: ['formatted_address', 'geometry', 'name'] };
     this._placesService.findPlaceFromQuery(request, (results, status) => {
+      // Only update if the component still has focus on this address and hasn't changed
+      if (this.formData.address !== text) return;
+      
       if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
         const place = results[0];
         if (place.formatted_address && place.formatted_address !== this.formData.address) {
+          this._addressIsUserInput = false; // Prevent recursive resolution
           this.formData = { ...this.formData, address: place.formatted_address };
+          this._addressIsUserInput = true; // Reset for next interaction
         }
         this._addressLastResolved = this.formData.address;
       } else {
