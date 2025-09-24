@@ -1,5 +1,4 @@
-import { LitElement, html, css, unsafeCSS } from 'lit';
-import componentStyles from './neo-pricework.css';
+import { LitElement, html, css } from 'lit';
 
 // Simple id generator for new jobs
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -85,48 +84,162 @@ class NeoPriceworkElement extends LitElement {
         readOnly: {
           type: 'boolean',
           title: 'Read only',
-          description: 'Whether this control should be read-only',
           defaultValue: false
         },
         outputobj: {
           type: 'object',
           title: 'Output object',
-          description: 'Form-bound output',
-          isValueField: true
+          isValueField: true,
+          properties: {
+            jobs: { type: 'array' },
+            subtotal: { type: 'number' },
+            count: { type: 'number' }
+          }
         }
       },
+      events: ['ntx-value-change'],
       standardProperties: {
         fieldLabel: true,
         description: true,
+        readOnly: true,
+        visibility: true
       }
     };
   }
 
-  static get properties() {
-    return {
-      apiKey: { type: String },
-      inputobj: { type: Object },
-      outputobj: { type: Object },
-      contracts: { type: String },
-      workItems: { type: Object },
-      currency: { type: String },
-      readOnly: { type: Boolean },
-      jobs: { type: Array, state: true },
-      showModal: { type: Boolean, state: true },
-      editingIndex: { type: Number, state: true },
-      formData: { type: Object, state: true },
-      workItemQuery: { type: String, state: true },
-      noteOpen: { type: Object, state: true },
-    };
-  }
+  static properties = {
+  apiKey: { type: String },
+    inputobj: { type: Object },
+    outputobj: { type: Object },
+  contracts: { type: String },
+  workItems: { type: Object },
+    currency: { type: String },
+    readOnly: { type: Boolean, reflect: true },
+    jobs: { type: Array },
+    showModal: { type: Boolean },
+    editingIndex: { type: Number },
+    formData: { type: Object },
+  workItemQuery: { type: String },
+  noteOpen: { type: Object },
+  };
 
   static get styles() {
-    return css`${unsafeCSS(componentStyles)}`;
+    // Bootstrap-like with Nintex variables
+    return css`
+  :host { display:block; font-family: var(--ntx-form-theme-font-family, 'Open Sans', 'Helvetica', 'Arial', sans-serif); }
+  :host, :host *, :host *::before, :host *::after { box-sizing: border-box; }
+
+      .card { background: var(--ntx-form-theme-color-form-background, #fff); border: 1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); box-shadow: var(--ntx-form-theme-popover-box-shadow, none); }
+      .card + .card { margin-top: .75rem; }
+      .card-body { padding: .75rem 1rem; }
+      .card-title { margin: 0; font-weight: 600; color: var(--ntx-form-theme-color-input-text, #161718); }
+      .muted { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); }
+
+      .list-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem; }
+      .badge { display:inline-block; padding:.25rem .5rem; border-radius:999px; background: var(--ntx-form-theme-color-secondary-button-background, #fff); color: var(--ntx-form-theme-color-secondary, #575c61); border:1px solid var(--ntx-form-theme-color-border, #898f94); font-size:12px; }
+
+      .btn { cursor:pointer; display:inline-flex; align-items:center; gap:.35rem; font-weight:600; border-radius: var(--ntx-form-theme-border-radius, 4px); border:1px solid transparent; padding:.45rem .75rem; line-height:1.25; }
+      .btn:disabled { opacity:.65; cursor:not-allowed; }
+      .btn-primary { background: var(--ntx-form-theme-color-primary-button-background, #006bd6); color: var(--ntx-form-theme-color-primary-button-font, #fff); }
+      .btn-primary:hover { background: var(--ntx-form-theme-color-primary-button-hover, #2d83dc); }
+      .btn-outline { background: transparent; color: var(--ntx-form-theme-color-primary, #006bd6); border-color: var(--ntx-form-theme-color-primary, #006bd6); }
+      .btn-outline:hover { background: color-mix(in srgb, var(--ntx-form-theme-color-primary, #006bd6), #fff 85%); }
+      .btn-danger { background: var(--ntx-form-theme-color-error, #e60000); color:#fff; }
+  .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); background: var(--ntx-form-theme-color-form-background, #fff); color: var(--ntx-form-theme-color-error, #e60000); }
+  .icon-btn:hover { background: color-mix(in srgb, var(--ntx-form-theme-color-error, #e60000), #fff 90%); }
+  .icon-btn.success { background: var(--ntx-form-theme-color-success, #2e7d32); color: #fff; border-color: var(--ntx-form-theme-color-success, #2e7d32); }
+  .icon-btn.success:hover { background: color-mix(in srgb, var(--ntx-form-theme-color-success, #2e7d32), #000 10%); }
+      .btn-light { background: var(--ntx-form-theme-color-form-background, #fff); border:1px solid var(--ntx-form-theme-color-border, #898f94); color: var(--ntx-form-theme-color-input-text, #161718); }
+
+      .rows { display:flex; flex-direction:column; gap:.5rem; }
+      .row { display:grid; grid-template-columns: 1fr auto; gap:.5rem; align-items:start; }
+      .title { font-weight:600; }
+      .actions { display:flex; gap:.5rem; }
+    .actions-inline { display:flex; align-items:center; gap:.5rem; }
+    .pill-group { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.25rem; }
+    .notes { margin-top:.5rem; padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border-left:3px solid var(--ntx-form-theme-color-primary, #006bd6); border-radius: var(--ntx-form-theme-border-radius, 4px); }
+  .icon-btn.neutral { color: var(--ntx-form-theme-color-input-text, #161718); }
+  .icon-btn.primary { color: var(--ntx-form-theme-color-primary, #006bd6); }
+
+  /* Field lines and labels in list rows */
+  .field-line { display:flex; align-items:center; flex-wrap:wrap; gap:.5rem; }
+  .inline-label { font-weight:600; color: var(--ntx-form-theme-color-input-text, #161718); }
+  .right .summary { text-align:right; margin-bottom:.35rem; color: var(--ntx-form-theme-color-input-text, #161718); }
+  .right-actions { display:flex; flex-direction:column; gap:.35rem; align-items:flex-end; }
+  .btn-compact { padding:.3rem .5rem; line-height:1.1; }
+
+      .footer { margin-top:.75rem; display:flex; justify-content:space-between; align-items:center; }
+      .total { font-weight:700; }
+
+      .empty { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); text-align:center; padding: .75rem; border: 1px dashed var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); }
+
+      /* Modal */
+      .backdrop { position:fixed; inset:0; background: rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding: 10px; z-index:10000; }
+  .modal { width: min(720px, calc(100vw - 20px)); max-width: 100%; max-height: 90vh; display:flex; flex-direction:column; background: var(--ntx-form-theme-color-form-background, #fff); border: 1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); box-shadow: 0 10px 30px rgba(0,0,0,.25); box-sizing: border-box; }
+  .modal-header, .modal-footer { flex: 0 0 auto; padding:.75rem 1rem; border-bottom:1px solid var(--ntx-form-theme-color-border, #898f94); display:flex; align-items:center; justify-content:space-between; }
+      .modal-footer { border-bottom:0; border-top:1px solid var(--ntx-form-theme-color-border, #898f94); }
+  .modal-body { flex: 1 1 auto; overflow:auto; padding:1rem; }
+      .form-grid { display:grid; grid-template-columns: 1fr; gap:.75rem; }
+      @media (min-width: 600px) { .form-grid { grid-template-columns: 1fr 1fr; } }
+      .form-group { display:flex; flex-direction:column; gap:.25rem; }
+      label { font-size: var(--ntx-form-theme-text-label-size, 14px); color: var(--ntx-form-theme-color-input-text, #161718); }
+  input, textarea, select { display:block; width: 100%; max-width: 100%; font-size: var(--ntx-form-theme-text-input-size, 14px); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.45rem .6rem; background: var(--ntx-form-theme-color-input-background, #fff); color: var(--ntx-form-theme-color-input-text, #161718); }
+      textarea { min-height: 72px; resize: vertical; }
+      .right { text-align:right; }
+  .pill { border-radius:999px; padding:.15rem .5rem; background: var(--ntx-form-theme-color-primary-light90, #e8f1f9); color: var(--ntx-form-theme-color-primary, #006bd6); font-weight:600; }
+
+  /* Available work items (touch-friendly) */
+  .avail-list { display:flex; flex-direction:column; gap:.5rem; max-height: 260px; font-size: 14px; overflow:auto; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.5rem; background: var(--ntx-form-theme-color-form-background, #fff); width: 100%; max-width: 100%; }
+  .avail-row { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .6rem; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); min-height:44px; width: 100%; box-sizing: border-box; }
+  .avail-main { display:flex; align-items:center; gap:.5rem; min-width:0; flex:1 1 auto; }
+  .avail-title { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .avail-price { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); white-space:nowrap; }
+  .avail-actions { flex:0 0 auto; }
+
+      /* Selected items list styling */
+      .list-table { display:flex; flex-direction:column; gap:.5rem; font-size:14px; }
+  /* Requested fixed column widths */
+  :host { --neo-col-unit: 50px; --neo-col-qty: 75px; --neo-col-cost: 50px; --neo-col-remove: 30px; }
+      .list-row { padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); }
+      .cell-name { min-width: 0; }
+      .cell-name .title { font-weight:600; word-break: break-word; }
+      .cell-unit { text-align: right; white-space: nowrap; }
+      .cell-qty { text-align:right; }
+      .cell-cost { white-space: nowrap; text-align:right; }
+  .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
+      .cell-label { display: none; margin-right: .25rem; color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); font-size: 12px; }
+
+      /* Large screens: one-line grid with header */
+      @media (min-width: 576px) {
+        .list-head { display:grid; grid-template-columns: 1fr var(--neo-col-unit) var(--neo-col-qty) var(--neo-col-cost) var(--neo-col-remove); gap:.75rem; align-items:center; padding:.25rem .75rem; }
+        .list-row { display:grid; grid-template-columns: 1fr var(--neo-col-unit) var(--neo-col-qty) var(--neo-col-cost) var(--neo-col-remove); gap:.75rem; align-items:center; }
+        .cell-numbers { display: contents; }
+        .cell-remove { justify-self: end; }
+        .cell-label { display: none; }
+  .list-head .center { text-align: center; }
+  .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
+      }
+
+      /* Small screens: two-line layout, inline labels for numeric cells */
+      @media (max-width: 575.98px) {
+        .list-head { display:none; }
+        .list-row { display:grid; grid-template-columns: 1fr var(--neo-col-remove); grid-template-rows: auto auto; row-gap:.25rem; }
+        .cell-name { grid-column: 1 / 2; grid-row: 1; }
+        .cell-remove { grid-column: 2 / 3; grid-row: 1; justify-self:end; display:flex; }
+        .cell-numbers { grid-column: 1 / -1; grid-row: 2; display:flex; justify-content: space-evenly; align-items:center; gap:.75rem; }
+        .cell-unit, .cell-qty, .cell-cost { width: auto; text-align:center; }
+        .cell-qty { display:flex; align-items:center; gap:.25rem; }
+  :host { --neo-col-qty: 100px; }
+  .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
+        .cell-label { display: inline; }
+  .avail-title { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+      }
+    `;
   }
 
   constructor() {
     super();
-    this.apiKey = '';
+  this.apiKey = '';
     this.inputobj = null;
     this.outputobj = { jobs: [], subtotal: 0, count: 0 };
     this.contracts = '';
@@ -137,43 +250,42 @@ class NeoPriceworkElement extends LitElement {
     this.showModal = false;
     this.editingIndex = -1;
     this.formData = this.getEmptyForm();
-    this.workItemQuery = '';
+  this.workItemQuery = '';
 
-    // Address autocomplete state
-    this._gmapsLoaded = false;
-    this._autocomplete = null;
-    this._placesService = null;
-    this._addressIsUserInput = false;
-    this._addressPreviousValue = '';
-    this._addressLastResolved = '';
-    this.noteOpen = new Set();
+  // Address autocomplete state
+  this._gmapsLoaded = false;
+  this._autocomplete = null;
+  this._placesService = null;
+  this._addressIsUserInput = false;
+  this._addressPreviousValue = '';
+  this._addressLastResolved = '';
+  this.noteOpen = new Set();
   }
 
   getEmptyForm() {
-    return { id: '', address: '', contract: '', items: [], notes: '' };
+    return { id: '', address: '', contract: '', notes: '', items: [] };
   }
 
-  updated(changedProperties) {
-    if (changedProperties.has('inputobj') && this.inputobj) {
-      const jobs = Array.isArray(this.inputobj.jobs) ? this.inputobj.jobs : [];
-      this.jobs = jobs.map(j => ({ ...j, id: j.id || uid() }));
+  updated(changed) {
+    if (changed.has('inputobj') && this.inputobj && Array.isArray(this.inputobj.jobs)) {
+      // Load initial jobs from input
+      this.jobs = [...this.inputobj.jobs].map(j => ({
+        id: j.id || uid(),
+        address: j.address || '',
+        contract: j.contract || '',
+        notes: j.notes || '',
+  items: Array.isArray(j.items) ? j.items.map(it => ({ itemCode: it.itemCode || '', name: it.name, price: Number(it.price) || 0, quantity: Number(it.quantity) || 0, contract: it.contract || '' })) : []
+      }));
       this.recomputeAndDispatch();
     }
   }
 
-  // Totals helpers
-  itemTotal(item) {
-    return Number(item.price || 0) * Number(item.quantity || 0);
-  }
+  // Computed helpers
+  itemTotal(item) { return (Number(item.quantity) || 0) * (Number(item.price) || 0); }
+  jobTotal(job) { return (Array.isArray(job.items) ? job.items : []).reduce((s, it) => s + this.itemTotal(it), 0); }
+  subtotal() { return this.jobs.reduce((sum, j) => sum + this.jobTotal(j), 0); }
 
-  jobTotal(job) {
-    return (job.items || []).reduce((sum, it) => sum + this.itemTotal(it), 0);
-  }
-
-  subtotal() {
-    return this.jobs.reduce((sum, j) => sum + this.jobTotal(j), 0);
-  }
-
+  // Event dispatch to Nintex
   recomputeAndDispatch() {
     this.outputobj = { jobs: this.jobs, subtotal: this.subtotal(), count: this.jobs.length };
     this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: this.outputobj, bubbles: true, composed: true }));
@@ -185,7 +297,7 @@ class NeoPriceworkElement extends LitElement {
     this.formData = { ...this.getEmptyForm(), id: uid() };
     this.editingIndex = -1;
     this.showModal = true;
-    this.updateComplete.then(() => this.ensureGoogleMapsLoadedAndInit());
+  this.updateComplete.then(()=>this.ensureGoogleMapsLoadedAndInit());
   }
 
   openEdit = (index) => {
@@ -195,12 +307,10 @@ class NeoPriceworkElement extends LitElement {
     this.formData = { ...j };
     this.editingIndex = index;
     this.showModal = true;
-    this.updateComplete.then(() => this.ensureGoogleMapsLoadedAndInit());
+  this.updateComplete.then(()=>this.ensureGoogleMapsLoadedAndInit());
   }
 
-  closeModal = () => {
-    this.showModal = false;
-  }
+  closeModal = () => { this.showModal = false; }
 
   onInput = (e, field) => {
     const value = e.target?.value;
@@ -209,8 +319,8 @@ class NeoPriceworkElement extends LitElement {
 
   onContractChange = (e) => {
     const contract = e.target.value;
-    // Preserve selected items and filter when contract changes
-    this.formData = { ...this.formData, contract };
+  // Preserve selected items and filter when contract changes
+  this.formData = { ...this.formData, contract };
   }
 
   getContractOptions() {
@@ -299,7 +409,7 @@ class NeoPriceworkElement extends LitElement {
     const adds = available
       .filter(w => toAddNames.has(w.name))
       .map(w => ({ itemCode: w.itemCode || '', name: w.name, price: Number(w.price) || 0, quantity: 1 }));
-    const next = [...(this.formData.items || []), ...adds];
+    const next = [ ...(this.formData.items || []), ...adds ];
     this.formData = { ...this.formData, items: next };
     // Clear selection for better UX
     select.selectedIndex = -1;
@@ -309,7 +419,7 @@ class NeoPriceworkElement extends LitElement {
     if (!w) return;
     const exists = (this.formData.items || []).some(i => i.name === w.name);
     if (exists) return;
-    const next = [...(this.formData.items || []), { itemCode: w.itemCode || '', name: w.name, price: Number(w.price) || 0, quantity: 1, contract: w.contract || this.formData.contract || '' }];
+    const next = [ ...(this.formData.items || []), { itemCode: w.itemCode || '', name: w.name, price: Number(w.price) || 0, quantity: 1, contract: w.contract || this.formData.contract || '' } ];
     this.formData = { ...this.formData, items: next };
   }
 
@@ -317,10 +427,10 @@ class NeoPriceworkElement extends LitElement {
     const set = new Set();
     // From job.contract (string, csv, or array)
     const raw = job.contract;
-    if (Array.isArray(raw)) raw.forEach(v => { if (v) set.add(String(v).trim()); });
-    else if (typeof raw === 'string') raw.split(',').map(s => s.trim()).filter(Boolean).forEach(v => set.add(v));
+    if (Array.isArray(raw)) raw.forEach(v=>{ if (v) set.add(String(v).trim()); });
+    else if (typeof raw === 'string') raw.split(',').map(s=>s.trim()).filter(Boolean).forEach(v=>set.add(v));
     // From items
-    (job.items || []).forEach(it => { if (it && it.contract) set.add(String(it.contract).trim()); });
+    (job.items||[]).forEach(it=>{ if (it && it.contract) set.add(String(it.contract).trim()); });
     return Array.from(set).filter(Boolean);
   }
 
@@ -372,53 +482,47 @@ class NeoPriceworkElement extends LitElement {
     return html`
       <div class="card">
         <div class="card-body">
-          <div class="row" style="display: grid; grid-template-columns: 1fr auto; gap: .5rem .75rem; align-items: start;">
-            <!-- Row 1: Address (left) -->
-            <div class="field-line">
-              <span class="inline-label">Address:</span>
-              <span class="title">${job.address || 'Untitled job'}</span>
-            </div>
-            <div></div>
-
-            <!-- Row 2: Contracts (left) + Summary (right) -->
-            <div class="field-line" style="margin-top:.25rem;">
-              <span class="inline-label">Contracts:</span>
+          <div class="row">
+            <div>
+              <div class="field-line">
+                <span class="inline-label">Address:</span>
+                <span class="title">${job.address || 'Untitled job'}</span>
+              </div>
               ${contracts.length ? html`
-                <span class="pill-group">
-                  ${contracts.map(c => html`<span class="pill">${c}</span>`)}
-                </span>
-              ` : html`<span class="muted">None</span>`}
+                <div class="field-line" style="margin-top:.25rem;">
+                  <span class="inline-label">Contracts:</span>
+                  <span class="pill-group">
+                    ${contracts.map(c => html`<span class="pill">${c}</span>`)}
+                  </span>
+                </div>
+              `: ''}
             </div>
             <div class="right">
-              <div class="summary">${(job.items?.length || 0)} work item${(job.items?.length || 0) === 1 ? '' : 's'} - ${this.currency}${this.jobTotal(job).toFixed(2)}</div>
-            </div>
-
-            <!-- Row 3: Actions (right) -->
-            <div></div>
-            <div class="right-actions">
-              ${!this.readOnly ? html`
-                <button class="btn btn-light btn-compact" title="Edit" aria-label="Edit" @click=${() => this.openEdit(index)}>
-                  <span>Edit</span>
-                  <!-- refined pencil icon -->
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 21l1.5-.5L18.5 6.5a2.12 2.12 0 10-3-3L1.5 17.5 3 21z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                    <path d="M14.5 4.5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                  </svg>
-                </button>
-              ` : ''}
-              ${hasNotes ? html`
-                <button class="btn btn-light btn-compact" title="${open ? 'Hide' : 'Show'} notes" aria-label="${open ? 'Hide' : 'Show'} notes" @click=${() => this.toggleNotes(job.id)}>
-                  <span>Notes</span>
-                  ${open ? html`
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 15l6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  ` : html`
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  `}
-                </button>
-              ` : ''}
+              <div class="summary">${(job.items?.length||0)} work item${(job.items?.length||0)===1?'':'s'} - <strong>${this.currency}${this.jobTotal(job).toFixed(2)}</strong></div>
+              <div class="right-actions">
+                ${!this.readOnly ? html`
+                  <button class="btn btn-light btn-compact" title="Edit" aria-label="Edit" @click=${() => this.openEdit(index)}>
+                    <span>Edit</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M4 21h4l11-11-4-4L4 17v4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                      <path d="M13 5l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                  </button>
+                `: ''}
+                ${hasNotes ? html`
+                  <button class="btn btn-light btn-compact" title="${open?'Hide':'Show'} notes" aria-label="${open?'Hide':'Show'} notes" @click=${() => this.toggleNotes(job.id)}>
+                    <span>Notes</span>
+                    ${open ? html`
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 15l6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    ` : html`
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    `}
+                  </button>
+                `: ''}
+              </div>
             </div>
           </div>
-          ${open && hasNotes ? html`<div class="notes">${job.notes}</div>` : ''}
+          ${open && hasNotes ? html`<div class="notes">${job.notes}</div>`: ''}
         </div>
       </div>
     `;
@@ -428,7 +532,7 @@ class NeoPriceworkElement extends LitElement {
     if (!this.showModal) return null;
     const editing = this.editingIndex > -1;
     return html`
-      <div class="backdrop" @click=${(e) => { if (e.target === e.currentTarget) this.closeModal(); }}>
+      <div class="backdrop" @click=${(e)=>{ if (e.target === e.currentTarget) this.closeModal(); }}>
         <div class="modal" role="dialog" aria-modal="true">
           <div class="modal-header">
             <div class="card-title">${editing ? 'Edit Job' : 'Add Job'}</div>
@@ -454,7 +558,7 @@ class NeoPriceworkElement extends LitElement {
               <div class="form-group" style="grid-column: 1 / -1;">
                 <label>Work Items</label>
                 <input type="text" placeholder="Search work items" .value=${this.workItemQuery}
-                  @input=${(e) => { this.workItemQuery = e.target.value; }} />
+                  @input=${(e)=>{ this.workItemQuery = e.target.value; }} />
                 <div class="avail-list" role="list">
                   ${this.getAvailableWorkItems().map(w => html`
                     <div class="avail-row" role="listitem">
@@ -463,7 +567,7 @@ class NeoPriceworkElement extends LitElement {
                         <div class="avail-price">${this.currency}${Number(w.price).toFixed(2)}</div>
                       </div>
                       <div class="avail-actions">
-                        <button class="icon-btn success" @click=${() => this.addWorkItem(w)} aria-label=${`Add ${w.name}`} title="Add">
+                        <button class="icon-btn success" @click=${()=>this.addWorkItem(w)} aria-label=${`Add ${w.name}`} title="Add">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                           </svg>
@@ -474,7 +578,7 @@ class NeoPriceworkElement extends LitElement {
                 </div>
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
-                ${Array.isArray(this.formData.items) && this.formData.items.length > 0 ? html`
+                ${Array.isArray(this.formData.items) && this.formData.items.length>0 ? html`
                   <div class="list-table">
                     <div class="list-head sm">
                       <div>Selected Work Item</div>
@@ -483,18 +587,18 @@ class NeoPriceworkElement extends LitElement {
                       <div class="center">Cost</div>
                       <div></div>
                     </div>
-                    ${this.formData.items.map((it, idx) => html`
+                    ${this.formData.items.map((it, idx)=> html`
                       <div class="list-row">
                         <div class="cell-name">
                           <div class="title">${it.name}</div>
                         </div>
                         <div class="cell-numbers">
                           <div class="cell-unit"><span class="cell-label">Price </span><span class="sm">${this.currency}${Number(it.price).toFixed(2)}</span></div>
-                          <div class="cell-qty"><span class="cell-label">Qty </span><input class="qty-input" type="number" min="0" step="1" .value=${String(it.quantity ?? 0)} @input=${(e) => this.updateItemQty(idx, e)} /></div>
+                          <div class="cell-qty"><span class="cell-label">Qty </span><input class="qty-input" type="number" min="0" step="1" .value=${String(it.quantity ?? 0)} @input=${(e)=>this.updateItemQty(idx, e)} /></div>
                           <div class="cell-cost"><span class="cell-label">Cost </span><span class="total">${this.currency}${this.itemTotal(it).toFixed(2)}</span></div>
                         </div>
                         <div class="cell-remove">
-                          <button class="icon-btn" title="Remove" aria-label="Remove" @click=${() => this.removeSelectedItem(idx)}>
+                          <button class="icon-btn" title="Remove" aria-label="Remove" @click=${()=>this.removeSelectedItem(idx)}>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                               <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
@@ -510,16 +614,16 @@ class NeoPriceworkElement extends LitElement {
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
                 <label>Job Notes</label>
-                <textarea .value=${this.formData.notes} @input=${(e) => this.onInput(e, 'notes')} placeholder="Add any notes about this job"></textarea>
+                <textarea .value=${this.formData.notes} @input=${(e)=>this.onInput(e,'notes')} placeholder="Add any notes about this job"></textarea>
               </div>
             </div>
           </div>
           <div class="modal-footer">
             <div class="muted">Job total: <strong>${this.currency}${this.jobTotal(this.formData).toFixed(2)}</strong></div>
             <div class="actions">
-              ${editing ? html`<button class="btn btn-danger" @click=${() => this.remove(this.editingIndex)}>Delete</button>` : ''}
+              ${editing ? html`<button class="btn btn-danger" @click=${()=>this.remove(this.editingIndex)}>Delete</button>` : ''}
               <button class="btn btn-outline" @click=${this.closeModal}>Cancel</button>
-              <button class="btn btn-primary" @click=${this.save} ?disabled=${!(this.formData.items?.length > 0)}>Save</button>
+              <button class="btn btn-primary" @click=${this.save} ?disabled=${!(this.formData.items?.length>0)}>Save</button>
             </div>
           </div>
         </div>
@@ -627,11 +731,11 @@ class NeoPriceworkElement extends LitElement {
     return html`
       <div class="list-header">
         <div class="card-title">Jobs</div>
-        <span class="badge">${this.jobs.length} item${this.jobs.length === 1 ? '' : 's'}</span>
+        <span class="badge">${this.jobs.length} item${this.jobs.length===1?'':'s'}</span>
       </div>
 
       <div class="rows">
-        ${this.jobs.length === 0 ? html`<div class="empty">No jobs yet. Use the button below to add your first job.</div>` : this.jobs.map((j, i) => this.renderRow(j, i))}
+        ${this.jobs.length === 0 ? html`<div class="empty">No jobs yet. Use the button below to add your first job.</div>` : this.jobs.map((j,i)=>this.renderRow(j,i))}
       </div>
 
       <div class="footer">
@@ -643,7 +747,7 @@ class NeoPriceworkElement extends LitElement {
         <div style="margin-top:.5rem; display:flex; justify-content:flex-end;">
           <button class="btn btn-primary" @click=${this.openAdd}>Add Job</button>
         </div>
-      ` : ''}
+      `: ''}
 
       ${this.renderModal()}
     `;
