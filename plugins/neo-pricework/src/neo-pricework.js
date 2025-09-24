@@ -42,6 +42,8 @@ class NeoPriceworkElement extends LitElement {
                         name: { type: 'string' },
                         price: { type: 'number' },
                         quantity: { type: 'number' },
+                        contract: { type: 'string' },
+                        spid: { type: 'integer' }
                       }
                     }
                   }
@@ -296,15 +298,55 @@ class NeoPriceworkElement extends LitElement {
   }
 
   updated(changed) {
-    if (changed.has('inputobj') && this.inputobj && Array.isArray(this.inputobj.jobs)) {
-      // Load initial jobs from input
-      this.jobs = [...this.inputobj.jobs].map(j => ({
+    if (changed.has('inputobj')) {
+      this.loadFromInputObject();
+    }
+  }
+
+  loadFromInputObject() {
+    // Handle both direct jobs array and full output object structure
+    let jobsToLoad = [];
+    
+    if (this.inputobj) {
+      // If inputobj has a jobs property (output from another neo-pricework control)
+      if (Array.isArray(this.inputobj.jobs)) {
+        jobsToLoad = this.inputobj.jobs;
+      }
+      // If inputobj is directly a jobs array
+      else if (Array.isArray(this.inputobj)) {
+        jobsToLoad = this.inputobj;
+      }
+      // If inputobj has jobs at root level (legacy format)
+      else if (this.inputobj.jobs && Array.isArray(this.inputobj.jobs)) {
+        jobsToLoad = this.inputobj.jobs;
+      }
+    }
+
+    if (jobsToLoad.length > 0) {
+      // Load jobs with all properties preserved
+      this.jobs = jobsToLoad.map(j => ({
         id: j.id || uid(),
         address: j.address || '',
         contract: j.contract || '',
+        contracts: j.contracts || [], // Preserve computed contracts if present
         notes: j.notes || '',
-  items: Array.isArray(j.items) ? j.items.map(it => ({ itemCode: it.itemCode || '', name: it.name, price: Number(it.price) || 0, quantity: Number(it.quantity) || 0, contract: it.contract || '', spid: it.spid || null })) : []
+        items: Array.isArray(j.items) ? j.items.map(it => ({
+          itemCode: it.itemCode || '',
+          name: it.name || '',
+          price: Number(it.price) || 0,
+          quantity: Number(it.quantity) || 0,
+          contract: it.contract || '',
+          spid: it.spid || null,
+          cost: it.cost || 0 // Preserve computed cost if present
+        })) : [],
+        totalCost: j.totalCost || 0, // Preserve computed totals if present
+        totalItems: j.totalItems || 0
       }));
+      
+      this.recomputeAndDispatch();
+    } else {
+      // Clear jobs if no valid input
+      this.jobs = [];
       this.recomputeAndDispatch();
     }
   }
