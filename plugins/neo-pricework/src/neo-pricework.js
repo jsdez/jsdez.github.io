@@ -120,6 +120,7 @@ class NeoPriceworkElement extends LitElement {
     editingIndex: { type: Number },
     formData: { type: Object },
   workItemQuery: { type: String },
+  noteOpen: { type: Object },
   };
 
   static get styles() {
@@ -154,6 +155,11 @@ class NeoPriceworkElement extends LitElement {
       .row { display:grid; grid-template-columns: 1fr auto; gap:.5rem; align-items:start; }
       .title { font-weight:600; }
       .actions { display:flex; gap:.5rem; }
+    .actions-inline { display:flex; align-items:center; gap:.5rem; }
+    .pill-group { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.25rem; }
+    .notes { margin-top:.5rem; padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border-left:3px solid var(--ntx-form-theme-color-primary, #006bd6); border-radius: var(--ntx-form-theme-border-radius, 4px); }
+  .icon-btn.neutral { color: var(--ntx-form-theme-color-input-text, #161718); }
+  .icon-btn.primary { color: var(--ntx-form-theme-color-primary, #006bd6); }
 
       .footer { margin-top:.75rem; display:flex; justify-content:space-between; align-items:center; }
       .total { font-weight:700; }
@@ -246,6 +252,7 @@ class NeoPriceworkElement extends LitElement {
   this._addressIsUserInput = false;
   this._addressPreviousValue = '';
   this._addressLastResolved = '';
+  this.noteOpen = new Set();
   }
 
   getEmptyForm() {
@@ -260,7 +267,7 @@ class NeoPriceworkElement extends LitElement {
         address: j.address || '',
         contract: j.contract || '',
         notes: j.notes || '',
-  items: Array.isArray(j.items) ? j.items.map(it => ({ itemCode: it.itemCode || '', name: it.name, price: Number(it.price) || 0, quantity: Number(it.quantity) || 0 })) : []
+  items: Array.isArray(j.items) ? j.items.map(it => ({ itemCode: it.itemCode || '', name: it.name, price: Number(it.price) || 0, quantity: Number(it.quantity) || 0, contract: it.contract || '' })) : []
       }));
       this.recomputeAndDispatch();
     }
@@ -405,8 +412,25 @@ class NeoPriceworkElement extends LitElement {
     if (!w) return;
     const exists = (this.formData.items || []).some(i => i.name === w.name);
     if (exists) return;
-    const next = [ ...(this.formData.items || []), { itemCode: w.itemCode || '', name: w.name, price: Number(w.price) || 0, quantity: 1 } ];
+    const next = [ ...(this.formData.items || []), { itemCode: w.itemCode || '', name: w.name, price: Number(w.price) || 0, quantity: 1, contract: w.contract || this.formData.contract || '' } ];
     this.formData = { ...this.formData, items: next };
+  }
+
+  getJobContracts(job) {
+    const set = new Set();
+    // From job.contract (string, csv, or array)
+    const raw = job.contract;
+    if (Array.isArray(raw)) raw.forEach(v=>{ if (v) set.add(String(v).trim()); });
+    else if (typeof raw === 'string') raw.split(',').map(s=>s.trim()).filter(Boolean).forEach(v=>set.add(v));
+    // From items
+    (job.items||[]).forEach(it=>{ if (it && it.contract) set.add(String(it.contract).trim()); });
+    return Array.from(set).filter(Boolean);
+  }
+
+  toggleNotes = (id) => {
+    const next = new Set(this.noteOpen || []);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    this.noteOpen = next;
   }
 
   updateItemQty = (index, e) => {
@@ -445,24 +469,46 @@ class NeoPriceworkElement extends LitElement {
   }
 
   renderRow(job, index) {
+    const contracts = this.getJobContracts(job);
+    const hasNotes = !!(job.notes && String(job.notes).trim());
+    const open = this.noteOpen?.has(job.id);
     return html`
       <div class="card">
         <div class="card-body">
           <div class="row">
             <div>
               <div class="title">${job.address || 'Untitled job'}</div>
-              ${job.contract ? html`<div class="muted">Contract: <span class="pill">${job.contract}</span></div>` : ''}
+              ${contracts.length ? html`
+                <div class="pill-group">
+                  ${contracts.map(c => html`<span class="pill">${c}</span>`)}
+                </div>
+              `: ''}
               <div class="muted">${(job.items?.length||0)} work item${(job.items?.length||0)===1?'':'s'}</div>
             </div>
             <div class="right">
-              <div class="total">${this.currency}${this.jobTotal(job).toFixed(2)}</div>
-              ${!this.readOnly ? html`
-                <div class="actions">
-                  <button class="btn btn-light" @click=${() => this.openEdit(index)}>Edit</button>
-                </div>
-              `: ''}
+              <div class="actions-inline">
+                <div class="total">${this.currency}${this.jobTotal(job).toFixed(2)}</div>
+                ${hasNotes ? html`
+                  <button class="icon-btn neutral" title="${open?'Hide':'Show'} notes" aria-label="${open?'Hide':'Show'} notes" @click=${() => this.toggleNotes(job.id)}>
+                    ${open ? html`
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 15l6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    ` : html`
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    `}
+                  </button>
+                `: ''}
+                ${!this.readOnly ? html`
+                  <button class="icon-btn primary" title="Edit" aria-label="Edit" @click=${() => this.openEdit(index)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M4 21h4l11-11-4-4L4 17v4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                      <path d="M13 5l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                  </button>
+                `: ''}
+              </div>
             </div>
           </div>
+          ${open && hasNotes ? html`<div class="notes">${job.notes}</div>`: ''}
         </div>
       </div>
     `;
