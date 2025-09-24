@@ -83,13 +83,6 @@ class NeoPriceworkElement extends LitElement {
           title: 'Read only',
           defaultValue: false
         },
-        readOnlyDisplayStyle: {
-          type: 'string',
-          title: 'Read-only display style',
-          description: 'How to display jobs in read-only mode',
-          enum: ['Simple', 'Complex'],
-          defaultValue: 'Simple'
-        },
         outputobj: {
           type: 'object',
           title: 'Output object',
@@ -153,13 +146,12 @@ class NeoPriceworkElement extends LitElement {
   contracts: { type: String },
   workItems: { type: Object },
     readOnly: { type: Boolean, reflect: true },
-    readOnlyDisplayStyle: { type: String },
     jobs: { type: Array },
     showModal: { type: Boolean },
     editingIndex: { type: Number },
     formData: { type: Object },
   workItemQuery: { type: String },
-  noteOpen: { type: Object },
+  detailsOpen: { type: Object },
   };
 
   static get styles() {
@@ -274,57 +266,47 @@ class NeoPriceworkElement extends LitElement {
   .avail-title { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
       }
 
-      /* Complex read-only view styles */
-      .complex-view { font-size: 12px; }
-      .complex-view .card { margin-bottom: .5rem; break-inside: avoid; }
-      .complex-view .card-body { padding: .5rem .75rem; }
-      .complex-view .job-header { display: grid; grid-template-columns: 1fr auto; gap: .5rem; align-items: start; margin-bottom: .5rem; }
-      .complex-view .job-info { min-width: 0; }
-      .complex-view .job-address { font-weight: 600; margin-bottom: .25rem; }
-      .complex-view .job-contracts { margin-bottom: .25rem; }
-      .complex-view .job-summary { text-align: right; font-weight: 600; }
-      .complex-view .job-notes { margin-top: .5rem; padding: .25rem .5rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border-left: 2px solid var(--ntx-form-theme-color-primary, #006bd6); font-size: 11px; }
-      .complex-view .items-table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
-      .complex-view .items-table th, .complex-view .items-table td { padding: .25rem .5rem; text-align: left; border-bottom: 1px solid var(--ntx-form-theme-color-border, #898f94); font-size: 11px; }
-      .complex-view .items-table th { background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); font-weight: 600; }
-      .complex-view .items-table .text-right { text-align: right; }
-      .complex-view .items-table .code-col { width: 80px; }
-      .complex-view .items-table .qty-col { width: 50px; text-align: center; }
-      .complex-view .items-table .price-col { width: 70px; }
-      .complex-view .items-table .cost-col { width: 70px; }
-      .complex-view .pill { font-size: 10px; padding: .1rem .35rem; }
-      .complex-view .total-summary { margin-top: .75rem; text-align: right; font-weight: 700; font-size: 14px; }
+      /* Details view styles */
+      .job-details { margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--ntx-form-theme-color-border, #898f94); }
+      .job-details .items-table { width: 100%; border-collapse: collapse; margin-bottom: .5rem; font-size: 12px; }
+      .job-details .items-table th, .job-details .items-table td { padding: .35rem .5rem; text-align: left; border-bottom: 1px solid var(--ntx-form-theme-color-border, #898f94); }
+      .job-details .items-table th { background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); font-weight: 600; }
+      .job-details .items-table .text-right { text-align: right; }
+      .job-details .items-table .code-col { width: 80px; }
+      .job-details .items-table .contract-col { width: 90px; }
+      .job-details .items-table .qty-col { width: 50px; text-align: center; }
+      .job-details .items-table .price-col { width: 70px; }
+      .job-details .items-table .cost-col { width: 70px; }
+      .job-details .job-notes { padding: .5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border-left: 3px solid var(--ntx-form-theme-color-primary, #006bd6); border-radius: var(--ntx-form-theme-border-radius, 4px); font-size: 13px; }
+      
+      /* Read-only mode: always show details */
+      :host([readonly]) .job-details { display: block; }
+      :host([readonly]) .btn { display: none; }
 
-      /* Print-specific styles for complex view */
+      /* Print-specific styles */
       @media print {
         :host { font-family: 'Arial', sans-serif !important; }
-        .complex-view { font-size: 10px; color: #000 !important; }
-        .complex-view .card { margin-bottom: .25rem; box-shadow: none; border: 1px solid #000; background: #fff !important; }
-        .complex-view .card-body { padding: .25rem .5rem; }
-        .complex-view .job-header { margin-bottom: .25rem; }
-        .complex-view .job-address { color: #000 !important; }
-        .complex-view .job-summary { color: #000 !important; }
-        .complex-view .items-table { border: 1px solid #000; }
-        .complex-view .items-table th { background: #f0f0f0 !important; color: #000 !important; border: 1px solid #000; }
-        .complex-view .items-table td { border: 1px solid #000; color: #000 !important; }
-        .complex-view .items-table th, .complex-view .items-table td { padding: .15rem .25rem; font-size: 9px; }
-        .complex-view .job-notes { font-size: 9px; padding: .15rem .25rem; background: #f8f8f8 !important; color: #000 !important; border-left: 2px solid #000 !important; }
-        .complex-view .pill { font-size: 8px; background: #e8e8e8 !important; color: #000 !important; border: 1px solid #000; }
-        .complex-view .total-summary { font-size: 12px; margin-top: .5rem; color: #000 !important; border-top: 2px solid #000; padding-top: .5rem; }
-        .complex-view .list-header { border-bottom: 2px solid #000; padding-bottom: .25rem; margin-bottom: .5rem; }
-        .complex-view .card-title { color: #000 !important; }
-        .complex-view .badge { background: #f0f0f0 !important; color: #000 !important; border: 1px solid #000; }
+        .card { margin-bottom: .25rem; box-shadow: none; border: 1px solid #000; background: #fff !important; page-break-inside: avoid; }
+        .card-body { padding: .25rem .5rem; }
+        .list-header { border-bottom: 2px solid #000; padding-bottom: .25rem; margin-bottom: .5rem; }
+        .card-title, .badge { color: #000 !important; }
+        .badge { background: #f0f0f0 !important; border: 1px solid #000; }
+        .footer { border-top: 2px solid #000; padding-top: .5rem; margin-top: .5rem; }
+        
+        /* Always show details in print */
+        .job-details { display: block !important; }
+        .job-details .items-table { border: 1px solid #000; font-size: 9px; page-break-inside: avoid; }
+        .job-details .items-table th { background: #f0f0f0 !important; color: #000 !important; border: 1px solid #000; }
+        .job-details .items-table td { border: 1px solid #000; color: #000 !important; }
+        .job-details .items-table th, .job-details .items-table td { padding: .1rem .2rem; }
+        .job-details .job-notes { font-size: 9px; padding: .15rem .25rem; background: #f8f8f8 !important; color: #000 !important; border-left: 2px solid #000 !important; }
+        .pill { font-size: 8px; background: #e8e8e8 !important; color: #000 !important; border: 1px solid #000; }
         
         /* Hide interactive elements in print */
         .btn, .icon-btn, .modal, .backdrop { display: none !important; }
         
-        /* Ensure good page breaks */
-        .complex-view .card { page-break-inside: avoid; }
-        .complex-view .items-table { page-break-inside: avoid; }
-        .complex-view .total-summary { page-break-inside: avoid; }
-        
         /* Force black text for all elements */
-        .complex-view * { color: #000 !important; }
+        * { color: #000 !important; }
       }
     `;
   }
@@ -338,7 +320,6 @@ class NeoPriceworkElement extends LitElement {
     this.workItems = { items: [] };
     this.currency = '£';
     this.readOnly = false;
-    this.readOnlyDisplayStyle = 'Simple';
     this.jobs = [];
     this.showModal = false;
     this.editingIndex = -1;
@@ -352,7 +333,7 @@ class NeoPriceworkElement extends LitElement {
   this._addressIsUserInput = false;
   this._addressPreviousValue = '';
   this._addressLastResolved = '';
-  this.noteOpen = new Set();
+  this.detailsOpen = new Set();
   }
 
   getEmptyForm() {
@@ -588,10 +569,10 @@ class NeoPriceworkElement extends LitElement {
     return Array.from(set).filter(Boolean);
   }
 
-  toggleNotes = (id) => {
-    const next = new Set(this.noteOpen || []);
+  toggleDetails = (id) => {
+    const next = new Set(this.detailsOpen || []);
     if (next.has(id)) next.delete(id); else next.add(id);
-    this.noteOpen = next;
+    this.detailsOpen = next;
   }
 
   updateItemQty = (index, e) => {
@@ -632,7 +613,10 @@ class NeoPriceworkElement extends LitElement {
   renderRow(job, index) {
     const contracts = this.getJobContracts(job);
     const hasNotes = !!(job.notes && String(job.notes).trim());
-    const open = this.noteOpen?.has(job.id);
+    const items = job.items || [];
+    const hasDetails = items.length > 0 || hasNotes;
+    const detailsVisible = this.readOnly || this.detailsOpen?.has(job.id);
+    
     return html`
       <div class="card">
         <div class="card-body">
@@ -650,11 +634,11 @@ class NeoPriceworkElement extends LitElement {
                       ${contracts.map(c => html`<span class="pill">${c}</span>`)}
                     </span>
                   </div>
-                  <div class="summary">${(job.items?.length||0)} work item${(job.items?.length||0)===1?'':'s'} - <strong>${this.currency}${this.jobTotal(job).toFixed(2)}</strong></div>
+                  <div class="summary">${items.length} work item${items.length===1?'':'s'} - <strong>${this.currency}${this.jobTotal(job).toFixed(2)}</strong></div>
                 </div>
               `: html`
                 <div class="field-line" style="margin-top:.25rem;">
-                  <div class="summary">${(job.items?.length||0)} work item${(job.items?.length||0)===1?'':'s'} - <strong>${this.currency}${this.jobTotal(job).toFixed(2)}</strong></div>
+                  <div class="summary">${items.length} work item${items.length===1?'':'s'} - <strong>${this.currency}${this.jobTotal(job).toFixed(2)}</strong></div>
                 </div>
               `}
             </div>
@@ -669,10 +653,10 @@ class NeoPriceworkElement extends LitElement {
                     </svg>
                   </button>
                 `: ''}
-                ${hasNotes ? html`
-                  <button class="btn btn-light btn-compact" title="${open?'Hide':'Show'} notes" aria-label="${open?'Hide':'Show'} notes" @click=${() => this.toggleNotes(job.id)} style="min-width: 90px; display:flex; justify-content:space-between; align-items:center;">
-                    <span>Notes</span>
-                    ${open ? html`
+                ${hasDetails && !this.readOnly ? html`
+                  <button class="btn btn-light btn-compact" title="${detailsVisible?'Hide':'Show'} details" aria-label="${detailsVisible?'Hide':'Show'} details" @click=${() => this.toggleDetails(job.id)} style="min-width: 90px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Details</span>
+                    ${detailsVisible ? html`
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 15l6-6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     ` : html`
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -682,68 +666,43 @@ class NeoPriceworkElement extends LitElement {
               </div>
             </div>
           </div>
-          ${open && hasNotes ? html`<div class="notes">${job.notes}</div>`: ''}
-        </div>
-      </div>
-    `;
-  }
-
-  renderComplexRow(job, index) {
-    const contracts = this.getJobContracts(job);
-    const hasNotes = !!(job.notes && String(job.notes).trim());
-    const items = job.items || [];
-    
-    return html`
-      <div class="card">
-        <div class="card-body">
-          <div class="job-header">
-            <div class="job-info">
-              <div class="job-address">${job.address || 'Untitled job'}</div>
-              ${contracts.length ? html`
-                <div class="job-contracts">
-                  <strong>Contracts:</strong>
-                  ${contracts.map(c => html`<span class="pill">${c}</span>`)}
+          
+          ${detailsVisible && hasDetails ? html`
+            <div class="job-details">
+              ${items.length > 0 ? html`
+                <table class="items-table">
+                  <thead>
+                    <tr>
+                      <th class="code-col">Code</th>
+                      <th>Work Item</th>
+                      <th class="contract-col">Contract</th>
+                      <th class="qty-col">Qty</th>
+                      <th class="price-col text-right">Unit Price</th>
+                      <th class="cost-col text-right">Total Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${items.map(item => html`
+                      <tr>
+                        <td class="code-col">${item.itemCode || ''}</td>
+                        <td>${item.name}</td>
+                        <td class="contract-col">${item.contract || ''}</td>
+                        <td class="qty-col text-right">${item.quantity || 0}</td>
+                        <td class="price-col text-right">${this.currency}${(Number(item.price) || 0).toFixed(2)}</td>
+                        <td class="cost-col text-right"><strong>${this.currency}${this.itemTotal(item).toFixed(2)}</strong></td>
+                      </tr>
+                    `)}
+                  </tbody>
+                </table>
+              ` : ''}
+              
+              ${hasNotes ? html`
+                <div class="job-notes">
+                  <strong>Notes:</strong> ${job.notes}
                 </div>
               ` : ''}
             </div>
-            <div class="job-summary">
-              ${items.length} item${items.length === 1 ? '' : 's'}<br>
-              <strong>${this.currency}${this.jobTotal(job).toFixed(2)}</strong>
-            </div>
-          </div>
-          
-          ${items.length > 0 ? html`
-            <table class="items-table">
-              <thead>
-                <tr>
-                  <th class="code-col">Code</th>
-                  <th>Work Item</th>
-                  <th class="qty-col">Qty</th>
-                  <th class="price-col text-right">Unit Price</th>
-                  <th class="cost-col text-right">Total Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${items.map(item => html`
-                  <tr>
-                    <td class="code-col">${item.itemCode || ''}</td>
-                    <td>${item.name}</td>
-                    <td class="qty-col text-right">${item.quantity || 0}</td>
-                    <td class="price-col text-right">${this.currency}${(Number(item.price) || 0).toFixed(2)}</td>
-                    <td class="cost-col text-right"><strong>${this.currency}${this.itemTotal(item).toFixed(2)}</strong></td>
-                  </tr>
-                `)}
-              </tbody>
-            </table>
-          ` : html`
-            <div class="muted" style="text-align: center; padding: .5rem;">No work items</div>
-          `}
-          
-          ${hasNotes ? html`
-            <div class="job-notes">
-              <strong>Notes:</strong> ${job.notes}
-            </div>
-          ` : ''}
+          `: ''}
         </div>
       </div>
     `;
@@ -970,40 +929,37 @@ class NeoPriceworkElement extends LitElement {
 
   render() {
     const subtotal = this.subtotal();
-    const isComplexReadOnly = this.readOnly && this.readOnlyDisplayStyle === 'Complex';
     
     return html`
-      <div class="${isComplexReadOnly ? 'complex-view' : ''}">
-        <div class="list-header">
-          <div class="card-title">Jobs</div>
-          <span class="badge">${this.jobs.length} item${this.jobs.length===1?'':'s'}</span>
-        </div>
-
-        <div class="rows">
-          ${this.jobs.length === 0 ? html`<div class="empty">No jobs yet. Use the button below to add your first job.</div>` : this.jobs.map((j,i) => isComplexReadOnly ? this.renderComplexRow(j,i) : this.renderRow(j,i))}
-        </div>
-
-        ${isComplexReadOnly ? html`
-          <div class="total-summary">
-            <div>Total Jobs: ${this.jobs.length}</div>
-            <div>Total Work Items: ${this.jobs.reduce((sum, job) => sum + (job.items?.length || 0), 0)}</div>
-            <div>Grand Total: ${this.currency}${subtotal.toFixed(2)}</div>
-          </div>
-        ` : html`
-          <div class="footer">
-            <div class="muted">Subtotal</div>
-            <div class="total">${this.currency}${subtotal.toFixed(2)}</div>
-          </div>
-        `}
-
-        ${!this.readOnly ? html`
-          <div style="margin-top:.5rem; display:flex; justify-content:flex-end;">
-            <button class="btn btn-primary" @click=${this.openAdd}>Add Job</button>
-          </div>
-        `: ''}
-
-        ${this.renderModal()}
+      <div class="list-header">
+        <div class="card-title">Jobs</div>
+        <span class="badge">${this.jobs.length} item${this.jobs.length===1?'':'s'}</span>
       </div>
+
+      <div class="rows">
+        ${this.jobs.length === 0 ? html`<div class="empty">No jobs yet. Use the button below to add your first job.</div>` : this.jobs.map((j,i) => this.renderRow(j,i))}
+      </div>
+
+      ${this.readOnly ? html`
+        <div class="footer" style="text-align: right; font-weight: 700; font-size: 16px;">
+          <div>Total Jobs: ${this.jobs.length}</div>
+          <div>Total Work Items: ${this.jobs.reduce((sum, job) => sum + (job.items?.length || 0), 0)}</div>
+          <div>Grand Total: ${this.currency}${subtotal.toFixed(2)}</div>
+        </div>
+      ` : html`
+        <div class="footer">
+          <div class="muted">Subtotal</div>
+          <div class="total">${this.currency}${subtotal.toFixed(2)}</div>
+        </div>
+      `}
+
+      ${!this.readOnly ? html`
+        <div style="margin-top:.5rem; display:flex; justify-content:flex-end;">
+          <button class="btn btn-primary" @click=${this.openAdd}>Add Job</button>
+        </div>
+      `: ''}
+
+      ${this.renderModal()}
     `;
   }
 }
