@@ -499,10 +499,10 @@ class NeoPriceworkElement extends LitElement {
   }
 
   getAvailableWorkItems() {
-    const selectedNames = new Set((this.formData.items || []).map(i => i.name));
+    const selectedNames = new Set((this.formData.items || []).map(i => i?.name).filter(Boolean));
     const all = Array.isArray(this.workItems?.items) ? this.workItems.items : [];
-    // Contract filter
-    let pool = all.filter(w => (!this.formData.contract || w.contract === this.formData.contract) && !selectedNames.has(w.name));
+    // Contract filter - ensure we have valid objects with properties
+    let pool = all.filter(w => w && w.name && (!this.formData.contract || w.contract === this.formData.contract) && !selectedNames.has(w.name));
     // Query filter: prefer itemCode containment; fallback to fuzzy name
     const q = (this.workItemQuery || '').trim().toLowerCase();
     if (!q) return pool;
@@ -510,7 +510,8 @@ class NeoPriceworkElement extends LitElement {
     const itemCodeMatches = [];
     const others = [];
     for (const w of pool) {
-      const code = (w.itemCode || '').toLowerCase();
+      if (!w || !w.name) continue; // Skip invalid items
+      const code = String(w.itemCode || '').toLowerCase();
       if (code && code.includes(q)) {
         itemCodeMatches.push(w);
         continue;
@@ -520,7 +521,8 @@ class NeoPriceworkElement extends LitElement {
     if (itemCodeMatches.length > 0) return itemCodeMatches;
     // Fallback fuzzy by name
     const fuzzy = others.filter(w => {
-      const hay = (w.name || '').toLowerCase();
+      if (!w || !w.name) return false; // Skip invalid items
+      const hay = String(w.name || '').toLowerCase();
       return words.every(word => {
         if (hay.includes(word)) return true;
         let i = 0;
