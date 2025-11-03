@@ -139,11 +139,6 @@ class NeoPriceworkElement extends LitElement {
             totalWorkItems: { type: 'number', title: 'Total Work Items', description: 'Total work items across all jobs' },
             totalPrice: { type: 'number', title: 'Total Price', description: 'Total price of all work across all jobs' }
           }
-        },
-        outputstr: {
-          type: 'string',
-          title: 'Output string',
-          description: 'JSON string version of the output payload for SharePoint forms compatibility'
         }
       },
       events: ['ntx-value-change'],
@@ -162,7 +157,6 @@ class NeoPriceworkElement extends LitElement {
     inputstr: { type: String },
     inputobj: { type: Object },
     outputobj: { type: Object },
-    outputstr: { type: String },
     contracts: { type: String },
     workItems: { type: Object },
     readOnly: { type: Boolean, reflect: true },
@@ -338,7 +332,6 @@ class NeoPriceworkElement extends LitElement {
     this.inputstr = '';
     this.inputobj = null;
     this.outputobj = { jobs: [], subtotal: 0, count: 0 };
-    this.outputstr = '';
     this.contracts = '';
     this.workItems = { items: [] };
     this.currency = '£';
@@ -357,6 +350,8 @@ class NeoPriceworkElement extends LitElement {
     this._addressPreviousValue = '';
     this._addressLastResolved = '';
     this.detailsOpen = new Set();
+    this._designerReadOnly = this.readOnly;
+    this._sharePointForcedReadOnly = false;
   }
 
   getEmptyForm() {
@@ -364,6 +359,29 @@ class NeoPriceworkElement extends LitElement {
   }
 
   updated(changed) {
+    if (changed.has('readOnly') && !this._sharePointForcedReadOnly) {
+      this._designerReadOnly = this.readOnly;
+    }
+
+    if (changed.has('formMode')) {
+      if (this.isSharePointForm) {
+        if (!this._sharePointForcedReadOnly) {
+          this._designerReadOnly = this.readOnly;
+        }
+        this._sharePointForcedReadOnly = true;
+        if (!this.readOnly) {
+          this.readOnly = true;
+          return; // wait for the readOnly change cycle before loading data
+        }
+      } else if (this._sharePointForcedReadOnly) {
+        this._sharePointForcedReadOnly = false;
+        if (this.readOnly !== this._designerReadOnly) {
+          this.readOnly = !!this._designerReadOnly;
+          return; // defer load until readOnly update propagates
+        }
+      }
+    }
+
     if (changed.has('formMode') || changed.has('inputobj') || changed.has('inputstr')) {
       this.loadConfiguredJobs();
     }
@@ -437,10 +455,6 @@ class NeoPriceworkElement extends LitElement {
     }
   }
 
-  loadFromInputObject() {
-    this.loadFromInputSource(this.inputobj);
-  }
-
   // Computed helpers
   itemTotal(item) { return (Number(item.quantity) || 0) * (Number(item.price) || 0); }
   jobTotal(job) { return (Array.isArray(job.items) ? job.items : []).reduce((s, it) => s + this.itemTotal(it), 0); }
@@ -471,10 +485,7 @@ class NeoPriceworkElement extends LitElement {
     };
 
     this.outputobj = payload;
-    this.outputstr = JSON.stringify(payload);
-
-    const detail = this.isSharePointForm ? this.outputstr : this.outputobj;
-    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail, bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: this.outputobj, bubbles: true, composed: true }));
   }
 
   // UI handlers
