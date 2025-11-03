@@ -14,10 +14,22 @@ class NeoPriceworkElement extends LitElement {
       groupName: 'NEO',
       version: '1.0',
       properties: {
+        formMode: {
+          type: 'string',
+          title: 'Form mode',
+          description: 'Choose the Nintex Forms host environment for this control.',
+          enum: ['Nintex Cloud Form', 'Nintex SharePoint Form'],
+          defaultValue: 'Nintex Cloud Form'
+        },
         apiKey: {
           type: 'string',
           title: 'Google Maps API key',
           description: 'API key used for address autocomplete'
+        },
+        inputstr: {
+          type: 'string',
+          title: 'Input string',
+          description: 'JSON string representation of the jobs payload when using SharePoint forms'
         },
         inputobj: {
           type: 'object',
@@ -127,6 +139,11 @@ class NeoPriceworkElement extends LitElement {
             totalWorkItems: { type: 'number', title: 'Total Work Items', description: 'Total work items across all jobs' },
             totalPrice: { type: 'number', title: 'Total Price', description: 'Total price of all work across all jobs' }
           }
+        },
+        outputstr: {
+          type: 'string',
+          title: 'Output string',
+          description: 'JSON string version of the output payload for SharePoint forms compatibility'
         }
       },
       events: ['ntx-value-change'],
@@ -140,18 +157,21 @@ class NeoPriceworkElement extends LitElement {
   }
 
   static properties = {
-  apiKey: { type: String },
+    formMode: { type: String },
+    apiKey: { type: String },
+    inputstr: { type: String },
     inputobj: { type: Object },
     outputobj: { type: Object },
-  contracts: { type: String },
-  workItems: { type: Object },
+    outputstr: { type: String },
+    contracts: { type: String },
+    workItems: { type: Object },
     readOnly: { type: Boolean, reflect: true },
     jobs: { type: Array },
     showModal: { type: Boolean },
     editingIndex: { type: Number },
     formData: { type: Object },
-  workItemQuery: { type: String },
-  detailsOpen: { type: Object },
+    workItemQuery: { type: String },
+    detailsOpen: { type: Object },
   };
 
   static get styles() {
@@ -313,9 +333,12 @@ class NeoPriceworkElement extends LitElement {
 
   constructor() {
     super();
-  this.apiKey = '';
+    this.formMode = 'Nintex Cloud Form';
+    this.apiKey = '';
+    this.inputstr = '';
     this.inputobj = null;
     this.outputobj = { jobs: [], subtotal: 0, count: 0 };
+    this.outputstr = '';
     this.contracts = '';
     this.workItems = { items: [] };
     this.currency = '£';
@@ -324,16 +347,16 @@ class NeoPriceworkElement extends LitElement {
     this.showModal = false;
     this.editingIndex = -1;
     this.formData = this.getEmptyForm();
-  this.workItemQuery = '';
+    this.workItemQuery = '';
 
-  // Address autocomplete state
-  this._gmapsLoaded = false;
-  this._autocomplete = null;
-  this._placesService = null;
-  this._addressIsUserInput = false;
-  this._addressPreviousValue = '';
-  this._addressLastResolved = '';
-  this.detailsOpen = new Set();
+    // Address autocomplete state
+    this._gmapsLoaded = false;
+    this._autocomplete = null;
+    this._placesService = null;
+    this._addressIsUserInput = false;
+    this._addressPreviousValue = '';
+    this._addressLastResolved = '';
+    this.detailsOpen = new Set();
   }
 
   getEmptyForm() {
@@ -341,27 +364,47 @@ class NeoPriceworkElement extends LitElement {
   }
 
   updated(changed) {
-    if (changed.has('inputobj')) {
-      this.loadFromInputObject();
+    if (changed.has('formMode') || changed.has('inputobj') || changed.has('inputstr')) {
+      this.loadConfiguredJobs();
     }
   }
 
-  loadFromInputObject() {
+  get isSharePointForm() {
+    return (this.formMode || '').toLowerCase() === 'nintex sharepoint form';
+  }
+
+  loadConfiguredJobs() {
+    const source = this.isSharePointForm ? this.parseInputString(this.inputstr) : this.inputobj;
+    this.loadFromInputSource(source);
+  }
+
+  parseInputString(raw) {
+    if (!raw || typeof raw !== 'string') return null;
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return null;
+    }
+  }
+
+  loadFromInputSource(data) {
     // Handle both direct jobs array and full output object structure
     let jobsToLoad = [];
     
-    if (this.inputobj) {
+    if (data) {
       // If inputobj has a jobs property (output from another neo-pricework control)
-      if (Array.isArray(this.inputobj.jobs)) {
-        jobsToLoad = this.inputobj.jobs;
+      if (Array.isArray(data.jobs)) {
+        jobsToLoad = data.jobs;
       }
       // If inputobj is directly a jobs array
-      else if (Array.isArray(this.inputobj)) {
-        jobsToLoad = this.inputobj;
+      else if (Array.isArray(data)) {
+        jobsToLoad = data;
       }
       // If inputobj has jobs at root level (legacy format)
-      else if (this.inputobj.jobs && Array.isArray(this.inputobj.jobs)) {
-        jobsToLoad = this.inputobj.jobs;
+      else if (data.jobs && Array.isArray(data.jobs)) {
+        jobsToLoad = data.jobs;
       }
     }
 
@@ -394,6 +437,10 @@ class NeoPriceworkElement extends LitElement {
     }
   }
 
+  loadFromInputObject() {
+    this.loadFromInputSource(this.inputobj);
+  }
+
   // Computed helpers
   itemTotal(item) { return (Number(item.quantity) || 0) * (Number(item.price) || 0); }
   jobTotal(job) { return (Array.isArray(job.items) ? job.items : []).reduce((s, it) => s + this.itemTotal(it), 0); }
@@ -416,14 +463,18 @@ class NeoPriceworkElement extends LitElement {
     const totalJobs = this.jobs.length;
     const totalWorkItems = this.jobs.reduce((sum, job) => sum + (job.items?.length || 0), 0);
 
-    this.outputobj = {
+    const payload = {
       jobs: enrichedJobs,
       totalJobs,
       totalWorkItems,
       totalPrice
     };
 
-    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail: this.outputobj, bubbles: true, composed: true }));
+    this.outputobj = payload;
+    this.outputstr = JSON.stringify(payload);
+
+    const detail = this.isSharePointForm ? this.outputstr : this.outputobj;
+    this.dispatchEvent(new CustomEvent('ntx-value-change', { detail, bubbles: true, composed: true }));
   }
 
   // UI handlers
