@@ -1,0 +1,37 @@
+const path = require('path');
+
+module.exports = {
+  entry: './src/neo-nocache.js',
+  mode: 'production',
+  output: {
+    filename: 'neo-nocache.js',
+    path: path.resolve(__dirname, 'dist'),
+    library: {
+      type: 'window',
+    },
+  },
+  resolve: {
+    extensions: ['.js'],
+  },
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: 'babel-loader',
+      },
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader'],
+      },
+    ],
+  },
+  optimization: {
+    concatenateModules: true,
+    usedExports: true,
+    sideEffects: false,
+  },
+  externals: {
+    // Don't bundle these - they should be available globally or not needed
+  },
+};
