@@ -82,11 +82,6 @@ class NeoNocacheElement extends LitElement {
   }
 
   render() {
-    if (!this.isDesignMode) {
-      return html``;
-    }
-
-    return html`<div class="design-hint">No-cache reload is ${this.forceNoCache ? 'enabled' : 'disabled'}.</div>`;
   }
 
   _isDesignMode() {
