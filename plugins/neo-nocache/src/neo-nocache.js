@@ -90,8 +90,12 @@ class NeoNocacheElement extends LitElement {
   }
 
   _isDesignMode() {
-    const currentUrl = window.location.href;
-    return currentUrl.includes('UFDesigner.aspx') || !currentUrl.includes('/runtime');
+    const currentUrl = window.location.href.toLowerCase();
+    const isCloudRuntime = currentUrl.includes('/forms/');
+    const isRuntime = isCloudRuntime || currentUrl.includes('ufruntime.aspx') || currentUrl.includes('/runtime');
+    const isDesigner = currentUrl.includes('ufdesigner.aspx') || currentUrl.includes('/designer');
+
+    return isDesigner && !isRuntime;
   }
 
   _applyNoCacheMetaTags() {
