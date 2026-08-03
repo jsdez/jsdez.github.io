@@ -1,0 +1,27 @@
+[dir] .nx-theme-styles div.nx-theme-radio-1 .nx-radio.nx-read-only input[type=radio]:checked+.nx-radio-container .nx-radio-faux, [dir] .nx-theme-styles div.nx-theme-radio-1 .nx-radio.nx-read-only input[type=radio]:disabled:checked+.nx-radio-container .nx-radio-faux, [dir] .nx-theme-styles ntx-simple-choice.nx-theme-radio-1 .nx-radio.nx-read-only input[type=radio]:checked+.nx-radio-container .nx-radio-faux, [dir] .nx-theme-styles ntx-simple-choice.nx-theme-radio-1 .nx-radio.nx-read-only input[type=radio]:disabled:checked+.nx-radio-container .nx-radio-faux {
+    background-color: var(--ntx-form-theme-color-input-background);
+    border: 6px solid var(--ntx-form-theme-color-input-text)
+}
+
+[dir] .nx-theme-styles div.nx-theme-radio-1 .nx-radio.nx-read-only,
+[dir] .nx-theme-styles div.nx-theme-radio-1 .nx-radio.nx-read-only *,
+[dir] .nx-theme-styles ntx-simple-choice.nx-theme-radio-1 .nx-radio.nx-read-only,
+[dir] .nx-theme-styles ntx-simple-choice.nx-theme-radio-1 .nx-radio.nx-read-only *,
+.nx-radio.nx-read-only,
+.nx-radio.nx-read-only * {
+    cursor: default !important;
+}
+
+/* File Upload/Signature - Read-only background */
+.nx-file-upload-control.nx-read-only,
+.nx-file-upload-control.nx-read-only *,
+.nx-signature-placeholder-canvas-border.nx-signature-border,
+.nx-signature-placeholder-canvas-border.nx-signature-border *,
+ntx-htmleditor.nx-read-only,
+ntx-htmleditor.nx-read-only * {
+    background-color: var(--ntx-form-theme-color-input-background-readonly) !important;
+}
+
+.nx-checkbox-toggle input[type=checkbox][disabled]+.nx-checkbox-toggle-container .nx-checkbox-toggle-off, .nx-checkbox-toggle input[type=checkbox][disabled]+.nx-checkbox-toggle-container .nx-checkbox-toggle-on {
+    color: var(--ntx-form-theme-color-secondary);
+}
