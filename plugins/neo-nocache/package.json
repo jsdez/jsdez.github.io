@@ -17,6 +17,14 @@
     "url": "https://github.com/jsdez/jsdez.github.io/issues"
   },
   "homepage": "https://github.com/jsdez/jsdez.github.io#readme",
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "css-loader": "^6.8.1",
+    "lit": "^2.6.1",
+    "style-loader": "^3.3.3",
+    "webpack": "^5.101.2",
+    "webpack-cli": "^5.1.4"
+  },
+  "devDependencies": {
+    "babel-loader": "^9.1.2"
+  }
 }

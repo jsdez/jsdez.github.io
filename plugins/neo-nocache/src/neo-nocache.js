@@ -1,5 +1,9 @@
 import { LitElement, html, css } from 'lit';
 
+const CACHE_BUSTER_PARAMETER = '_neo_nocache';
+const PAGE_STATE_KEY = '__neoNoCachePageState';
+const SESSION_STORAGE_PREFIX = 'neo-nocache:';
+
 class NeoNocacheElement extends LitElement {
   static getMetaConfig() {
     return {
@@ -13,8 +17,8 @@ class NeoNocacheElement extends LitElement {
         forceNoCache: {
           type: 'boolean',
           title: 'Force no cache',
-          defaultValue: false,
-          description: 'When enabled, runtime page reloads once with a cache-busting query parameter.',
+          defaultValue: true,
+          description: 'When enabled, runtime pages are loaded once through a verified cache-busting URL.',
         }
       },
       standardProperties: {
@@ -50,7 +54,7 @@ class NeoNocacheElement extends LitElement {
 
   constructor() {
     super();
-    this.forceNoCache = false;
+    this.forceNoCache = true;
     this.isDesignMode = false;
     this._onPageShow = this._onPageShow.bind(this);
   }
@@ -130,18 +134,98 @@ class NeoNocacheElement extends LitElement {
 
   _onPageShow(event) {
     if (event.persisted && this.forceNoCache && !this.isDesignMode) {
-      window.location.reload();
+      this._forceFreshLoad({ fromBackForwardCache: true });
     }
   }
 
-  _forceFreshLoad() {
-    const currentUrl = new URL(window.location.href);
-    if (currentUrl.searchParams.has('_neo_nocache')) {
+  _forceFreshLoad({ fromBackForwardCache = false } = {}) {
+    const pageState = this._getPageState();
+    const stateProperty = fromBackForwardCache
+      ? 'backForwardRefreshScheduled'
+      : 'initialLoadHandled';
+
+    if (pageState[stateProperty]) {
       return;
     }
 
-    currentUrl.searchParams.set('_neo_nocache', Date.now().toString());
+    pageState[stateProperty] = true;
+
+    const currentUrl = new URL(window.location.href);
+    const storageKey = this._getStorageKey(currentUrl);
+    const currentMarker = currentUrl.searchParams.get(CACHE_BUSTER_PARAMETER);
+    const sessionMarker = this._readSessionMarker(storageKey);
+
+    // Only a marker created by this tab for this exact form URL is trusted. An
+    // arbitrary or shared _neo_nocache parameter is replaced with a new nonce.
+    // If session storage is unavailable, accept an existing marker after one
+    // redirect so privacy-restricted browsers cannot enter a reload loop.
+    if (
+      !fromBackForwardCache
+      && currentMarker
+      && (!sessionMarker.available || currentMarker === sessionMarker.value)
+    ) {
+      this._removeSessionMarker(storageKey);
+      return;
+    }
+
+    const nextMarker = this._createCacheBuster();
+    this._writeSessionMarker(storageKey, nextMarker);
+    currentUrl.searchParams.set(CACHE_BUSTER_PARAMETER, nextMarker);
     window.location.replace(currentUrl.toString());
+  }
+
+  _getPageState() {
+    if (!window[PAGE_STATE_KEY]) {
+      window[PAGE_STATE_KEY] = {
+        initialLoadHandled: false,
+        backForwardRefreshScheduled: false,
+      };
+    }
+
+    return window[PAGE_STATE_KEY];
+  }
+
+  _getStorageKey(url) {
+    const stableUrl = new URL(url.toString());
+    stableUrl.searchParams.delete(CACHE_BUSTER_PARAMETER);
+    stableUrl.hash = '';
+    return `${SESSION_STORAGE_PREFIX}${stableUrl.toString()}`;
+  }
+
+  _createCacheBuster() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+
+  _readSessionMarker(key) {
+    try {
+      return {
+        available: true,
+        value: window.sessionStorage.getItem(key),
+      };
+    } catch (error) {
+      return {
+        available: false,
+        value: null,
+      };
+    }
+  }
+
+  _writeSessionMarker(key, value) {
+    try {
+      window.sessionStorage.setItem(key, value);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  _removeSessionMarker(key) {
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch (error) {
+      // Cache busting still works when session storage is unavailable; the
+      // browser simply cannot remember that a generated marker was verified.
+    }
   }
 }
 
