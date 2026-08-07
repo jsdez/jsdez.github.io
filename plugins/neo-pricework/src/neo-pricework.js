@@ -241,16 +241,52 @@ class NeoPriceworkElement extends LitElement {
     return typeof this.inputstr === 'string' && this.inputstr.trim().length > 0;
   }
 
+  get hasInputObject() {
+    if (this.inputobj === null || this.inputobj === undefined) return false;
+    if (Array.isArray(this.inputobj)) return this.inputobj.length > 0;
+    if (typeof this.inputobj === 'object') return Object.keys(this.inputobj).length > 0;
+    return Boolean(this.inputobj);
+  }
+
   loadConfiguredJobs() {
+    const hasInputString = this.hasInputString;
+    const hasInputObject = this.hasInputObject;
+
     // A populated string input always wins. Use the object input only when the string is blank.
-    if (this.hasInputString) {
+    if (hasInputString) {
       this.inputStringError = '';
-      this.loadFromInputSource(this.parseInputString(this.inputstr));
+      const parsedInput = this.parseInputString(this.inputstr);
+
+      if (this.inputStringError) {
+        console.error('[neo-pricework] input detected - inputstr contains invalid JSON; inputobj was not used.', {
+          inputstr: this.inputstr,
+          parseError: this.inputStringError
+        });
+      } else if (hasInputObject) {
+        console.log('[neo-pricework] input detected - both inputstr and inputobj are populated; pricework loaded from inputstr.');
+        console.log('[neo-pricework] raw inputstr payload:', this.inputstr);
+        console.log('[neo-pricework] parsed inputstr payload used for loading:', parsedInput);
+        console.log('[neo-pricework] inputobj payload present but not used:', this.inputobj);
+      } else {
+        console.log('[neo-pricework] input detected - pricework loaded from inputstr.');
+        console.log('[neo-pricework] raw inputstr payload:', this.inputstr);
+        console.log('[neo-pricework] parsed inputstr payload used for loading:', parsedInput);
+      }
+
+      this.loadFromInputSource(parsedInput);
+      console.log('[neo-pricework] normalized outputobj after input load:', this.outputobj);
       return;
     }
 
     this.inputStringError = '';
+    if (hasInputObject) {
+      console.log('[neo-pricework] input detected - pricework loaded from inputobj.');
+      console.log('[neo-pricework] inputobj payload used for loading:', this.inputobj);
+    } else {
+      console.log('[neo-pricework] no input detected - new pricework.');
+    }
     this.loadFromInputSource(this.inputobj);
+    console.log('[neo-pricework] normalized outputobj after input load:', this.outputobj);
   }
 
   parseInputString(raw) {
