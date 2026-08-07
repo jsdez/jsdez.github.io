@@ -38,6 +38,10 @@ class NeoAccordionElement extends LitElement {
   constructor() {
     super();
     this.targetClass = '';
+    this.lastOpenedItem = null;
+    this.accordionObserver = null;
+    this.accordionClickHandler = null;
+    this.reconcileAnimationFrame = null;
   }
 
   render() {
@@ -51,45 +55,82 @@ class NeoAccordionElement extends LitElement {
     }, 300);
   }
 
-  initAccordionLogic() {
-    if (!this.targetClass) return;
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.accordionObserver?.disconnect();
+    this.accordionObserver = null;
+    this.lastOpenedItem = null;
 
-    const ACCORDION_ITEMS = document.querySelectorAll(`.${this.targetClass}`);
+    if (this.accordionClickHandler) {
+      document.body.removeEventListener('click', this.accordionClickHandler);
+      this.accordionClickHandler = null;
+    }
+
+    if (this.reconcileAnimationFrame !== null) {
+      cancelAnimationFrame(this.reconcileAnimationFrame);
+      this.reconcileAnimationFrame = null;
+    }
+  }
+
+  initAccordionLogic() {
+    if (!this.targetClass || this.accordionObserver) return;
+
+    const getAccordionItems = () => Array.from(document.querySelectorAll(`.${this.targetClass}`));
+    const getHeader = (item) => item.querySelector('.nx-group-control-header');
+    const isCollapsed = (item) => item.classList.contains('nx-group-control-is-collapsed');
 
     const collapseAllExcept = (current) => {
-      ACCORDION_ITEMS.forEach(item => {
-        if (item !== current && !item.classList.contains('nx-group-control-is-collapsed')) {
-          const header = item.querySelector(`.${this.targetClass} .nx-group-control-header`);
-          header?.click();
+      getAccordionItems().forEach(item => {
+        if (item !== current && !isCollapsed(item)) {
+          getHeader(item)?.click();
         }
       });
     };
 
-    // Initial collapse logic to enforce only one expanded at start
-    let firstExpandedFound = false;
-    ACCORDION_ITEMS.forEach(item => {
-      const isCollapsed = item.classList.contains('nx-group-control-is-collapsed');
-      if (!isCollapsed) {
-        if (!firstExpandedFound) {
-          firstExpandedFound = true;
-        } else {
-          const header = item.querySelector(`.${this.targetClass} .nx-group-control-header`);
-          header?.click();
-        }
-      }
-    });
+    const collapseAllExceptPreferred = () => {
+      this.reconcileAnimationFrame = null;
+      const expandedItems = getAccordionItems().filter(item => !isCollapsed(item));
+      const preferredItem = expandedItems.includes(this.lastOpenedItem)
+        ? this.lastOpenedItem
+        : expandedItems[0];
 
-    document.body.addEventListener('click', (event) => {
+      expandedItems.forEach(item => {
+        if (item !== preferredItem) {
+          getHeader(item)?.click();
+        }
+      });
+    };
+
+    const scheduleAccordionReconciliation = () => {
+      if (this.reconcileAnimationFrame !== null) return;
+      this.reconcileAnimationFrame = requestAnimationFrame(collapseAllExceptPreferred);
+    };
+
+    // Keep the initial state to a single expanded group.
+    collapseAllExceptPreferred();
+
+    this.accordionClickHandler = (event) => {
       const header = event.target.closest(`.${this.targetClass} .nx-group-control-header`);
       if (!header) return;
 
       const item = header.closest(`.${this.targetClass}`);
       if (!item) return;
 
-      const isCollapsed = item.classList.contains('nx-group-control-is-collapsed');
-      if (!isCollapsed) {
+      // Header handlers run before this delegated listener, so this detects a newly expanded group.
+      if (!isCollapsed(item)) {
+        this.lastOpenedItem = item;
         collapseAllExcept(item);
       }
+    };
+    document.body.addEventListener('click', this.accordionClickHandler);
+
+    // Mass updates can alter group classes without a header click. Reconcile after the batch finishes.
+    this.accordionObserver = new MutationObserver(scheduleAccordionReconciliation);
+    this.accordionObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class'],
+      childList: true,
+      subtree: true
     });
   }
 }
