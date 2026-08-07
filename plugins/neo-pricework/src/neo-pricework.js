@@ -1,4 +1,5 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html } from 'lit';
+import { neoPriceworkStyles } from './neo-pricework.styles.js';
 
 // Simple id generator for new jobs
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -29,7 +30,7 @@ class NeoPriceworkElement extends LitElement {
         inputstr: {
           type: 'string',
           title: 'Input string',
-          description: 'JSON string representation of the jobs payload when using SharePoint forms'
+          description: 'JSON string representation of the jobs payload. When nonempty, this takes precedence over Input object.'
         },
         inputobj: {
           type: 'object',
@@ -166,164 +167,10 @@ class NeoPriceworkElement extends LitElement {
     formData: { type: Object },
     workItemQuery: { type: String },
     detailsOpen: { type: Object },
+    inputStringError: { type: String },
   };
 
-  static get styles() {
-    // Bootstrap-like with Nintex variables
-    return css`
-  :host { display:block; font-family: var(--ntx-form-theme-font-family, 'Open Sans', 'Helvetica', 'Arial', sans-serif); }
-  :host, :host *, :host *::before, :host *::after { box-sizing: border-box; }
-
-      .card { background: var(--ntx-form-theme-color-form-background, #fff); border: 1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); box-shadow: var(--ntx-form-theme-popover-box-shadow, none); }
-      .card + .card { margin-top: .75rem; }
-      .card-body { padding: .75rem 1rem; }
-      .card-title { margin: 0; font-weight: 600; color: var(--ntx-form-theme-color-input-text, #161718); }
-      .muted { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); }
-
-      .list-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem; }
-      .badge { display:inline-block; padding:.25rem .5rem; border-radius:999px; background: var(--ntx-form-theme-color-secondary-button-background, #fff); color: var(--ntx-form-theme-color-secondary, #575c61); border:1px solid var(--ntx-form-theme-color-border, #898f94); font-size:12px; }
-
-      .btn { cursor:pointer; display:inline-flex; align-items:center; gap:.35rem; font-weight:600; border-radius: var(--ntx-form-theme-border-radius, 4px); border:1px solid transparent; padding:.45rem .75rem; line-height:1.25; }
-      .btn:disabled { opacity:.65; cursor:not-allowed; }
-      .btn-primary { background: var(--ntx-form-theme-color-primary-button-background, #006bd6); color: var(--ntx-form-theme-color-primary-button-font, #fff); }
-      .btn-primary:hover { background: var(--ntx-form-theme-color-primary-button-hover, #2d83dc); }
-      .btn-outline { background: transparent; color: var(--ntx-form-theme-color-primary, #006bd6); border-color: var(--ntx-form-theme-color-primary, #006bd6); }
-      .btn-outline:hover { background: color-mix(in srgb, var(--ntx-form-theme-color-primary, #006bd6), #fff 85%); }
-      .btn-danger { background: var(--ntx-form-theme-color-error, #e60000); color:#fff; }
-  .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); background: var(--ntx-form-theme-color-form-background, #fff); color: var(--ntx-form-theme-color-error, #e60000); }
-  .icon-btn:hover { background: color-mix(in srgb, var(--ntx-form-theme-color-error, #e60000), #fff 90%); }
-  .icon-btn.success { background: var(--ntx-form-theme-color-success, #2e7d32); color: #fff; border-color: var(--ntx-form-theme-color-success, #2e7d32); }
-  .icon-btn.success:hover { background: color-mix(in srgb, var(--ntx-form-theme-color-success, #2e7d32), #000 10%); }
-      .btn-light { background: var(--ntx-form-theme-color-form-background, #fff); border:1px solid var(--ntx-form-theme-color-border, #898f94); color: var(--ntx-form-theme-color-input-text, #161718); }
-
-      .rows { display:flex; flex-direction:column; gap:.5rem; }
-      .row { display:grid; grid-template-columns: 1fr auto; gap:.5rem; align-items:start; }
-      .title { font-weight:600; }
-      .actions { display:flex; gap:.5rem; }
-    .actions-inline { display:flex; align-items:center; gap:.5rem; }
-    .pill-group { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.25rem; }
-    .notes { margin-top:.5rem; padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border-left:3px solid var(--ntx-form-theme-color-primary, #006bd6); border-radius: var(--ntx-form-theme-border-radius, 4px); }
-  .icon-btn.neutral { color: var(--ntx-form-theme-color-input-text, #161718); }
-  .icon-btn.primary { color: var(--ntx-form-theme-color-primary, #006bd6); }
-
-  /* Field lines and labels in list rows */
-  .field-line { display:flex; align-items:center; flex-wrap:wrap; gap:.5rem; }
-  .inline-label { font-weight:600; color: var(--ntx-form-theme-color-input-text, #161718); }
-  .right .summary { text-align:right; margin-bottom:.35rem; color: var(--ntx-form-theme-color-input-text, #161718); }
-  .right-actions { display:flex; flex-direction:column; gap:.35rem; align-items:flex-end; }
-  .btn-compact { padding:.3rem .5rem; line-height:1.1; }
-
-      .footer { margin-top:.75rem; display:flex; justify-content:space-between; align-items:center; }
-      .total { font-weight:700; }
-
-      .empty { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); text-align:center; padding: .75rem; border: 1px dashed var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); }
-
-      /* Modal */
-      .backdrop { position:fixed; inset:0; background: rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; padding: 10px; z-index:10000; }
-  .modal { width: min(720px, calc(100vw - 20px)); max-width: 100%; max-height: 90vh; display:flex; flex-direction:column; background: var(--ntx-form-theme-color-form-background, #fff); border: 1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); box-shadow: 0 10px 30px rgba(0,0,0,.25); box-sizing: border-box; }
-  .modal-header, .modal-footer { flex: 0 0 auto; padding:.75rem 1rem; border-bottom:1px solid var(--ntx-form-theme-color-border, #898f94); display:flex; align-items:center; justify-content:space-between; }
-      .modal-footer { border-bottom:0; border-top:1px solid var(--ntx-form-theme-color-border, #898f94); }
-  .modal-body { flex: 1 1 auto; overflow:auto; padding:1rem; }
-      .form-grid { display:grid; grid-template-columns: 1fr; gap:.75rem; }
-      @media (min-width: 600px) { .form-grid { grid-template-columns: 1fr 1fr; } }
-      .form-group { display:flex; flex-direction:column; gap:.25rem; }
-      label { font-size: var(--ntx-form-theme-text-label-size, 14px); color: var(--ntx-form-theme-color-input-text, #161718); }
-  input, textarea, select { display:block; width: 100%; max-width: 100%; font-size: var(--ntx-form-theme-text-input-size, 14px); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.45rem .6rem; background: var(--ntx-form-theme-color-input-background, #fff); color: var(--ntx-form-theme-color-input-text, #161718); }
-      textarea { min-height: 72px; resize: vertical; }
-      .right { text-align:right; }
-  .pill { border-radius:999px; padding:.15rem .5rem; background: var(--ntx-form-theme-color-primary-light90, #e8f1f9); color: var(--ntx-form-theme-color-primary, #006bd6); font-weight:600; }
-
-  /* Available work items (touch-friendly) */
-  .avail-list { display:flex; flex-direction:column; gap:.5rem; max-height: 260px; font-size: 14px; overflow:auto; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.5rem; background: var(--ntx-form-theme-color-form-background, #fff); width: 100%; max-width: 100%; }
-  .avail-row { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .6rem; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); min-height:44px; width: 100%; box-sizing: border-box; }
-  .avail-main { display:flex; align-items:center; gap:.5rem; min-width:0; flex:1 1 auto; }
-  .avail-title { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .avail-price { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); white-space:nowrap; }
-  .avail-actions { flex:0 0 auto; }
-
-      /* Selected items list styling */
-      .list-table { display:flex; flex-direction:column; gap:.5rem; font-size:14px; }
-  /* Requested fixed column widths */
-  :host { --neo-col-unit: 50px; --neo-col-qty: 75px; --neo-col-cost: 50px; --neo-col-remove: 30px; }
-      .list-row { padding:.5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); }
-      .cell-name { min-width: 0; }
-      .cell-name .title { font-weight:600; word-break: break-word; }
-      .cell-unit { text-align: right; white-space: nowrap; }
-      .cell-qty { text-align:right; }
-      .cell-cost { white-space: nowrap; text-align:right; }
-  .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
-      .cell-label { display: none; margin-right: .25rem; color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); font-size: 12px; }
-
-      /* Large screens: one-line grid with header */
-      @media (min-width: 576px) {
-        .list-head { display:grid; grid-template-columns: 1fr var(--neo-col-unit) var(--neo-col-qty) var(--neo-col-cost) var(--neo-col-remove); gap:.75rem; align-items:center; padding:.25rem .75rem; }
-        .list-row { display:grid; grid-template-columns: 1fr var(--neo-col-unit) var(--neo-col-qty) var(--neo-col-cost) var(--neo-col-remove); gap:.75rem; align-items:center; }
-        .cell-numbers { display: contents; }
-        .cell-remove { justify-self: end; }
-        .cell-label { display: none; }
-  .list-head .center { text-align: center; }
-  .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
-      }
-
-      /* Small screens: two-line layout, inline labels for numeric cells */
-      @media (max-width: 575.98px) {
-        .list-head { display:none; }
-        .list-row { display:grid; grid-template-columns: 1fr var(--neo-col-remove); grid-template-rows: auto auto; row-gap:.25rem; }
-        .cell-name { grid-column: 1 / 2; grid-row: 1; }
-        .cell-remove { grid-column: 2 / 3; grid-row: 1; justify-self:end; display:flex; }
-        .cell-numbers { grid-column: 1 / -1; grid-row: 2; display:flex; justify-content: space-evenly; align-items:center; gap:.75rem; }
-        .cell-unit, .cell-qty, .cell-cost { width: auto; text-align:center; }
-        .cell-qty { display:flex; align-items:center; gap:.25rem; }
-  :host { --neo-col-qty: 100px; }
-  .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
-        .cell-label { display: inline; }
-  .avail-title { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
-      }
-
-      /* Details view styles */
-      .job-details { margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--ntx-form-theme-color-border, #898f94); }
-      .job-details .items-table { width: 100%; border-collapse: collapse; margin-bottom: .5rem; font-size: 12px; }
-      .job-details .items-table th, .job-details .items-table td { padding: .35rem .5rem; text-align: left; border-bottom: 1px solid var(--ntx-form-theme-color-border, #898f94); }
-      .job-details .items-table th { background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); font-weight: 600; }
-      .job-details .items-table .text-right { text-align: right; }
-      .job-details .items-table .code-col { width: 80px; }
-      .job-details .items-table .contract-col { width: 90px; }
-      .job-details .items-table .qty-col { width: 50px; text-align: center; }
-      .job-details .items-table .price-col { width: 70px; }
-      .job-details .items-table .cost-col { width: 70px; }
-      .job-details .job-notes { padding: .5rem .75rem; background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); border-left: 3px solid var(--ntx-form-theme-color-primary, #006bd6); border-radius: var(--ntx-form-theme-border-radius, 4px); font-size: 13px; }
-      
-      /* Read-only mode: always show details */
-      :host([readonly]) .job-details { display: block; }
-      :host([readonly]) .btn { display: none; }
-
-      /* Print-specific styles */
-      @media print {
-        :host { font-family: 'Arial', sans-serif !important; }
-        .card { margin-bottom: .25rem; box-shadow: none; border: 1px solid #000; background: #fff !important; page-break-inside: avoid; }
-        .card-body { padding: .25rem .5rem; }
-        .list-header { border-bottom: 2px solid #000; padding-bottom: .25rem; margin-bottom: .5rem; }
-        .card-title, .badge { color: #000 !important; }
-        .badge { background: #f0f0f0 !important; border: 1px solid #000; }
-        .footer { border-top: 2px solid #000; padding-top: .5rem; margin-top: .5rem; }
-        
-        /* Always show details in print */
-        .job-details { display: block !important; }
-        .job-details .items-table { border: 1px solid #000; font-size: 9px; page-break-inside: avoid; }
-        .job-details .items-table th { background: #f0f0f0 !important; color: #000 !important; border: 1px solid #000; }
-        .job-details .items-table td { border: 1px solid #000; color: #000 !important; }
-        .job-details .items-table th, .job-details .items-table td { padding: .1rem .2rem; }
-        .job-details .job-notes { font-size: 9px; padding: .15rem .25rem; background: #f8f8f8 !important; color: #000 !important; border-left: 2px solid #000 !important; }
-        .pill { font-size: 8px; background: #e8e8e8 !important; color: #000 !important; border: 1px solid #000; }
-        
-        /* Hide interactive elements in print */
-        .btn, .icon-btn, .modal, .backdrop { display: none !important; }
-        
-        /* Force black text for all elements */
-        * { color: #000 !important; }
-      }
-    `;
-  }
+  static get styles() { return neoPriceworkStyles; }
 
   constructor() {
     super();
@@ -341,6 +188,7 @@ class NeoPriceworkElement extends LitElement {
     this.editingIndex = -1;
     this.formData = this.getEmptyForm();
     this.workItemQuery = '';
+    this.inputStringError = '';
 
     // Address autocomplete state
     this._gmapsLoaded = false;
@@ -371,13 +219,11 @@ class NeoPriceworkElement extends LitElement {
         this._sharePointForcedReadOnly = true;
         if (!this.readOnly) {
           this.readOnly = true;
-          return; // wait for the readOnly change cycle before loading data
         }
       } else if (this._sharePointForcedReadOnly) {
         this._sharePointForcedReadOnly = false;
         if (this.readOnly !== this._designerReadOnly) {
           this.readOnly = !!this._designerReadOnly;
-          return; // defer load until readOnly update propagates
         }
       }
     }
@@ -391,20 +237,59 @@ class NeoPriceworkElement extends LitElement {
     return (this.formMode || '').toLowerCase() === 'nintex sharepoint form';
   }
 
+  get hasInputString() {
+    return typeof this.inputstr === 'string' && this.inputstr.trim().length > 0;
+  }
+
   loadConfiguredJobs() {
-    const source = this.isSharePointForm ? this.parseInputString(this.inputstr) : this.inputobj;
-    this.loadFromInputSource(source);
+    // A populated string input always wins. Use the object input only when the string is blank.
+    if (this.hasInputString) {
+      this.inputStringError = '';
+      this.loadFromInputSource(this.parseInputString(this.inputstr));
+      return;
+    }
+
+    this.inputStringError = '';
+    this.loadFromInputSource(this.inputobj);
   }
 
   parseInputString(raw) {
     if (!raw || typeof raw !== 'string') return null;
     const trimmed = raw.trim();
     if (!trimmed) return null;
+
     try {
-      return JSON.parse(trimmed);
-    } catch {
+      const parsed = JSON.parse(trimmed);
+      // External systems can serialize an already JSON-serialized payload one additional time.
+      return typeof parsed === 'string' ? JSON.parse(parsed) : parsed;
+    } catch (error) {
+      this.inputStringError = error instanceof Error ? error.message : 'The value is not valid JSON.';
       return null;
     }
+  }
+
+  renderInputStringError() {
+    if (!this.inputStringError) return null;
+
+    return html`
+      <div class="input-error" role="alert">
+        <strong>Input string could not be loaded.</strong>
+        <div>The nonempty Input string takes precedence over Input object, so the object value was not used.</div>
+        <details>
+          <summary>Show details and expected format</summary>
+          <p><strong>JSON error:</strong> ${this.inputStringError}</p>
+          <p>Provide a JSON object with a <code>jobs</code> array, or a JSON-encoded string containing that object.</p>
+          <pre>{
+  "jobs": [
+    {
+      "address": "10 Example Street",
+      "items": []
+    }
+  ]
+}</pre>
+        </details>
+      </div>
+    `;
   }
 
   loadFromInputSource(data) {
@@ -560,11 +445,18 @@ class NeoPriceworkElement extends LitElement {
     return values.filter(v => (seen.has(v) ? false : (seen.add(v), true)));
   }
 
+  getWorkItemKey(item) {
+    const contract = String(item?.contract || this.formData.contract || '').trim();
+    const itemCode = String(item?.itemCode || '').trim();
+    const name = String(item?.name || '').trim();
+    return `${contract}\u0000${itemCode || name}`;
+  }
+
   getAvailableWorkItems() {
-    const selectedNames = new Set((this.formData.items || []).map(i => i?.name).filter(Boolean));
+    const selectedKeys = new Set((this.formData.items || []).map(item => this.getWorkItemKey(item)));
     const all = Array.isArray(this.workItems?.items) ? this.workItems.items : [];
     // Contract filter - ensure we have valid objects with properties
-    let pool = all.filter(w => w && w.name && (!this.formData.contract || w.contract === this.formData.contract) && !selectedNames.has(w.name));
+    let pool = all.filter(w => w && w.name && (!this.formData.contract || w.contract === this.formData.contract) && !selectedKeys.has(this.getWorkItemKey(w)));
     // Query filter: prefer itemCode containment; fallback to fuzzy name
     const q = (this.workItemQuery || '').trim().toLowerCase();
     if (!q) return pool;
@@ -603,23 +495,45 @@ class NeoPriceworkElement extends LitElement {
     const select = e.target;
     const options = Array.from(select.selectedOptions || []);
     if (options.length === 0) return;
-    const available = this.getAvailableWorkItems();
-    const toAddNames = new Set(options.map(o => o.value));
-    const adds = available
-      .filter(w => toAddNames.has(w.name))
-      .map(w => ({ itemCode: w.itemCode || '', name: w.name, price: Number(w.price) || 0, quantity: 1 }));
-    const next = [ ...(this.formData.items || []), ...adds ];
-    this.formData = { ...this.formData, items: next };
-    // Clear selection for better UX
+
+    const selectedNames = new Set(options.map(option => option.value));
+    const existingKeys = new Set((this.formData.items || []).map(item => this.getWorkItemKey(item)));
+    const adds = [];
+
+    for (const workItem of this.getAvailableWorkItems()) {
+      const key = this.getWorkItemKey(workItem);
+      if (!selectedNames.has(workItem.name) || existingKeys.has(key)) continue;
+
+      adds.push({
+        itemCode: workItem.itemCode || '',
+        name: workItem.name,
+        price: Number(workItem.price) || 0,
+        quantity: 1,
+        contract: workItem.contract || this.formData.contract || '',
+        spid: workItem.spid || null
+      });
+      existingKeys.add(key);
+    }
+
+    this.formData = { ...this.formData, items: [...(this.formData.items || []), ...adds] };
     select.selectedIndex = -1;
   }
 
-  addWorkItem = (w) => {
-    if (!w) return;
-    const exists = (this.formData.items || []).some(i => i.name === w.name);
+  addWorkItem = (workItem) => {
+    if (!workItem) return;
+    const key = this.getWorkItemKey(workItem);
+    const exists = (this.formData.items || []).some(item => this.getWorkItemKey(item) === key);
     if (exists) return;
-    const next = [ ...(this.formData.items || []), { itemCode: w.itemCode || '', name: w.name, price: Number(w.price) || 0, quantity: 1, contract: w.contract || this.formData.contract || '', spid: w.spid || null } ];
-    this.formData = { ...this.formData, items: next };
+
+    const item = {
+      itemCode: workItem.itemCode || '',
+      name: workItem.name,
+      price: Number(workItem.price) || 0,
+      quantity: 1,
+      contract: workItem.contract || this.formData.contract || '',
+      spid: workItem.spid || null
+    };
+    this.formData = { ...this.formData, items: [...(this.formData.items || []), item] };
   }
 
   getJobContracts(job) {
@@ -999,6 +913,8 @@ class NeoPriceworkElement extends LitElement {
         <div class="card-title">Jobs</div>
         <span class="badge">${this.jobs.length} item${this.jobs.length===1?'':'s'}</span>
       </div>
+
+      ${this.renderInputStringError()}
 
       <div class="rows">
         ${this.jobs.length === 0 ? html`<div class="empty">No jobs yet. Use the button below to add your first job.</div>` : this.jobs.map((j,i) => this.renderRow(j,i))}
