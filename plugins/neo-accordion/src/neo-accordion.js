@@ -15,6 +15,11 @@ class NeoAccordionElement extends LitElement {
           title: 'Target Class',
           description: 'Please enter the class used to identify the accordion element, this class is applied to each group in the accordion',
         },
+        reload: {
+          type: 'boolean',
+          title: 'Reload',
+          description: 'Set to true to reinitialize the accordion after external updates. The control resets this value to false when reloading is complete.',
+        },
       },
       standardProperties: {
         fieldLabel: true,
@@ -24,7 +29,8 @@ class NeoAccordionElement extends LitElement {
   }
 
   static properties = {
-    targetClass: { type: String }
+    targetClass: { type: String },
+    reload: { type: Boolean }
   };
 
   static get styles() {
@@ -38,10 +44,12 @@ class NeoAccordionElement extends LitElement {
   constructor() {
     super();
     this.targetClass = '';
+    this.reload = false;
     this.lastOpenedItem = null;
     this.accordionObserver = null;
     this.accordionClickHandler = null;
     this.reconcileAnimationFrame = null;
+    this.reloadAnimationFrame = null;
   }
 
   render() {
@@ -55,11 +63,26 @@ class NeoAccordionElement extends LitElement {
     }, 300);
   }
 
+  updated(changedProperties) {
+    if (changedProperties.has('reload') && this.reload) {
+      this.reloadAccordionLogic();
+    }
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
+    this.disposeAccordionLogic();
+    this.lastOpenedItem = null;
+
+    if (this.reloadAnimationFrame !== null) {
+      cancelAnimationFrame(this.reloadAnimationFrame);
+      this.reloadAnimationFrame = null;
+    }
+  }
+
+  disposeAccordionLogic() {
     this.accordionObserver?.disconnect();
     this.accordionObserver = null;
-    this.lastOpenedItem = null;
 
     if (this.accordionClickHandler) {
       document.body.removeEventListener('click', this.accordionClickHandler);
@@ -70,6 +93,23 @@ class NeoAccordionElement extends LitElement {
       cancelAnimationFrame(this.reconcileAnimationFrame);
       this.reconcileAnimationFrame = null;
     }
+  }
+
+  reloadAccordionLogic() {
+    if (this.reloadAnimationFrame !== null) return;
+
+    this.disposeAccordionLogic();
+    this.requestUpdate();
+    this.reloadAnimationFrame = requestAnimationFrame(() => {
+      this.reloadAnimationFrame = null;
+
+      if (this.isConnected) {
+        this.initAccordionLogic();
+      }
+
+      // Reset the trigger only after the reinitialization attempt is complete.
+      this.reload = false;
+    });
   }
 
   initAccordionLogic() {
