@@ -650,9 +650,12 @@ class NeoPriceworkElement extends LitElement {
     this.recomputeAndDispatch();
   }
 
-  remove = (index) => {
-    const next = this.jobs.filter((_, i) => i !== index);
-    this.jobs = next;
+  // Named removeJob (not remove) so it doesn't replace the built-in Element.remove(),
+  // which the page or host may use to take the control out of the page.
+  removeJob = (index) => {
+    if (!Number.isInteger(index) || index < 0 || index >= this.jobs.length) return;
+    this.jobs = this.jobs.filter((_, i) => i !== index);
+    this.editingIndex = -1;
     this.showModal = false;
     this.recomputeAndDispatch();
   }
@@ -848,7 +851,7 @@ class NeoPriceworkElement extends LitElement {
           <div class="modal-footer">
             <div class="muted">Job total: <strong>${this.currency}${this.jobTotal(this.formData).toFixed(2)}</strong></div>
             <div class="actions">
-              ${editing ? html`<button class="btn btn-danger" @click=${()=>this.remove(this.editingIndex)}>Delete</button>` : ''}
+              ${editing ? html`<button class="btn btn-danger" @click=${()=>this.removeJob(this.editingIndex)}>Delete</button>` : ''}
               <button class="btn btn-outline" @click=${this.closeModal}>Cancel</button>
               <button class="btn btn-primary" @click=${this.save} ?disabled=${!(this.formData.items?.length>0)}>Save</button>
             </div>

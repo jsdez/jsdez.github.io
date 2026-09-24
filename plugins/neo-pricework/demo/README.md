@@ -69,6 +69,11 @@ update `dist/`, then commit and push as usual.
     Reset back to `false`; that re-sending the same input is ignored; that a
     different input loads; that Reset works a second time; and that Reset set
     before first load starts blank. It leaves the component in the reset state.
+  - **Test: Delete and remove()** — checks that no component method or
+    property replaces a built-in element member (such as `remove()`), that
+    the editor's Delete button deletes only the job being edited and emits one
+    value, that `removeJob()` ignores invalid indexes, and that `remove()`
+    takes the element off the page without emitting a value.
   - Reset works like a button: ticking the **Reset** checkbox resets the
     component, which switches Reset back off, so the checkbox unticks itself.
     The Input fields in the Properties panel stand in for the form's bound

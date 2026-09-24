@@ -86,6 +86,7 @@
         <button class="demo-btn secondary" id="btnReadOnlyTest">Test: read-only while editing</button>
         <button class="demo-btn secondary" id="btnRestoreTest">Test: restore emitted value</button>
         <button class="demo-btn secondary" id="btnResetTest">Test: Reset</button>
+        <button class="demo-btn secondary" id="btnElementTest" title="Checks for clashes with built-in element members, that remove() takes the element off the page, and that the editor's Delete button deletes the right job">Test: Delete and remove()</button>
       </div>
       <div id="props"></div>
     </div>
@@ -438,9 +439,7 @@
           var bug = restored === 0;
           log('Assigned a ' + lastOutput.jobs.length + '-job ' + valueField + ' before mount → jobs after render = ' + restored +
             (bug ? '  (BUG: value field not restored)' : '  (OK)'), bug ? 'warn' : undefined);
-          // Note: not probe.remove() — the component defines its own `remove(index)` job-delete
-          // method, which shadows the native Element.remove().
-          probe.parentNode.removeChild(probe);
+          probe.remove();
         });
       }
 
@@ -530,14 +529,76 @@
           document.body.appendChild(probe);
           await settle(probe);
           check('Reset set before first load starts blank', probe.jobs.length === 0 && probe.reset === false && probe.inputobj == null);
-          // Not probe.remove(): the component's own remove(index) shadows Element.remove().
-          probe.parentNode.removeChild(probe);
+          probe.remove();
         }
 
         if (fields.reset) fields.reset.input.checked = false;
         var passed = checks.filter(function (c) { return c.pass; }).length;
         checks.forEach(function (c) { log((c.pass ? 'PASS ' : 'FAIL ') + c.label, c.pass ? 'ok' : 'error'); });
         log('Reset test: ' + passed + '/' + checks.length + ' checks passed. The component is left in the reset state.',
+          passed === checks.length ? 'ok' : 'error');
+      }
+
+      async function elementTest() {
+        var checks = [];
+        function check(label, pass) { checks.push({ label: label, pass: !!pass }); }
+        var events = 0;
+        function countEvent() { events++; }
+
+        mount(); await settle(el);
+
+        // 1. No method or property replaces a built-in element member (e.g. remove()).
+        var Ctor = customElements.get(TAG);
+        var names = new Set(Object.getOwnPropertyNames(el)
+          .concat(Object.getOwnPropertyNames(Ctor.prototype).filter(function (n) { return n !== 'constructor'; }))
+          .concat(Ctor.elementProperties ? Array.from(Ctor.elementProperties.keys()).map(String) : []));
+        var plain = document.createElement('div');
+        var clashes = Array.from(names).filter(function (n) { return n in plain; });
+        check('no clashes with built-in element members' + (clashes.length ? ' (found: ' + clashes.join(', ') + ')' : ''),
+          clashes.length === 0);
+
+        // 2. The editor's Delete button deletes the job being edited.
+        var items = (fixture().workItems && fixture().workItems.items) || [];
+        function job(id, item) {
+          return { id: id, address: id + ' Street', contract: item ? item.contract : '', notes: '',
+            items: item ? [{ itemCode: item.itemCode, name: item.name, price: item.price, quantity: 1, contract: item.contract }] : [] };
+        }
+        el.inputobj = { jobs: [job('first', items[0]), job('second', items[1] || items[0])] }; await settle(el);
+        el.openEdit(1); await settle(el);
+        var deleteButton = el.shadowRoot.querySelector('.modal .btn-danger');
+        el.addEventListener('ntx-value-change', countEvent);
+        if (deleteButton) deleteButton.click();
+        await settle(el);
+        el.removeEventListener('ntx-value-change', countEvent);
+        check('Delete removes the edited job only', !!deleteButton && el.jobs.length === 1 && el.jobs[0].id === 'first');
+        check('Delete closes the editor and emits one value', !el.showModal && el.editingIndex === -1 && events === 1 &&
+          lastOutput && lastOutput.totalJobs === 1);
+
+        // 3. removeJob() with an invalid index changes nothing and emits nothing.
+        events = 0;
+        el.addEventListener('ntx-value-change', countEvent);
+        [undefined, -1, 99, '0'].forEach(function (i) { el.removeJob(i); });
+        await settle(el);
+        el.removeEventListener('ntx-value-change', countEvent);
+        check('removeJob() ignores invalid indexes', el.jobs.length === 1 && events === 0);
+
+        // 4. remove() takes the element off the page without emitting a value.
+        var probe = createConfiguredElement();
+        if (probe) {
+          probe.removeEventListener('ntx-value-change', onValueChange);
+          probe.style.display = 'none';
+          document.body.appendChild(probe);
+          await settle(probe);
+          var probeEvents = 0;
+          probe.addEventListener('ntx-value-change', function () { probeEvents++; });
+          probe.remove();
+          check('remove() takes the element off the page', !probe.isConnected);
+          check('remove() emits no value', probeEvents === 0);
+        }
+
+        var passed = checks.filter(function (c) { return c.pass; }).length;
+        checks.forEach(function (c) { log((c.pass ? 'PASS ' : 'FAIL ') + c.label, c.pass ? 'ok' : 'error'); });
+        log('Delete and remove() test: ' + passed + '/' + checks.length + ' checks passed.',
           passed === checks.length ? 'ok' : 'error');
       }
 
@@ -595,6 +656,7 @@
           document.getElementById('btnReadOnlyTest').addEventListener('click', readOnlyWhileEditingTest);
           document.getElementById('btnRestoreTest').addEventListener('click', restoreEmittedValueTest);
           document.getElementById('btnResetTest').addEventListener('click', resetTest);
+          document.getElementById('btnElementTest').addEventListener('click', elementTest);
           document.getElementById('btnOutputToInput').addEventListener('click', outputToInput);
         });
         connectLiveReload();
