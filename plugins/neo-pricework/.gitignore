@@ -1,2 +1,14 @@
 # Ignore node_modules directory
 node_modules/
+
+# Dev server build output (npm run dev); the deployable bundle is dist/ via npm run build
+.dev-build/
+
+# Local demo fixtures may contain real, non-public business data captured
+# from a live form (contract names, pricing, work item catalog). Never
+# commit these to the public GitHub Pages repository. The tracked
+# fixture-data.example.js file provides safe placeholder data instead.
+plugins/neo-pricework/demo/fixture-data.js
+plugins/neo-pricework/demo/live-timesheet-fixture.json
+demo/fixture-data.js
+demo/live-timesheet-fixture.json

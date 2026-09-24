@@ -5,7 +5,9 @@
   "main": "./src/neo-pricework.js",
   "browser": "./src/index.html",
   "scripts": {
-    "build": "webpack"
+    "build": "webpack",
+    "watch": "webpack --watch",
+    "dev": "node demo/dev-server.js"
   },
   "repository": {
     "type": "git",

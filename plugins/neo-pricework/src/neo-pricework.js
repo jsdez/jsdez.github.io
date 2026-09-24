@@ -96,6 +96,12 @@ class NeoPriceworkElement extends LitElement {
           title: 'Read only',
           defaultValue: false
         },
+        reset: {
+          type: 'boolean',
+          title: 'Reset',
+          description: 'Works like a button: set to true to clear all jobs, the loaded Input object and Input string, and the output value, as if the control had loaded with blank inputs. Reset then switches itself back to false. If the same Input object/string is sent again afterwards it is ignored; a different input loads normally.',
+          defaultValue: false
+        },
         outputobj: {
           type: 'object',
           title: 'Output object',
@@ -161,6 +167,7 @@ class NeoPriceworkElement extends LitElement {
     contracts: { type: String },
     workItems: { type: Object },
     readOnly: { type: Boolean, reflect: true },
+    reset: { type: Boolean },
     jobs: { type: Array },
     showModal: { type: Boolean },
     editingIndex: { type: Number },
@@ -183,6 +190,7 @@ class NeoPriceworkElement extends LitElement {
     this.workItems = { items: [] };
     this.currency = '£';
     this.readOnly = false;
+    this.reset = false;
     this.jobs = [];
     this.showModal = false;
     this.editingIndex = -1;
@@ -200,6 +208,11 @@ class NeoPriceworkElement extends LitElement {
     this.detailsOpen = new Set();
     this._designerReadOnly = this.readOnly;
     this._sharePointForcedReadOnly = false;
+
+    // Reset state: the inputs that were cleared by the last reset (so the same input
+    // re-sent by the host is not reloaded), and a flag for the update caused by the reset.
+    this._resetInputSignature = null;
+    this._resetApplying = false;
   }
 
   getEmptyForm() {
@@ -228,9 +241,65 @@ class NeoPriceworkElement extends LitElement {
       }
     }
 
+    // This update was caused by resetComponent() clearing the inputs and switching Reset off.
+    if (this._resetApplying) {
+      this._resetApplying = false;
+      return;
+    }
+
+    // Reset works like a button: act on true (including at first render), then switch off.
+    if (changed.has('reset') && this.reset) {
+      this.resetComponent();
+      return;
+    }
+
     if (changed.has('formMode') || changed.has('inputobj') || changed.has('inputstr')) {
+      if (this._resetInputSignature !== null) {
+        // After a reset, ignore the host re-sending the input that was just cleared, and
+        // keep the reset state if only the form mode changed.
+        const inputChanged = changed.has('inputobj') || changed.has('inputstr');
+        if (!inputChanged || this.getInputSignature() === this._resetInputSignature) return;
+        this._resetInputSignature = null;
+      }
       this.loadConfiguredJobs();
     }
+  }
+
+  getInputSignature() {
+    try {
+      return JSON.stringify({
+        obj: this.inputobj == null ? null : this.inputobj,
+        str: typeof this.inputstr === 'string' ? this.inputstr.trim() : '',
+      });
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // Return the component to the state it has on first load with blank inputs, then switch
+  // Reset back off.
+  resetComponent() {
+    this._resetInputSignature = this.getInputSignature();
+    this._resetApplying = true;
+    this.reset = false;
+
+    this.showModal = false;
+    this.editingIndex = -1;
+    this.formData = this.getEmptyForm();
+    this.workItemQuery = '';
+    this.detailsOpen = new Set();
+    this.inputStringError = '';
+    this.inputobj = null;
+    this.inputstr = '';
+    this.jobs = [];
+
+    // Address autocomplete state from the last edit (recreated when the editor opens).
+    this._autocomplete = null;
+    this._addressIsUserInput = false;
+    this._addressPreviousValue = '';
+    this._addressLastResolved = '';
+
+    this.recomputeAndDispatch();
   }
 
   get isSharePointForm() {

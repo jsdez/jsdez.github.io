@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>neo-pricework — local demo harness</title>
+<style>
+  :root { font-family: 'Open Sans', 'Helvetica', 'Arial', sans-serif; }
+  body { margin: 0; padding: 1.25rem; background: #f4f5f6; color: #161718; }
+  h1 { font-size: 1.25rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1rem; margin: 0 0 .75rem; }
+  .subtitle { color: #575c61; margin: 0 0 1rem; font-size: .9rem; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 1rem; align-items: start; }
+  @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+  .panel { background: #fff; border: 1px solid #d7dadd; border-radius: 6px; padding: 1rem; }
+  .panel + .panel { margin-top: 1rem; }
+
+  button.demo-btn { cursor: pointer; border: 1px solid #006bd6; background: #006bd6; color: #fff; border-radius: 4px; padding: .35rem .65rem; font-size: .78rem; font-weight: 600; }
+  button.demo-btn.secondary { background: #fff; color: #006bd6; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+
+  #fixtureInfo { font-size: .8rem; color: #575c61; margin-bottom: .75rem; }
+  #fixtureInfo.example { color: #a15c00; }
+
+  .prop { border-top: 1px solid #eceef0; padding: .6rem 0; }
+  .prop:first-child { border-top: 0; padding-top: 0; }
+  .prop-head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
+  .prop-name { font-weight: 600; font-size: .85rem; }
+  .prop-name code { font-weight: 400; color: #575c61; font-size: .75rem; margin-left: .35rem; }
+  .prop-desc { font-size: .75rem; color: #6c757d; margin: .15rem 0 .35rem; }
+  .prop textarea, .prop input[type="text"], .prop select { width: 100%; box-sizing: border-box; font-family: ui-monospace, Menlo, monospace; font-size: .75rem; padding: .35rem .45rem; border: 1px solid #b7bcc1; border-radius: 4px; }
+  .prop textarea { resize: vertical; }
+  .prop-actions { display: flex; gap: .5rem; align-items: center; margin-top: .35rem; }
+  .prop-error { color: #c00; font-size: .75rem; }
+  .prop-ok { color: #2e7d32; font-size: .75rem; }
+
+  #valueViewer { margin: 0; padding: .5rem; background: #f4f5f6; border: 1px solid #d7dadd; border-radius: 4px; font-size: .72rem; max-height: 320px; overflow: auto; }
+  #eventLog { font-size: .75rem; max-height: 240px; overflow: auto; background: #161718; color: #d7f7c2; padding: .5rem; border-radius: 4px; }
+  #eventLog div { white-space: pre-wrap; margin-bottom: .25rem; }
+  #eventLog div.warn { color: #ffce7a; }
+  #eventLog div.error { color: #ff9d9d; }
+  #eventLog div.ok { color: #9be89b; }
+
+  #devBanner { display: none; margin-bottom: 1rem; padding: .75rem 1rem; border-radius: 6px; font-size: .8rem; }
+  #devBanner.error { display: block; background: #fff0f0; border: 1px solid #e60000; color: #161718; }
+  #devBanner.error pre { margin: .5rem 0 0; white-space: pre-wrap; font-size: .72rem; max-height: 240px; overflow: auto; }
+  #liveStatus { font-size: .75rem; color: #6c757d; }
+  #liveStatus.on { color: #2e7d32; }
+</style>
+</head>
+<body>
+  <h1>neo-pricework — local demo harness</h1>
+  <p class="subtitle">
+    Offline test bed for <code>&lt;neo-pricework&gt;</code> using the local <code>dist/neo-pricework.js</code> build.
+    Run <code>npm run dev</code> and the page reloads automatically when the plugin or demo changes — no GitHub Pages push needed.
+    <span id="liveStatus">Live reload: off (not served by <code>npm run dev</code>)</span>
+  </p>
+  <div id="devBanner"></div>
+
+  <div class="layout">
+    <div>
+      <div class="panel">
+        <h2>Component</h2>
+        <div id="host"></div>
+      </div>
+      <div class="panel">
+        <h2>Output value <code style="font-weight:400">outputobj</code> (last <code style="font-weight:400">ntx-value-change</code>)</h2>
+        <pre id="valueViewer">(no ntx-value-change emitted yet)</pre>
+      </div>
+      <div class="panel">
+        <h2>Event log</h2>
+        <div id="eventLog"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Properties</h2>
+      <div id="fixtureInfo">Loading fixture…</div>
+      <div class="btn-row">
+        <button class="demo-btn" id="btnRemount" title="Create a fresh element with all values below applied before it connects (tests initial-load behaviour)">Remount with these values</button>
+        <button class="demo-btn secondary" id="btnResetFixture">Reset fields to fixture</button>
+        <button class="demo-btn secondary" id="btnOutputToInput" title="Copy the current output value into the Input object field and apply it. Field values survive reloads, so this keeps your jobs across rebuilds.">Use output as input</button>
+      </div>
+      <div class="btn-row">
+        <button class="demo-btn secondary" id="btnSeed">Add sample job</button>
+        <button class="demo-btn secondary" id="btnReadOnlyTest">Test: read-only while editing</button>
+        <button class="demo-btn secondary" id="btnRestoreTest">Test: restore emitted value</button>
+        <button class="demo-btn secondary" id="btnResetTest">Test: Reset</button>
+      </div>
+      <div id="props"></div>
+    </div>
+  </div>
+
+  <!--
+    Fixture loading order:
+      1. fixture-data.js         -> real data captured from a live form (gitignored, local-only).
+      2. fixture-data.example.js -> safe tracked placeholder, used automatically if (1) is absent.
+  -->
+  <script>
+    // Load with a cache-busting query so a reload always picks up the latest build/fixture.
+    (function () {
+      var bust = '?t=' + Date.now();
+      function load(src, onerror) {
+        var s = document.createElement('script');
+        s.src = src + bust;
+        if (onerror) s.onerror = onerror;
+        document.head.appendChild(s);
+      }
+      load('fixture-data.js', function () { load('fixture-data.example.js'); });
+      load('../dist/neo-pricework.js');
+    })();
+  </script>
+
+  <script>
+    (function () {
+      'use strict';
+      if (window.__NEO_DEMO_INITED__) { return; }
+      window.__NEO_DEMO_INITED__ = true;
+
+      var TAG = 'neo-pricework';
+      var el = null;          // current component instance
+      var meta = null;        // getMetaConfig() result
+      var fields = {};        // propName -> { input, type, status }
+      var lastOutput = null;
+
+      function log(message, level) {
+        var box = document.getElementById('eventLog');
+        var line = document.createElement('div');
+        if (level) line.className = level;
+        line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + message;
+        box.appendChild(line);
+        box.scrollTop = box.scrollHeight;
+      }
+
+      function waitForFixture(cb, tries) {
+        tries = tries || 0;
+        if (window.__NEO_PRICEWORK_FIXTURE__) return cb();
+        if (tries > 100) { log('No fixture data could be loaded.', 'error'); return; }
+        setTimeout(function () { waitForFixture(cb, tries + 1); }, 30);
+      }
+
+      function fixture() { return window.__NEO_PRICEWORK_FIXTURE__ || {}; }
+
+      function describeFixture() {
+        var info = document.getElementById('fixtureInfo');
+        var src = window.__NEO_PRICEWORK_FIXTURE_SOURCE__ || 'unknown source';
+        var f = fixture();
+        var items = (f.workItems && f.workItems.items || []).length;
+        var isExample = /example/i.test(src);
+        info.className = isExample ? 'example' : '';
+        info.textContent = 'Fixture: ' + src + ' — ' + items + ' work item(s).' +
+          (isExample ? ' Using placeholder data; see demo/README.md to load a real capture.' : '');
+      }
+
+      // ---- property editor, generated from getMetaConfig() -----------------------------
+
+      function toEditorText(type, value) {
+        if (type === 'object' || type === 'array') {
+          return value == null ? '' : JSON.stringify(value, null, 2);
+        }
+        return value == null ? '' : String(value);
+      }
+
+      function readField(name) {
+        var f = fields[name];
+        if (f.type === 'boolean') return { ok: true, value: f.input.checked };
+        var text = f.input.value;
+        if (f.type === 'object' || f.type === 'array') {
+          if (!text.trim()) return { ok: true, value: null };
+          try { return { ok: true, value: JSON.parse(text) }; }
+          catch (e) { return { ok: false, error: e.message }; }
+        }
+        if (f.type === 'number' || f.type === 'integer') {
+          return text.trim() === '' ? { ok: true, value: null } : { ok: true, value: Number(text) };
+        }
+        return { ok: true, value: text };
+      }
+
+      function applyField(name, target) {
+        var f = fields[name];
+        var result = readField(name);
+        if (!result.ok) {
+          f.status.className = 'prop-error';
+          f.status.textContent = 'Invalid JSON: ' + result.error;
+          return false;
+        }
+        (target || el)[name] = result.value;
+        f.status.className = 'prop-ok';
+        f.status.textContent = 'Applied';
+        setTimeout(function () { f.status.textContent = ''; }, 1500);
+        if (!target) {
+          log('Set ' + name + ' = ' + summarise(result.value));
+          if (name === 'reset' && result.value === true) {
+            log('The component cleared its own inputobj/inputstr. The Input fields here stand in for the form\'s bound ' +
+              'values, so they are left as they are: applying the same value again is ignored, a different value loads.');
+          }
+          if (f.type === 'boolean') {
+            // Show the component's value if it changed it itself (e.g. Reset switching back off).
+            var applied = el;
+            settle(applied).then(function () {
+              if (applied === el && f.input.checked !== !!el[name]) {
+                f.input.checked = !!el[name];
+                log('The component switched ' + name + ' back to ' + el[name] + '.');
+              }
+            });
+          }
+        }
+        return true;
+      }
+
+      function summarise(value) {
+        if (value == null) return String(value);
+        if (typeof value === 'string') return value.length > 60 ? JSON.stringify(value.slice(0, 60)) + '… (' + value.length + ' chars)' : JSON.stringify(value);
+        if (typeof value === 'object') {
+          var s = JSON.stringify(value);
+          return s.length > 80 ? s.slice(0, 80) + '… (' + s.length + ' chars)' : s;
+        }
+        return String(value);
+      }
+
+      function buildEditor() {
+        var container = document.getElementById('props');
+        container.innerHTML = '';
+        fields = {};
+        var props = meta.properties || {};
+        Object.keys(props).forEach(function (name) {
+          var def = props[name];
+          var type = def.type || 'string';
+
+          var wrap = document.createElement('div');
+          wrap.className = 'prop';
+
+          var head = document.createElement('div');
+          head.className = 'prop-head';
+          var title = document.createElement('div');
+          title.className = 'prop-name';
+          title.textContent = def.title || name;
+          var code = document.createElement('code');
+          code.textContent = name + ' : ' + type + (def.isValueField ? ' (value field)' : '');
+          title.appendChild(code);
+          head.appendChild(title);
+          wrap.appendChild(head);
+
+          if (def.description) {
+            var desc = document.createElement('div');
+            desc.className = 'prop-desc';
+            desc.textContent = def.description;
+            wrap.appendChild(desc);
+          }
+
+          var input;
+          var immediate = false;
+          if (type === 'boolean') {
+            input = document.createElement('input');
+            input.type = 'checkbox';
+            immediate = true;
+          } else if (Array.isArray(def.enum)) {
+            input = document.createElement('select');
+            def.enum.forEach(function (opt) {
+              var o = document.createElement('option');
+              o.value = opt; o.textContent = opt;
+              input.appendChild(o);
+            });
+            immediate = true;
+          } else if (type === 'object' || type === 'array') {
+            input = document.createElement('textarea');
+            input.rows = 6;
+          } else {
+            input = document.createElement('textarea');
+            input.rows = 2;
+          }
+          wrap.appendChild(input);
+
+          var actions = document.createElement('div');
+          actions.className = 'prop-actions';
+          var status = document.createElement('span');
+          if (!immediate) {
+            var btn = document.createElement('button');
+            btn.className = 'demo-btn secondary';
+            btn.textContent = 'Apply';
+            btn.addEventListener('click', function () { applyField(name); });
+            actions.appendChild(btn);
+          }
+          actions.appendChild(status);
+          wrap.appendChild(actions);
+
+          if (immediate) input.addEventListener('change', function () { applyField(name); });
+
+          fields[name] = { input: input, type: type, status: status };
+          container.appendChild(wrap);
+        });
+        applyFixtureToFields();
+        if (restoreSavedFields()) {
+          log('Restored property field values from before the reload ("Reset fields to fixture" to discard).');
+        }
+      }
+
+      function setFieldValue(name, value) {
+        var f = fields[name];
+        if (!f) return;
+        if (f.type === 'boolean') f.input.checked = !!value;
+        else f.input.value = toEditorText(f.type, value);
+      }
+
+      // Field values are kept in sessionStorage (this tab only) so they survive reloads.
+      var STORAGE_KEY = 'neo-pricework-demo:fields';
+
+      function saveFields() {
+        if (!meta) return;
+        var saved = {};
+        Object.keys(fields).forEach(function (name) {
+          var f = fields[name];
+          saved[name] = f.type === 'boolean' ? f.input.checked : f.input.value;
+        });
+        try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (e) { /* storage full or disabled */ }
+      }
+
+      function restoreSavedFields() {
+        var raw;
+        try { raw = sessionStorage.getItem(STORAGE_KEY); } catch (e) { return false; }
+        if (!raw) return false;
+        var saved;
+        try { saved = JSON.parse(raw); } catch (e) { return false; }
+        Object.keys(fields).forEach(function (name) {
+          if (!Object.prototype.hasOwnProperty.call(saved, name)) return;
+          var f = fields[name];
+          if (f.type === 'boolean') f.input.checked = !!saved[name];
+          else f.input.value = saved[name];
+        });
+        return true;
+      }
+
+      function clearSavedFields() {
+        try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+      }
+
+      function resetFieldsToFixture() {
+        clearSavedFields();
+        applyFixtureToFields();
+      }
+
+      function applyFixtureToFields() {
+        var f = fixture();
+        Object.keys(fields).forEach(function (name) {
+          // Never pre-fill the value field from the fixture: start empty like a new form.
+          if (meta.properties[name].isValueField) { setFieldValue(name, null); return; }
+          var value = Object.prototype.hasOwnProperty.call(f, name) ? f[name] : meta.properties[name].defaultValue;
+          setFieldValue(name, value);
+        });
+      }
+
+      // ---- component lifecycle ----------------------------------------------------------
+
+      function onValueChange(event) {
+        lastOutput = event.detail;
+        document.getElementById('valueViewer').textContent = JSON.stringify(event.detail, null, 2);
+        var d = event.detail || {};
+        log('ntx-value-change — ' + d.totalJobs + ' job(s), ' + d.totalWorkItems + ' item(s), total ' +
+          (Number(d.totalPrice) || 0).toFixed(2));
+      }
+
+      function createConfiguredElement() {
+        var next = document.createElement(TAG);
+        next.addEventListener('ntx-value-change', onValueChange);
+        var ok = true;
+        Object.keys(fields).forEach(function (name) {
+          var result = readField(name);
+          if (!result.ok) { ok = false; applyField(name, next); return; }
+          // Leave the value field untouched when empty so the component uses its own default.
+          if (meta.properties[name].isValueField && result.value == null) return;
+          next[name] = result.value;
+        });
+        return ok ? next : null;
+      }
+
+      function mount() {
+        var next = createConfiguredElement();
+        if (!next) { log('Fix the invalid JSON field(s) before remounting.', 'error'); return; }
+        var host = document.getElementById('host');
+        host.innerHTML = '';
+        host.appendChild(next);
+        el = next;
+        log('Mounted a fresh <' + TAG + '> with the current property values.');
+      }
+
+      // ---- quick tests ------------------------------------------------------------------
+
+      function seedSampleJob() {
+        el.openAdd();
+        el.updateComplete.then(function () {
+          el.formData = Object.assign({}, el.formData, {
+            address: '123 Demo Street, Testville',
+            contract: el.getContractOptions()[0] || '',
+            notes: 'Seeded by the local demo harness.'
+          });
+          var available = el.getAvailableWorkItems();
+          if (available[0]) el.addWorkItem(available[0]);
+          if (available[1]) el.addWorkItem(available[1]);
+          return el.updateComplete;
+        }).then(function () {
+          el.save();
+          log('Added a sample job via openAdd → addWorkItem → save.');
+        });
+      }
+
+      function readOnlyWhileEditingTest() {
+        if (el.jobs.length > 0) el.openEdit(0); else el.openAdd();
+        el.updateComplete.then(function () {
+          log('Editor open; setting readOnly = true…');
+          el.readOnly = true;
+          return el.updateComplete;
+        }).then(function () {
+          var modalOpen = !!el.shadowRoot.querySelector('.modal');
+          var enabled = [].slice.call(el.shadowRoot.querySelectorAll('.modal input, .modal select, .modal textarea, .modal button'))
+            .filter(function (n) { return !n.disabled; }).length;
+          var bug = modalOpen && enabled > 0;
+          log('Result: modal open = ' + modalOpen + ', enabled modal controls = ' + enabled +
+            (bug ? '  (BUG: editor not locked on read-only)' : '  (OK)'), bug ? 'warn' : undefined);
+          el.readOnly = !!readField('readOnly').value;
+          if (el.showModal) el.closeModal();
+        });
+      }
+
+      function restoreEmittedValueTest() {
+        if (!lastOutput || !lastOutput.jobs || lastOutput.jobs.length === 0) {
+          log('Nothing to restore yet — click "Add sample job" first.', 'warn');
+          return;
+        }
+        var probe = createConfiguredElement();
+        if (!probe) return;
+        probe.removeEventListener('ntx-value-change', onValueChange);
+        var valueField = Object.keys(meta.properties).find(function (n) { return meta.properties[n].isValueField; });
+        probe[valueField] = JSON.parse(JSON.stringify(lastOutput));
+        probe.style.display = 'none';
+        document.body.appendChild(probe);
+        probe.updateComplete.then(function () {
+          var restored = probe.jobs.length;
+          var bug = restored === 0;
+          log('Assigned a ' + lastOutput.jobs.length + '-job ' + valueField + ' before mount → jobs after render = ' + restored +
+            (bug ? '  (BUG: value field not restored)' : '  (OK)'), bug ? 'warn' : undefined);
+          // Note: not probe.remove() — the component defines its own `remove(index)` job-delete
+          // method, which shadows the native Element.remove().
+          probe.parentNode.removeChild(probe);
+        });
+      }
+
+      function outputToInput() {
+        if (!lastOutput) { log('No output value yet.', 'warn'); return; }
+        var inputField = fields.inputobj;
+        if (!inputField) { log('This build has no inputobj property.', 'error'); return; }
+        inputField.input.value = JSON.stringify(lastOutput, null, 2);
+        applyField('inputobj');
+      }
+
+      function settle(target) {
+        // Keep waiting while updates trigger further updates (updateComplete resolves false).
+        return target.updateComplete.then(function (done) { return done ? undefined : settle(target); });
+      }
+
+      async function resetTest() {
+        if (!fields.reset) { log('This build has no reset property.', 'error'); return; }
+        var f = fixture();
+        var first = f.workItems && f.workItems.items && f.workItems.items[0];
+        var sample = lastOutput && lastOutput.jobs && lastOutput.jobs.length ? JSON.parse(JSON.stringify(lastOutput)) : {
+          jobs: [{
+            id: 'reset-test', address: '1 Reset Test Road', contract: first ? first.contract : '', notes: '',
+            items: first ? [{ itemCode: first.itemCode, name: first.name, price: first.price, quantity: 1, contract: first.contract }] : []
+          }]
+        };
+        var checks = [];
+        function check(label, pass) { checks.push({ label: label, pass: !!pass }); }
+        function copy() { return JSON.parse(JSON.stringify(sample)); }
+        function rendersEmpty() {
+          var root = el.shadowRoot;
+          var text = root.textContent.replace(/\s+/g, ' ');
+          return !!root.querySelector('.empty') && root.querySelectorAll('.card').length === 0 &&
+            /0 items/.test(text) && !root.querySelector('.modal');
+        }
+        function rendersJobs(n) { return el.shadowRoot.querySelectorAll('.card').length === n; }
+
+        function different() {
+          var d = copy();
+          d.jobs = d.jobs.map(function (j) { return Object.assign({}, j, { id: (j.id || 'job') + '-other', address: 'A different timesheet' }); });
+          return d;
+        }
+        var events = 0;
+        function countEvent() { events++; }
+
+        // Start from a fresh component so earlier resets in this session don't affect the test.
+        if (fields.reset) fields.reset.input.checked = false;
+        mount(); await settle(el);
+
+        // 1. Load a timesheet through the input object.
+        el.inputobj = copy(); await settle(el);
+        check('input object loads and renders ' + sample.jobs.length + ' job(s)',
+          el.jobs.length === sample.jobs.length && rendersJobs(sample.jobs.length));
+
+        // 2. Press Reset with the editor open: back to a blank first load, then Reset switches off.
+        el.openEdit(0); await settle(el);
+        el.addEventListener('ntx-value-change', countEvent);
+        el.reset = true; await settle(el);
+        el.removeEventListener('ntx-value-change', countEvent);
+        check('Reset clears jobs', el.jobs.length === 0);
+        check('Reset clears inputobj and inputstr', el.inputobj == null && !el.inputstr);
+        check('Reset closes the editor and clears its form', !el.showModal && el.editingIndex === -1 && el.formData.items.length === 0);
+        check('Reset emits one empty value (got ' + events + ' event(s))',
+          events === 1 && lastOutput && lastOutput.totalJobs === 0 && lastOutput.jobs.length === 0 && lastOutput.totalPrice === 0);
+        check('Reset renders the empty component', rendersEmpty());
+        check('Reset switches itself back to false', el.reset === false);
+
+        // 3. The host re-sending the same timesheet does not reload it.
+        el.inputobj = copy(); await settle(el);
+        check('same input re-sent after Reset is ignored', el.jobs.length === 0 && rendersEmpty());
+
+        // 4. A different input loads normally.
+        el.inputobj = different(); await settle(el);
+        check('a different input loads after Reset', el.jobs.length === sample.jobs.length && rendersJobs(sample.jobs.length));
+
+        // 5. Reset can be pressed again.
+        el.reset = true; await settle(el);
+        check('Reset works a second time', el.jobs.length === 0 && el.reset === false && rendersEmpty());
+
+        // 6. Reset already true when the control first loads.
+        var probe = createConfiguredElement();
+        if (probe) {
+          probe.removeEventListener('ntx-value-change', onValueChange);
+          probe.inputobj = copy();
+          probe.reset = true;
+          probe.style.display = 'none';
+          document.body.appendChild(probe);
+          await settle(probe);
+          check('Reset set before first load starts blank', probe.jobs.length === 0 && probe.reset === false && probe.inputobj == null);
+          // Not probe.remove(): the component's own remove(index) shadows Element.remove().
+          probe.parentNode.removeChild(probe);
+        }
+
+        if (fields.reset) fields.reset.input.checked = false;
+        var passed = checks.filter(function (c) { return c.pass; }).length;
+        checks.forEach(function (c) { log((c.pass ? 'PASS ' : 'FAIL ') + c.label, c.pass ? 'ok' : 'error'); });
+        log('Reset test: ' + passed + '/' + checks.length + ' checks passed. The component is left in the reset state.',
+          passed === checks.length ? 'ok' : 'error');
+      }
+
+      // ---- live reload (only when served by `npm run dev`) -------------------------------
+
+      function connectLiveReload() {
+        if (!/^https?:$/.test(location.protocol) || !('EventSource' in window)) return;
+        var opened = false;
+        var source = new EventSource('/__livereload');
+        var status = document.getElementById('liveStatus');
+        var banner = document.getElementById('devBanner');
+        source.onopen = function () {
+          opened = true;
+          status.className = 'on';
+          status.textContent = 'Live reload: on';
+        };
+        source.onerror = function () {
+          // Not the dev server (e.g. python http.server): stop retrying.
+          if (!opened) { source.close(); return; }
+          status.className = '';
+          status.textContent = 'Live reload: reconnecting…';
+        };
+        source.addEventListener('reload', function () {
+          saveFields();
+          location.reload();
+        });
+        source.addEventListener('build-error', function (event) {
+          var data = {};
+          try { data = JSON.parse(event.data); } catch (e) { /* ignore */ }
+          banner.className = 'error';
+          banner.innerHTML = '<strong>Build failed — the page is still running the last good build.</strong>';
+          var pre = document.createElement('pre');
+          pre.textContent = data.message || 'Unknown error';
+          banner.appendChild(pre);
+          log('Build failed (see banner).', 'error');
+        });
+      }
+
+      window.addEventListener('beforeunload', saveFields);
+
+      // ---- init -------------------------------------------------------------------------
+
+      function init() {
+        describeFixture();
+        customElements.whenDefined(TAG).then(function () {
+          meta = customElements.get(TAG).getMetaConfig();
+          buildEditor();
+          mount();
+          document.getElementById('btnRemount').addEventListener('click', mount);
+          document.getElementById('btnResetFixture').addEventListener('click', function () {
+            resetFieldsToFixture();
+            log('Property fields reset to fixture values (click "Remount" or "Apply" to use them).');
+          });
+          document.getElementById('btnSeed').addEventListener('click', seedSampleJob);
+          document.getElementById('btnReadOnlyTest').addEventListener('click', readOnlyWhileEditingTest);
+          document.getElementById('btnRestoreTest').addEventListener('click', restoreEmittedValueTest);
+          document.getElementById('btnResetTest').addEventListener('click', resetTest);
+          document.getElementById('btnOutputToInput').addEventListener('click', outputToInput);
+        });
+        connectLiveReload();
+      }
+
+      waitForFixture(init);
+    })();
+  </script>
+</body>
+</html>
