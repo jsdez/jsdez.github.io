@@ -4,6 +4,11 @@ import { neoPriceworkStyles } from './neo-pricework.styles.js';
 // Simple id generator for new jobs
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+// Work item search results shown at once (keeps long lists quick on mobile).
+const WORK_ITEM_SEARCH_LIMIT = 50;
+
+const normaliseContract = (value) => String(value ?? '').trim();
+
 // Address lookup providers (the "Address Lookup Provider" property). UK addresses only.
 const ADDRESS_PROVIDERS = { GOOGLE: 'Google Maps', OS: 'OS Places' };
 const ADDRESS_LOOKUP_DELAY_MS = 250; // wait for a pause in typing before requesting suggestions
@@ -300,6 +305,7 @@ class NeoPriceworkElement extends LitElement {
     formData: { type: Object },
     workItemQuery: { type: String },
     detailsOpen: { type: Object },
+    expandedItemGroups: { state: true },
     inputStringError: { type: String },
     addressSuggestions: { state: true },
     addressActiveIndex: { state: true },
@@ -337,6 +343,8 @@ class NeoPriceworkElement extends LitElement {
     this._addressAbort = null; // cancels an in-flight OS Places request
     this._warnedMissingAddressKey = false;
     this.detailsOpen = new Set();
+    // Contracts whose selected-item group is expanded in the editor (the selected contract's by default).
+    this.expandedItemGroups = new Set();
     this._designerReadOnly = this.readOnly;
     this._sharePointForcedReadOnly = false;
 
@@ -434,6 +442,7 @@ class NeoPriceworkElement extends LitElement {
     this.formData = this.getEmptyForm();
     this.workItemQuery = '';
     this.detailsOpen = new Set();
+    this.expandedItemGroups = new Set();
     this.inputStringError = '';
     this.inputobj = null;
     this.inputstr = '';
@@ -591,6 +600,8 @@ class NeoPriceworkElement extends LitElement {
     if (this.readOnly) return;
     this.formData = { ...this.getEmptyForm(), id: uid() };
     this.editingIndex = -1;
+    this.workItemQuery = '';
+    this.expandedItemGroups = new Set([normaliseContract(this.formData.contract)]);
     this.showModal = true;
     this.prepareAddressLookup();
   }
@@ -601,6 +612,8 @@ class NeoPriceworkElement extends LitElement {
     if (!j) return;
     this.formData = { ...this.getEmptyForm(), ...j };
     this.editingIndex = index;
+    this.workItemQuery = '';
+    this.expandedItemGroups = new Set([normaliseContract(this.formData.contract)]);
     this.showModal = true;
     this.prepareAddressLookup();
   }
@@ -614,8 +627,16 @@ class NeoPriceworkElement extends LitElement {
 
   onContractChange = (e) => {
     const contract = e.target.value;
-  // Preserve selected items and filter when contract changes
-  this.formData = { ...this.formData, contract };
+    // Selected items are kept; only the new contract's group is expanded (others can still be
+    // opened by hand).
+    this.formData = { ...this.formData, contract };
+    this.expandedItemGroups = new Set([normaliseContract(contract)]);
+  }
+
+  toggleItemGroup = (contract) => {
+    const next = new Set(this.expandedItemGroups);
+    if (next.has(contract)) next.delete(contract); else next.add(contract);
+    this.expandedItemGroups = next;
   }
 
   getContractOptions() {
@@ -665,43 +686,87 @@ class NeoPriceworkElement extends LitElement {
     return `${contract}\u0000${itemCode || name}`;
   }
 
+  // Work items that can be added to the job being edited (already-selected items and exact
+  // duplicates are left out).
+  // - Browsing (search box empty): only the selected contract's items, or only items without a
+  //   contract when no contract is selected.
+  // - Searching: items from every contract, best matches first, the selected contract's first
+  //   among equal matches.
   getAvailableWorkItems() {
     const selectedKeys = new Set((this.formData.items || []).map(item => this.getWorkItemKey(item)));
+    const selectedContract = normaliseContract(this.formData.contract);
     const all = Array.isArray(this.workItems?.items) ? this.workItems.items : [];
-    // Contract filter - ensure we have valid objects with properties
-    let pool = all.filter(w => w && w.name && (!this.formData.contract || w.contract === this.formData.contract) && !selectedKeys.has(this.getWorkItemKey(w)));
-    // Query filter: prefer itemCode containment; fallback to fuzzy name
-    const q = (this.workItemQuery || '').trim().toLowerCase();
-    if (!q) return pool;
-    const words = q.split(/\s+/).filter(Boolean);
-    const itemCodeMatches = [];
-    const others = [];
-    for (const w of pool) {
-      if (!w || !w.name) continue; // Skip invalid items
-      const code = String(w.itemCode || '').toLowerCase();
-      if (code && code.includes(q)) {
-        itemCodeMatches.push(w);
-        continue;
-      }
-      others.push(w);
-    }
-    if (itemCodeMatches.length > 0) return itemCodeMatches;
-    // Fallback fuzzy by name
-    const fuzzy = others.filter(w => {
-      if (!w || !w.name) return false; // Skip invalid items
-      const hay = String(w.name || '').toLowerCase();
-      return words.every(word => {
-        if (hay.includes(word)) return true;
-        let i = 0;
-        for (const ch of word) {
-          i = hay.indexOf(ch, i);
-          if (i === -1) return false;
-          i++;
-        }
-        return true;
-      });
+    const seen = new Set();
+    const pool = [];
+    all.forEach((w, order) => {
+      if (!w || !w.name) return; // skip invalid items
+      const key = this.getWorkItemKey(w);
+      if (selectedKeys.has(key) || seen.has(key)) return;
+      seen.add(key);
+      pool.push({ w, order });
     });
-    return fuzzy;
+
+    const q = (this.workItemQuery || '').trim().toLowerCase();
+    if (!q) {
+      return pool.filter(({ w }) => normaliseContract(w.contract) === selectedContract).map(({ w }) => w);
+    }
+
+    const words = q.split(/\s+/).filter(Boolean);
+    const isSubsequence = (word, hay) => {
+      let i = 0;
+      for (const ch of word) {
+        i = hay.indexOf(ch, i);
+        if (i === -1) return false;
+        i++;
+      }
+      return true;
+    };
+    // Lower score = better match.
+    const scoreOf = (w) => {
+      const code = String(w.itemCode || '').toLowerCase();
+      const name = String(w.name || '').toLowerCase();
+      const contract = normaliseContract(w.contract).toLowerCase();
+      if (code && code === q) return 0;
+      if (code && code.startsWith(q)) return 1;
+      if (code && code.includes(q)) return 2;
+      // Every word found in the code, name or contract, e.g. "eicr falkirk".
+      const hay = `${code} ${name} ${contract}`;
+      if (words.every(word => hay.includes(word))) return 3;
+      // Loose fallback on the name (letters in order), used only when nothing better matches.
+      if (words.every(word => isSubsequence(word, name))) return 4;
+      return -1;
+    };
+
+    let matches = pool
+      .map(entry => ({ ...entry, score: scoreOf(entry.w) }))
+      .filter(entry => entry.score >= 0);
+    if (matches.some(entry => entry.score < 4)) matches = matches.filter(entry => entry.score < 4);
+
+    return matches
+      .sort((a, b) =>
+        a.score - b.score ||
+        (normaliseContract(a.w.contract) === selectedContract ? 0 : 1) -
+          (normaliseContract(b.w.contract) === selectedContract ? 0 : 1) ||
+        normaliseContract(a.w.contract).localeCompare(normaliseContract(b.w.contract)) ||
+        a.order - b.order)
+      .map(({ w }) => w);
+  }
+
+  // Selected items grouped by contract for the editor: the selected contract's group first, then
+  // groups in the order their first item was added. Each entry keeps the item's index in
+  // formData.items so quantity changes and removal still target the right item.
+  getSelectedItemGroups() {
+    const selectedContract = normaliseContract(this.formData.contract);
+    const groups = new Map();
+    (this.formData.items || []).forEach((item, index) => {
+      const contract = normaliseContract(item?.contract);
+      if (!groups.has(contract)) groups.set(contract, { contract, entries: [], total: 0 });
+      const group = groups.get(contract);
+      group.entries.push({ item, index });
+      group.total += this.itemTotal(item);
+    });
+    return Array.from(groups.values()).sort((a, b) =>
+      (a.contract === selectedContract ? 0 : 1) - (b.contract === selectedContract ? 0 : 1));
   }
 
   addSelectedWorkItems = (e) => {
@@ -902,6 +967,109 @@ class NeoPriceworkElement extends LitElement {
     `;
   }
 
+  // The list of work items to add (see getAvailableWorkItems for what is shown when).
+  renderAvailableWorkItems() {
+    const searching = !!(this.workItemQuery || '').trim();
+    const selectedContract = normaliseContract(this.formData.contract);
+    const matches = this.getAvailableWorkItems();
+    const shown = searching ? matches.slice(0, WORK_ITEM_SEARCH_LIMIT) : matches;
+
+    let empty = '';
+    if (!matches.length) {
+      if (searching) empty = `No work items match "${this.workItemQuery.trim()}".`;
+      else if (selectedContract) empty = `No more work items for ${selectedContract}. Search to add items from any contract.`;
+      else empty = 'Select a contract to see its work items, or search to find items from any contract.';
+    }
+
+    return html`
+      ${empty ? html`<div class="avail-empty muted">${empty}</div>` : html`
+        <div class="avail-list" role="list" aria-label=${searching ? 'Matching work items' : `Work items for ${selectedContract || 'no contract'}`}>
+          ${shown.map(w => {
+            const contract = normaliseContract(w.contract);
+            return html`
+              <div class="avail-row" role="listitem">
+                <div class="avail-main">
+                  <div class="avail-title">${w.name}</div>
+                  <div class="avail-meta">
+                    <span class="avail-price">${this.currency}${Number(w.price).toFixed(2)}</span>
+                    <span class="pill pill-sm ${contract === selectedContract ? '' : 'pill-muted'}">${contract || 'No contract'}</span>
+                  </div>
+                </div>
+                <div class="avail-actions">
+                  <button class="icon-btn success" @click=${()=>this.addWorkItem(w)}
+                    aria-label=${`Add ${w.name}${contract ? ` (${contract})` : ''}`} title="Add">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            `;
+          })}
+        </div>
+        ${searching && matches.length > shown.length ? html`
+          <div class="avail-note muted">Showing ${shown.length} of ${matches.length} matches. Keep typing to narrow the list.</div>
+        ` : ''}
+      `}
+    `;
+  }
+
+  // Selected work items, grouped by contract with a subtotal per contract.
+  renderSelectedItems() {
+    const groups = this.getSelectedItemGroups();
+    if (!groups.length) return html`<div class="muted">No items selected yet.</div>`;
+    return html`
+      <div class="list-table">
+        <div class="list-head sm">
+          <div>Selected Work Item</div>
+          <div class="center">Price</div>
+          <div class="center">Qty</div>
+          <div class="center">Cost</div>
+          <div></div>
+        </div>
+        ${groups.map((group, groupIndex) => {
+          const name = group.contract || 'No contract';
+          const expanded = this.expandedItemGroups.has(group.contract);
+          const bodyId = `item-group-${groupIndex}`;
+          return html`
+          <div class="item-group ${expanded ? 'expanded' : 'collapsed'}" role="group" aria-label=${`${name} work items`}>
+            <button type="button" class="item-group-head" aria-expanded=${expanded ? 'true' : 'false'} aria-controls=${bodyId}
+              @click=${() => this.toggleItemGroup(group.contract)}>
+              <svg class="item-group-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="item-group-name">${name}</span>
+              <span class="item-group-total">${group.entries.length} item${group.entries.length === 1 ? '' : 's'} · ${this.currency}${group.total.toFixed(2)}</span>
+            </button>
+            <div class="item-group-body" id=${bodyId} ?hidden=${!expanded}>
+            ${group.entries.map(({ item: it, index: idx }) => html`
+              <div class="list-row">
+                <div class="cell-name">
+                  <div class="title">${it.name}</div>
+                </div>
+                <div class="cell-numbers">
+                  <div class="cell-unit"><span class="cell-label">Price </span><span class="sm">${this.currency}${Number(it.price).toFixed(2)}</span></div>
+                  <div class="cell-qty"><span class="cell-label">Qty </span><input class="qty-input" type="number" min="0" step="1" inputmode="numeric" aria-label=${`Quantity for ${it.name}`} .value=${String(it.quantity ?? 0)} @input=${(e)=>this.updateItemQty(idx, e)} /></div>
+                  <div class="cell-cost"><span class="cell-label">Cost </span><span class="total">${this.currency}${this.itemTotal(it).toFixed(2)}</span></div>
+                </div>
+                <div class="cell-remove">
+                  <button class="icon-btn" title="Remove" aria-label=${`Remove ${it.name}`} @click=${()=>this.removeSelectedItem(idx)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" stroke-width="2"/>
+                      <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            `)}
+            </div>
+          </div>
+        `;
+        })}
+      </div>
+    `;
+  }
+
   renderModal() {
     if (!this.showModal) return null;
     const editing = this.editingIndex > -1;
@@ -926,61 +1094,14 @@ class NeoPriceworkElement extends LitElement {
                 </select>
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
-                <label>Work Items</label>
-                <input type="text" placeholder="Search work items" .value=${this.workItemQuery}
+                <label for="workItemSearch">Work Items</label>
+                <input id="workItemSearch" type="search" placeholder="Search all contracts by code or name"
+                  .value=${this.workItemQuery} autocomplete="off"
                   @input=${(e)=>{ this.workItemQuery = e.target.value; }} />
-                <div class="avail-list" role="list">
-                  ${this.getAvailableWorkItems().map(w => html`
-                    <div class="avail-row" role="listitem">
-                      <div class="avail-main">
-                        <div class="avail-title">${w.name}</div>
-                        <div class="avail-price">${this.currency}${Number(w.price).toFixed(2)}</div>
-                      </div>
-                      <div class="avail-actions">
-                        <button class="icon-btn success" @click=${()=>this.addWorkItem(w)} aria-label=${`Add ${w.name}`} title="Add">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  `)}
-                </div>
+                ${this.renderAvailableWorkItems()}
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
-                ${Array.isArray(this.formData.items) && this.formData.items.length>0 ? html`
-                  <div class="list-table">
-                    <div class="list-head sm">
-                      <div>Selected Work Item</div>
-                      <div class="center">Price</div>
-                      <div class="center">Qty</div>
-                      <div class="center">Cost</div>
-                      <div></div>
-                    </div>
-                    ${this.formData.items.map((it, idx)=> html`
-                      <div class="list-row">
-                        <div class="cell-name">
-                          <div class="title">${it.name}</div>
-                        </div>
-                        <div class="cell-numbers">
-                          <div class="cell-unit"><span class="cell-label">Price </span><span class="sm">${this.currency}${Number(it.price).toFixed(2)}</span></div>
-                          <div class="cell-qty"><span class="cell-label">Qty </span><input class="qty-input" type="number" min="0" step="1" .value=${String(it.quantity ?? 0)} @input=${(e)=>this.updateItemQty(idx, e)} /></div>
-                          <div class="cell-cost"><span class="cell-label">Cost </span><span class="total">${this.currency}${this.itemTotal(it).toFixed(2)}</span></div>
-                        </div>
-                        <div class="cell-remove">
-                          <button class="icon-btn" title="Remove" aria-label="Remove" @click=${()=>this.removeSelectedItem(idx)}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" stroke-width="2"/>
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" stroke-width="2"/>
-                              <path d="M10 11v6M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    `)}
-                  </div>
-                ` : html`<div class="muted">No items selected yet.</div>`}
+                ${this.renderSelectedItems()}
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
                 <label>Job Notes</label>

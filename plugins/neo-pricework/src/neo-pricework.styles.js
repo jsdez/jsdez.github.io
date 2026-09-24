@@ -81,7 +81,30 @@ export const neoPriceworkStyles = css`
   /* Available work items (touch-friendly) */
   .avail-list { display:flex; flex-direction:column; gap:.5rem; max-height: 260px; font-size: 14px; overflow:auto; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.5rem; background: var(--ntx-form-theme-color-form-background, #fff); width: 100%; max-width: 100%; }
   .avail-row { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .6rem; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); min-height:44px; width: 100%; box-sizing: border-box; }
-  .avail-main { display:flex; align-items:center; gap:.5rem; min-width:0; flex:1 1 auto; }
+  .avail-list > .avail-row { flex: 0 0 auto; }
+  .avail-main { display:flex; flex-direction:column; align-items:flex-start; gap:.2rem; min-width:0; flex:1 1 auto; }
+  .avail-meta { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem; }
+  .avail-empty { padding:.6rem .1rem; font-size:14px; }
+  .avail-note { margin-top:.35rem; font-size:12px; }
+  .pill-sm { font-size:11px; font-weight:600; padding:.1rem .45rem; }
+  .pill-muted { background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); color: var(--ntx-form-theme-color-input-text, #161718); font-weight:500; }
+  input[type="search"] { -webkit-appearance: none; appearance: none; }
+
+  /* Selected work items grouped by contract */
+  .item-group { display:flex; flex-direction:column; gap:.5rem; min-width:0; padding-left:.5rem; border-left:3px solid var(--ntx-form-theme-color-primary, #006bd6); }
+  .item-group + .item-group { margin-top:.35rem; }
+  .item-group-body > .list-row { min-width:0; box-sizing:border-box; }
+  /* Group header: a full-width button that expands/collapses the group */
+  .item-group-head { display:flex; align-items:center; gap:.4rem .6rem; width:100%; min-height:44px; margin:0; padding:.35rem .25rem; border:0; border-radius: var(--ntx-form-theme-border-radius, 4px); background:none; color:inherit; font:inherit; font-size:14px; text-align:left; cursor:pointer; box-sizing:border-box; }
+  .item-group-head:hover { background: var(--ntx-form-theme-color-form-background-alternate-contrast, #0000000d); }
+  .item-group-head:focus-visible { outline:2px solid var(--ntx-form-theme-color-primary, #006bd6); outline-offset:1px; }
+  .item-group-chevron { flex:0 0 auto; transition: transform .15s ease; }
+  .item-group.expanded .item-group-chevron { transform: rotate(90deg); }
+  .item-group-name { font-weight:700; flex:1 1 auto; min-width:0; overflow-wrap:anywhere; }
+  .item-group-body { display:flex; flex-direction:column; gap:.5rem; }
+  .item-group-body[hidden] { display:none; }
+  .item-group.collapsed { gap:0; }
+  .item-group-total { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); font-size:13px; white-space:nowrap; }
   .avail-title { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .avail-price { color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); white-space:nowrap; }
   .avail-actions { flex:0 0 auto; }
@@ -107,6 +130,8 @@ export const neoPriceworkStyles = css`
         .cell-remove { justify-self: end; }
         .cell-label { display: none; }
   .list-head .center { text-align: center; }
+        /* Line the headings up with rows indented inside contract groups */
+        .list-table > .list-head { margin-left: calc(.5rem + 3px); }
   .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
       }
 
@@ -116,12 +141,15 @@ export const neoPriceworkStyles = css`
         .list-row { display:grid; grid-template-columns: 1fr var(--neo-col-remove); grid-template-rows: auto auto; row-gap:.25rem; }
         .cell-name { grid-column: 1 / 2; grid-row: 1; }
         .cell-remove { grid-column: 2 / 3; grid-row: 1; justify-self:end; display:flex; }
-        .cell-numbers { grid-column: 1 / -1; grid-row: 2; display:flex; justify-content: space-evenly; align-items:center; gap:.75rem; }
-        .cell-unit, .cell-qty, .cell-cost { width: auto; text-align:center; }
-        .cell-qty { display:flex; align-items:center; gap:.25rem; }
-  :host { --neo-col-qty: 100px; }
+        /* Price | Qty | Cost as three columns, small label above each value */
+        .cell-numbers { grid-column: 1 / -1; grid-row: 2; display:grid; grid-template-columns: 1fr auto 1fr; align-items:end; gap:.5rem; min-width:0; }
+        .cell-unit, .cell-qty, .cell-cost { width: auto; display:flex; flex-direction:column; gap:.1rem; min-width:0; }
+        .cell-unit { align-items:flex-start; text-align:left; }
+        .cell-qty { align-items:center; text-align:center; }
+        .cell-cost { align-items:flex-end; text-align:right; }
+  :host { --neo-col-qty: 72px; }
   .qty-input { width: var(--neo-col-qty); max-width: var(--neo-col-qty); }
-        .cell-label { display: inline; }
+        .cell-label { display: block; margin: 0; }
   .avail-title { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
       }
 
