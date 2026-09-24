@@ -82,6 +82,22 @@ update `dist/`, then commit and push as usual.
 - The Google Maps API key is only kept in the page for the session. Leave it
   blank to test offline; the address field then acts as a plain text input.
 
+## Testing address lookup
+
+Pick the provider with **addressProvider** in the Properties panel and enter
+the matching key. Keys typed into the panel are kept for the browser session
+only and are never written to disk.
+
+- **Google Maps** — set **apiKey**. The key's allowed websites must include
+  `http://localhost:4321/*`, and the Google Cloud project needs Places API
+  (New) enabled. Suggestions are UK only; picking one fills in the formatted
+  address (UPRN stays empty).
+- **OS Places** — set **osPlacesApiKey** (an OS Data Hub key for a project with
+  the OS Places API). OS accepts requests from `localhost`, so no extra set-up
+  is needed. A full postcode (e.g. `G2 1DY`) lists every address at it;
+  anything else is a free-text search. Picking a result fills in the address
+  and its UPRN.
+
 ## Fixture data
 
 The demo reads component configuration from a global variable,

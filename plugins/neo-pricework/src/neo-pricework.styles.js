@@ -69,6 +69,15 @@ export const neoPriceworkStyles = css`
       .right { text-align:right; }
   .pill { border-radius:999px; padding:.15rem .5rem; background: var(--ntx-form-theme-color-primary-light90, #e8f1f9); color: var(--ntx-form-theme-color-primary, #006bd6); font-weight:600; }
 
+  /* Address box with suggestions drawn inside the editor (not on the page body) */
+  .address-field { position: relative; }
+  .address-field input { width: 100%; box-sizing: border-box; }
+  .address-suggestions { position: absolute; top: calc(100% + 2px); left: 0; right: 0; z-index: 5; margin: 0; padding: .25rem 0; list-style: none; background: var(--ntx-form-theme-color-form-background, #fff); border: 1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); box-shadow: 0 6px 16px rgba(0,0,0,.18); max-height: 260px; overflow: auto; }
+  .address-option { display: flex; flex-direction: column; gap: .1rem; padding: .45rem .75rem; cursor: pointer; font-size: 14px; color: var(--ntx-form-theme-color-input-text, #161718); }
+  .address-option.active { background: color-mix(in srgb, var(--ntx-form-theme-color-primary, #006bd6), #fff 88%); }
+  .address-main { font-weight: 600; }
+  .address-secondary { font-size: 12px; color: var(--ntx-form-theme-color-input-text-placeholder, #6c757d); }
+  .address-attribution { padding: .25rem .75rem 0; text-align: right; font-size: 11px; white-space: nowrap; color: var(--ntx-form-theme-color-input-text-placeholder, #5f6368); }
   /* Available work items (touch-friendly) */
   .avail-list { display:flex; flex-direction:column; gap:.5rem; max-height: 260px; font-size: 14px; overflow:auto; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); padding:.5rem; background: var(--ntx-form-theme-color-form-background, #fff); width: 100%; max-width: 100%; }
   .avail-row { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.6rem .6rem; border:1px solid var(--ntx-form-theme-color-border, #898f94); border-radius: var(--ntx-form-theme-border-radius, 4px); min-height:44px; width: 100%; box-sizing: border-box; }

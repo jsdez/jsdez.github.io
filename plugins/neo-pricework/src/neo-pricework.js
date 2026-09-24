@@ -1,8 +1,118 @@
-import { LitElement, html } from 'lit';
+import { LitElement, html, nothing } from 'lit';
 import { neoPriceworkStyles } from './neo-pricework.styles.js';
 
 // Simple id generator for new jobs
 const uid = () => Math.random().toString(36).slice(2, 10);
+
+// Address lookup providers (the "Address Lookup Provider" property). UK addresses only.
+const ADDRESS_PROVIDERS = { GOOGLE: 'Google Maps', OS: 'OS Places' };
+const ADDRESS_LOOKUP_DELAY_MS = 250; // wait for a pause in typing before requesting suggestions
+const ADDRESS_LOOKUP_MIN_CHARS = 3;
+const ADDRESS_MAX_SUGGESTIONS = 5;
+
+// Google Maps: Places API (New).
+// Place types that match addresses (the legacy 'address' type isn't supported by the new API).
+const ADDRESS_PLACE_TYPES = ['street_address', 'premise', 'subpremise', 'route', 'postal_code'];
+const GOOGLE_REGION_CODES = ['gb'];
+
+// OS Places API (Ordnance Survey AddressBase Premium): returns the address and its UPRN.
+const OS_PLACES_URL = 'https://api.os.uk/search/places/v1';
+const OS_POSTCODE_MAX_RESULTS = 100; // every address at a postcode
+// A full UK postcode, e.g. "G2 1DY" or "g21dy": looked up with the postcode search instead of find.
+const UK_POSTCODE = /^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$/i;
+
+// Calls an OS Places API search and returns its address records (DPA, or LPI if requested).
+// The key is sent in the "key" header (allowed by OS for browser requests) so it isn't in the URL.
+async function fetchOsPlaces(path, params, key, signal) {
+  const url = new URL(`${OS_PLACES_URL}/${path}`);
+  Object.entries(params).forEach(([name, value]) => url.searchParams.set(name, value));
+  const response = await fetch(url, { headers: { key }, signal });
+  if (!response.ok) {
+    let detail = '';
+    try {
+      const body = await response.json();
+      detail = body?.error?.message || body?.fault?.faultstring || '';
+    } catch (error) { /* no JSON body */ }
+    throw new Error(`OS Places ${path} request failed (${response.status})${detail ? `: ${detail}` : ''}`);
+  }
+  const body = await response.json();
+  return (body.results || []).map((result) => result.DPA || result.LPI).filter(Boolean);
+}
+
+// Turns an OS Places record into a suggestion: the full address and UPRN, shown as
+// "address" with the postcode underneath.
+function osSuggestion(record) {
+  const address = record.ADDRESS || '';
+  const postcode = record.POSTCODE || record.POSTCODE_LOCATOR || '';
+  const suffix = postcode ? `, ${postcode}` : '';
+  return {
+    provider: 'os',
+    text: address,
+    mainText: suffix && address.endsWith(suffix) ? address.slice(0, -suffix.length) : address,
+    secondaryText: postcode,
+    address,
+    uprn: record.UPRN == null ? '' : String(record.UPRN),
+  };
+}
+
+// Loads the Maps JavaScript API once per page (shared by every instance on the form) and
+// resolves with the Places library.
+const MAPS_READY_CALLBACK = '__neoPriceworkMapsReady';
+const MAPS_READY_TIMEOUT_MS = 15000;
+let placesLibraryPromise = null;
+
+// Resolves once google.maps.importLibrary exists. With loading=async it can appear a moment
+// after the script's load event, so poll briefly rather than failing.
+function whenImportLibraryReady() {
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
+    (function check() {
+      if (window.google?.maps?.importLibrary) { resolve(); return; }
+      if (Date.now() - started > MAPS_READY_TIMEOUT_MS) {
+        reject(new Error('Google Maps loaded without importLibrary support'));
+        return;
+      }
+      setTimeout(check, 50);
+    })();
+  });
+}
+
+function loadPlacesLibrary(apiKey) {
+  if (window.google?.maps?.importLibrary) return window.google.maps.importLibrary('places');
+  if (!placesLibraryPromise) {
+    placesLibraryPromise = new Promise((resolve, reject) => {
+      const failed = () => reject(new Error('Failed to load Google Maps API'));
+      // Reuse a Maps script already on the page (e.g. from another control) rather than
+      // loading it twice, which Google reports as an error.
+      const existing = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]');
+      if (existing) {
+        existing.addEventListener('error', failed, { once: true });
+        whenImportLibraryReady().then(resolve, reject);
+        return;
+      }
+      // Google calls this once the API is ready (the recommended pattern with loading=async).
+      window[MAPS_READY_CALLBACK] = () => {
+        delete window[MAPS_READY_CALLBACK];
+        whenImportLibraryReady().then(resolve, reject);
+      };
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}` +
+        `&loading=async&v=weekly&callback=${MAPS_READY_CALLBACK}`;
+      script.async = true;
+      script.dataset.neoPriceworkGmaps = '1';
+      script.addEventListener('error', () => {
+        // Remove the failed script so a later attempt (e.g. after signal returns) can retry.
+        script.remove();
+        delete window[MAPS_READY_CALLBACK];
+        failed();
+      }, { once: true });
+      document.head.appendChild(script);
+    }).then(() => window.google.maps.importLibrary('places'));
+    // Allow a later retry if loading failed.
+    placesLibraryPromise.catch(() => { placesLibraryPromise = null; });
+  }
+  return placesLibraryPromise;
+}
 
 class NeoPriceworkElement extends LitElement {
   static getMetaConfig() {
@@ -22,10 +132,22 @@ class NeoPriceworkElement extends LitElement {
           enum: ['Nintex Cloud Form', 'Nintex SharePoint Form'],
           defaultValue: 'Nintex Cloud Form'
         },
+        addressProvider: {
+          type: 'string',
+          title: 'Address Lookup Provider',
+          description: 'Service that suggests UK addresses as the engineer types. Google Maps returns the formatted address; OS Places returns the address and its UPRN.',
+          enum: [ADDRESS_PROVIDERS.GOOGLE, ADDRESS_PROVIDERS.OS],
+          defaultValue: ADDRESS_PROVIDERS.GOOGLE
+        },
         apiKey: {
           type: 'string',
-          title: 'Google Maps API key',
-          description: 'API key used for address autocomplete'
+          title: 'Google Maps API Key',
+          description: 'Browser API key with the Maps JavaScript API and Places API (New) enabled. Used when the Address Lookup Provider is Google Maps.'
+        },
+        osPlacesApiKey: {
+          type: 'string',
+          title: 'OS Places API Key',
+          description: 'OS Data Hub API key for a project with the OS Places API. Used when the Address Lookup Provider is OS Places.'
         },
         inputstr: {
           type: 'string',
@@ -44,6 +166,7 @@ class NeoPriceworkElement extends LitElement {
                 properties: {
                   id: { type: 'string' },
                   address: { type: 'string', title: 'Address' },
+                  uprn: { type: 'string', title: 'UPRN' },
                   contract: { type: 'string', title: 'Contract' },
                   notes: { type: 'string', title: 'Job Notes' },
                   items: {
@@ -117,6 +240,7 @@ class NeoPriceworkElement extends LitElement {
                 properties: {
                   id: { type: 'string', title: 'Job ID', description: 'Unique job identifier' },
                   address: { type: 'string', title: 'Address', description: 'Job address' },
+                  uprn: { type: 'string', title: 'UPRN', description: 'Unique Property Reference Number for the address, when known (empty otherwise)' },
                   contract: { type: 'string', title: 'Contract', description: 'Contract identifier' },
                   contracts: { type: 'array', title: 'Contracts', description: 'Array of all contracts for this job', items: { type: 'string' } },
                   notes: { type: 'string', title: 'Notes', description: 'Job notes' },
@@ -160,7 +284,9 @@ class NeoPriceworkElement extends LitElement {
 
   static properties = {
     formMode: { type: String },
+    addressProvider: { type: String },
     apiKey: { type: String },
+    osPlacesApiKey: { type: String },
     inputstr: { type: String },
     inputobj: { type: Object },
     outputobj: { type: Object },
@@ -175,6 +301,8 @@ class NeoPriceworkElement extends LitElement {
     workItemQuery: { type: String },
     detailsOpen: { type: Object },
     inputStringError: { type: String },
+    addressSuggestions: { state: true },
+    addressActiveIndex: { state: true },
   };
 
   static get styles() { return neoPriceworkStyles; }
@@ -182,7 +310,9 @@ class NeoPriceworkElement extends LitElement {
   constructor() {
     super();
     this.formMode = 'Nintex Cloud Form';
+    this.addressProvider = ADDRESS_PROVIDERS.GOOGLE;
     this.apiKey = '';
+    this.osPlacesApiKey = '';
     this.inputstr = '';
     this.inputobj = null;
     this.outputobj = { jobs: [], subtotal: 0, count: 0 };
@@ -198,13 +328,14 @@ class NeoPriceworkElement extends LitElement {
     this.workItemQuery = '';
     this.inputStringError = '';
 
-    // Address autocomplete state
-    this._gmapsLoaded = false;
-    this._autocomplete = null;
-    this._placesService = null;
-    this._addressIsUserInput = false;
-    this._addressPreviousValue = '';
-    this._addressLastResolved = '';
+    // Address suggestions (Places API (New))
+    this.addressSuggestions = [];
+    this.addressActiveIndex = -1;
+    this._placesSessionToken = null; // groups one engineer's search into one billed session
+    this._addressLookupTimer = null;
+    this._addressRequestSeq = 0; // ignores responses that arrive after newer typing
+    this._addressAbort = null; // cancels an in-flight OS Places request
+    this._warnedMissingAddressKey = false;
     this.detailsOpen = new Set();
     this._designerReadOnly = this.readOnly;
     this._sharePointForcedReadOnly = false;
@@ -216,10 +347,25 @@ class NeoPriceworkElement extends LitElement {
   }
 
   getEmptyForm() {
-    return { id: '', address: '', contract: '', notes: '', items: [] };
+    return { id: '', address: '', uprn: '', contract: '', notes: '', items: [] };
   }
 
   updated(changed) {
+    // However the editor closed (Close, Cancel, Save, Delete, Reset), stop any address lookup.
+    if (changed.has('showModal') && !this.showModal) {
+      this.clearAddressLookup();
+    }
+    // Keep the highlighted suggestion visible when moving through a long list (e.g. a postcode).
+    if (changed.has('addressActiveIndex') && this.addressActiveIndex >= 0) {
+      const option = this.renderRoot?.getElementById?.(`address-option-${this.addressActiveIndex}`);
+      if (option) option.scrollIntoView({ block: 'nearest' });
+    }
+    // Switching provider or key while the editor is open: drop any suggestions from the old one.
+    if (changed.has('addressProvider') || changed.has('apiKey') || changed.has('osPlacesApiKey')) {
+      this.clearAddressLookup();
+      this._warnedMissingAddressKey = false;
+    }
+
     if (changed.has('readOnly') && !this._sharePointForcedReadOnly) {
       this._designerReadOnly = this.readOnly;
     }
@@ -293,11 +439,7 @@ class NeoPriceworkElement extends LitElement {
     this.inputstr = '';
     this.jobs = [];
 
-    // Address autocomplete state from the last edit (recreated when the editor opens).
-    this._autocomplete = null;
-    this._addressIsUserInput = false;
-    this._addressPreviousValue = '';
-    this._addressLastResolved = '';
+    this.clearAddressLookup();
 
     this.recomputeAndDispatch();
   }
@@ -385,6 +527,7 @@ class NeoPriceworkElement extends LitElement {
       this.jobs = jobsToLoad.map(j => ({
         id: j.id || uid(),
         address: j.address || '',
+        uprn: j.uprn == null ? '' : String(j.uprn).trim(),
         contract: j.contract || '',
         contracts: j.contracts || [], // Preserve computed contracts if present
         notes: j.notes || '',
@@ -418,6 +561,7 @@ class NeoPriceworkElement extends LitElement {
   recomputeAndDispatch() {
     const enrichedJobs = this.jobs.map(job => ({
       ...job,
+      uprn: job.uprn == null ? '' : String(job.uprn),
       contracts: this.getJobContracts(job),
       items: (job.items || []).map(item => ({
         ...item,
@@ -448,17 +592,17 @@ class NeoPriceworkElement extends LitElement {
     this.formData = { ...this.getEmptyForm(), id: uid() };
     this.editingIndex = -1;
     this.showModal = true;
-  this.updateComplete.then(()=>this.ensureGoogleMapsLoadedAndInit());
+    this.prepareAddressLookup();
   }
 
   openEdit = (index) => {
     if (this.readOnly) return;
     const j = this.jobs[index];
     if (!j) return;
-    this.formData = { ...j };
+    this.formData = { ...this.getEmptyForm(), ...j };
     this.editingIndex = index;
     this.showModal = true;
-  this.updateComplete.then(()=>this.ensureGoogleMapsLoadedAndInit());
+    this.prepareAddressLookup();
   }
 
   closeModal = () => { this.showModal = false; }
@@ -772,11 +916,7 @@ class NeoPriceworkElement extends LitElement {
             <div class="form-grid">
               <div class="form-group" style="grid-column: 1 / -1;">
                 <label>Address</label>
-                <input id="addressInput" type="text" .value=${this.formData.address}
-                  @input=${this.onAddressTyping}
-                  @blur=${this.onAddressBlur}
-                  @change=${this.onAddressBlur}
-                  placeholder="Search for an address" />
+                ${this.renderAddressField()}
               </div>
               <div class="form-group" style="grid-column: 1 / -1;">
                 <label>Contract</label>
@@ -861,120 +1001,235 @@ class NeoPriceworkElement extends LitElement {
     `;
   }
 
-  // ======== Embedded neo-address capabilities (lite) ========
-  ensureGoogleMapsLoadedAndInit() {
-    // If field isn't in DOM yet, bail; updateComplete callers handle sequencing.
-    const input = this.shadowRoot?.getElementById('addressInput');
-    if (!input) return;
+  // ======== Address suggestions (Google Maps or OS Places) ========
+  // Suggestions are requested as the engineer types and shown under the address box. Picking
+  // one fills in the address (and, with OS Places, its UPRN); typed text is otherwise kept
+  // exactly as typed. The provider is chosen by the "Address Lookup Provider" property.
+  //
+  // Billing:
+  // - Google Maps: all requests for one search share a session token, and picking a suggestion
+  //   makes one Place Details request for formattedAddress only (the Essentials level), which
+  //   ends the session.
+  // - OS Places: each search request is billed as an OS Data Hub transaction; picking a result
+  //   makes no further request (the address and UPRN are already in the results).
 
-    if (this._gmapsLoaded && window.google && window.google.maps) {
-      this.initAutocomplete(input);
-      return;
-    }
-
-    if (!this.apiKey) {
-      // API key missing; fallback to plain text input behavior
-      return;
-    }
-
-    // If already loading/loaded script exists, hook into onload
-    if (window.google && window.google.maps) {
-      this._gmapsLoaded = true;
-      this.initAutocomplete(input);
-      return;
-    }
-
-    const existing = document.querySelector('script[data-neo-pricework-gmaps]');
-    if (existing) {
-      existing.addEventListener('load', () => {
-        this._gmapsLoaded = true;
-        this.initAutocomplete(input);
-      }, { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.dataset.neoPriceworkGmaps = '1';
-    script.addEventListener('load', () => {
-      this._gmapsLoaded = true;
-      this.initAutocomplete(input);
-    }, { once: true });
-    script.addEventListener('error', () => {
-      // Swallow errors; input remains plain text
-      // eslint-disable-next-line no-console
-      console.error('Failed to load Google Maps API');
-    }, { once: true });
-    document.head.appendChild(script);
+  get addressLookupProvider() {
+    return this.addressProvider === ADDRESS_PROVIDERS.OS ? 'os' : 'google';
   }
 
-  initAutocomplete(inputEl) {
-    if (!window.google || !window.google.maps) return;
-    if (!inputEl) return;
-    // Create once per modal lifecycle
-    this._autocomplete = new google.maps.places.Autocomplete(inputEl, { types: ['address'] });
-    this._autocomplete.addListener('place_changed', () => {
-      const place = this._autocomplete.getPlace();
-      if (!place || !place.formatted_address) return;
-      
-      // Mark as NOT user input since this is an autocomplete selection
-      this._addressIsUserInput = false;
-      this.formData = { ...this.formData, address: place.formatted_address };
-      this._addressPreviousValue = place.formatted_address;
-      this._addressLastResolved = place.formatted_address;
-      
-      // Reset the flag after a brief delay to handle future user input
-      setTimeout(() => {
-        this._addressIsUserInput = true;
-      }, 100);
-    });
-    // Prepare Places Service for programmatic resolution
-    this._placesService = new google.maps.places.PlacesService(document.createElement('div'));
+  get addressLookupKey() {
+    const key = this.addressLookupProvider === 'os' ? this.osPlacesApiKey : this.apiKey;
+    return typeof key === 'string' ? key.trim() : '';
+  }
+
+  // Called when the editor opens. Google: start loading the Places library so the first
+  // suggestions are quick. OS Places needs nothing loaded.
+  prepareAddressLookup() {
+    if (!this.addressLookupKey) {
+      if (!this._warnedMissingAddressKey) {
+        this._warnedMissingAddressKey = true;
+        // eslint-disable-next-line no-console
+        console.info(`neo-pricework: no ${this.addressLookupProvider === 'os' ? 'OS Places' : 'Google Maps'} API key set; address suggestions are off.`);
+      }
+      return;
+    }
+    if (this.addressLookupProvider === 'google') {
+      loadPlacesLibrary(this.addressLookupKey).catch((error) => {
+        // eslint-disable-next-line no-console
+        console.warn('neo-pricework: address suggestions unavailable:', error);
+      });
+    }
+  }
+
+  // Stop any pending lookup and close the suggestions. An unfinished Google session is simply
+  // billed per suggestion request; the next search starts a new session.
+  clearAddressLookup() {
+    this.closeAddressSuggestions();
+    this._placesSessionToken = null;
+  }
+
+  closeAddressSuggestions() {
+    clearTimeout(this._addressLookupTimer);
+    this._addressLookupTimer = null;
+    this._addressRequestSeq++;
+    if (this._addressAbort) {
+      this._addressAbort.abort();
+      this._addressAbort = null;
+    }
+    if (this.addressSuggestions.length) this.addressSuggestions = [];
+    if (this.addressActiveIndex !== -1) this.addressActiveIndex = -1;
   }
 
   onAddressTyping = (e) => {
-    this._addressIsUserInput = true;
     const value = e.target.value;
-    this.formData = { ...this.formData, address: value };
-    this._addressPreviousValue = value;
-    // Reset the resolved flag when user types - they're changing the selection
-    this._addressLastResolved = '';
+    // A typed change means any UPRN for the previous address no longer applies.
+    this.formData = { ...this.formData, address: value, uprn: '' };
+
+    clearTimeout(this._addressLookupTimer);
+    if (!this.addressLookupKey || value.trim().length < ADDRESS_LOOKUP_MIN_CHARS) {
+      this.closeAddressSuggestions();
+      return;
+    }
+    this._addressLookupTimer = setTimeout(() => this.fetchAddressSuggestions(value), ADDRESS_LOOKUP_DELAY_MS);
+  }
+
+  async fetchAddressSuggestions(text) {
+    const seq = ++this._addressRequestSeq;
+    if (this._addressAbort) this._addressAbort.abort();
+    const abort = new AbortController();
+    this._addressAbort = abort;
+    try {
+      const suggestions = this.addressLookupProvider === 'os'
+        ? await this.fetchOsPlacesSuggestions(text, abort.signal)
+        : await this.fetchGoogleSuggestions(text, seq);
+      // Ignore the response if the engineer has typed more, picked something or closed the editor.
+      if (!suggestions || seq !== this._addressRequestSeq || !this.showModal || this.formData.address !== text) return;
+      this.addressSuggestions = suggestions;
+      this.addressActiveIndex = -1;
+    } catch (error) {
+      if (error?.name === 'AbortError' || seq !== this._addressRequestSeq) return;
+      this.addressSuggestions = [];
+      // eslint-disable-next-line no-console
+      console.warn('neo-pricework: address suggestions failed:', error);
+    } finally {
+      if (this._addressAbort === abort) this._addressAbort = null;
+    }
+  }
+
+  // Google Maps (Places API (New)), UK addresses only. Returns null if superseded.
+  async fetchGoogleSuggestions(text, seq) {
+    const places = await loadPlacesLibrary(this.addressLookupKey);
+    if (seq !== this._addressRequestSeq) return null;
+    if (!this._placesSessionToken) this._placesSessionToken = new places.AutocompleteSessionToken();
+    const { suggestions } = await places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+      input: text,
+      sessionToken: this._placesSessionToken,
+      includedPrimaryTypes: ADDRESS_PLACE_TYPES,
+      includedRegionCodes: GOOGLE_REGION_CODES,
+    });
+    return (suggestions || [])
+      .filter((s) => s.placePrediction)
+      .slice(0, ADDRESS_MAX_SUGGESTIONS)
+      .map((s) => ({
+        provider: 'google',
+        text: s.placePrediction.text.toString(),
+        mainText: s.placePrediction.mainText ? s.placePrediction.mainText.toString() : '',
+        secondaryText: s.placePrediction.secondaryText ? s.placePrediction.secondaryText.toString() : '',
+        prediction: s.placePrediction,
+      }));
+  }
+
+  // OS Places API. A full postcode lists every address at it; anything else is a free-text
+  // search for the best matches.
+  async fetchOsPlacesSuggestions(text, signal) {
+    const query = text.trim();
+    const isPostcode = UK_POSTCODE.test(query);
+    const records = isPostcode
+      ? await fetchOsPlaces('postcode', { postcode: query, maxresults: OS_POSTCODE_MAX_RESULTS }, this.addressLookupKey, signal)
+      : await fetchOsPlaces('find', { query, maxresults: ADDRESS_MAX_SUGGESTIONS }, this.addressLookupKey, signal);
+    const seen = new Set();
+    return records
+      .map(osSuggestion)
+      .filter((s) => {
+        const id = s.uprn || s.address;
+        if (!s.address || seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      })
+      .slice(0, isPostcode ? OS_POSTCODE_MAX_RESULTS : ADDRESS_MAX_SUGGESTIONS);
+  }
+
+  async selectAddressSuggestion(suggestion) {
+    if (!suggestion) return;
+    const editingId = this.formData.id;
+    this.closeAddressSuggestions();
+
+    if (suggestion.provider === 'os') {
+      // The OS result already has the address and UPRN; no further request.
+      this.formData = { ...this.formData, address: suggestion.address, uprn: suggestion.uprn };
+      return;
+    }
+
+    let address = suggestion.text;
+    try {
+      // Ends the Google session: one Place Details request for the formatted address only.
+      const place = suggestion.prediction.toPlace();
+      await place.fetchFields({ fields: ['formattedAddress'] });
+      if (place.formattedAddress) address = place.formattedAddress;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('neo-pricework: could not fetch the formatted address; using the suggestion text:', error);
+    }
+    this._placesSessionToken = null; // the next search is a new session
+    // Only apply if the same job is still being edited.
+    if (!this.showModal || this.formData.id !== editingId) return;
+    this.formData = { ...this.formData, address, uprn: '' };
+  }
+
+  onAddressKeydown = (e) => {
+    const count = this.addressSuggestions.length;
+    if (!count) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      this.addressActiveIndex = (this.addressActiveIndex + 1) % count;
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      this.addressActiveIndex = this.addressActiveIndex <= 0 ? count - 1 : this.addressActiveIndex - 1;
+    } else if (e.key === 'Enter' && this.addressActiveIndex >= 0) {
+      e.preventDefault();
+      this.selectAddressSuggestion(this.addressSuggestions[this.addressActiveIndex]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      this.closeAddressSuggestions();
+    }
   }
 
   onAddressBlur = () => {
-    // Skip resolution if address was just set by autocomplete selection
-    if (!this._addressIsUserInput) return;
-    
-    const text = this.formData.address || '';
-    if (!text.trim()) return;
-    
-    // Don't resolve if we don't have Google Maps or if this address was already resolved
-    if (!this._gmapsLoaded || !this._placesService || !window.google || !window.google.maps) return;
-    if (text === this._addressLastResolved) return;
-    
-    // Don't resolve if the text hasn't changed since the last input event
-    if (text === this._addressPreviousValue && this._addressLastResolved) return;
+    // Keep whatever was typed; just close the suggestions. (Picking a suggestion doesn't blur
+    // the box because the options cancel mousedown.)
+    this.closeAddressSuggestions();
+  }
 
-    const request = { query: text, fields: ['formatted_address', 'geometry', 'name'] };
-    this._placesService.findPlaceFromQuery(request, (results, status) => {
-      // Only update if the component still has focus on this address and hasn't changed
-      if (this.formData.address !== text) return;
-      
-      if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
-        const place = results[0];
-        if (place.formatted_address && place.formatted_address !== this.formData.address) {
-          this._addressIsUserInput = false; // Prevent recursive resolution
-          this.formData = { ...this.formData, address: place.formatted_address };
-          this._addressIsUserInput = true; // Reset for next interaction
-        }
-        this._addressLastResolved = this.formData.address;
-      } else {
-        // Keep user text; mark as attempted
-        this._addressLastResolved = text;
-      }
-    });
+  // Attribution each provider requires alongside its results.
+  renderAddressAttribution() {
+    return this.addressLookupProvider === 'os'
+      ? `Contains OS data © Crown copyright and database rights ${new Date().getFullYear()}`
+      : 'Google Maps';
+  }
+
+  renderAddressField() {
+    const suggestions = this.addressSuggestions || [];
+    const open = suggestions.length > 0;
+    const active = this.addressActiveIndex;
+    return html`
+      <div class="address-field">
+        <input id="addressInput" type="text" .value=${this.formData.address || ''}
+          role="combobox" aria-autocomplete="list" aria-expanded=${open ? 'true' : 'false'}
+          aria-controls="addressSuggestions"
+          aria-activedescendant=${open && active >= 0 ? `address-option-${active}` : nothing}
+          autocomplete="off"
+          @input=${this.onAddressTyping}
+          @keydown=${this.onAddressKeydown}
+          @blur=${this.onAddressBlur}
+          placeholder=${this.addressLookupProvider === 'os' ? 'Search for an address or postcode' : 'Search for an address'} />
+        ${open ? html`
+          <ul id="addressSuggestions" class="address-suggestions" role="listbox" aria-label="Address suggestions">
+            ${suggestions.map((s, i) => html`
+              <li id="address-option-${i}" role="option" aria-selected=${i === active ? 'true' : 'false'}
+                class="address-option ${i === active ? 'active' : ''}"
+                @mousedown=${(e) => e.preventDefault()}
+                @mouseenter=${() => { this.addressActiveIndex = i; }}
+                @click=${() => this.selectAddressSuggestion(s)}>
+                <span class="address-main">${s.mainText || s.text}</span>
+                ${s.secondaryText ? html`<span class="address-secondary">${s.secondaryText}</span>` : ''}
+              </li>
+            `)}
+            <li class="address-attribution" role="presentation" aria-hidden="true">${this.renderAddressAttribution()}</li>
+          </ul>
+        ` : ''}
+      </div>
+    `;
   }
 
   render() {
